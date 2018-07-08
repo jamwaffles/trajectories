@@ -1,0 +1,7 @@
+[package]
+name = "trajectories"
+version = "0.1.0"
+authors = ["James Waples <jamwaffles@gmail.com>"]
+
+[dependencies]
+trajectories-sys = { path = "../trajectories-sys" }

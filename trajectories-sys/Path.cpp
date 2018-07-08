@@ -192,7 +192,7 @@ Path::Path(const list<VectorXd> &path, double maxDeviation) :
 				pathSegments.push_back(new LinearPathSegment(startConfig, endConfig));
 			}
 			pathSegments.push_back(blendSegment);
-			
+
 			startConfig = blendSegment->getConfig(blendSegment->getLength());
 		}
 		else {
