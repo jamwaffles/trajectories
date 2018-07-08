@@ -1,4 +1,5 @@
-extern crate trajectories_sys;
+mod path;
+mod trajectory;
 
 #[cfg(test)]
 mod tests {
