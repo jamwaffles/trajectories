@@ -1,3 +1,5 @@
+use std::cmp;
+
 use super::Coord;
 
 pub trait PathSegment {
@@ -16,6 +18,8 @@ pub trait PathSegment {
 pub struct LinearPathSegment {
     position: f64,
     length: f64,
+    start: Coord,
+    end: Coord,
 }
 
 impl PathSegment for LinearPathSegment {
@@ -24,7 +28,9 @@ impl PathSegment for LinearPathSegment {
     }
 
     fn get_config(&self, s: f64) -> Coord {
-        unimplemented!()
+        let div = 0.0f64.max(1.0f64.min(s / self.length));
+
+        return (1.0 - div) * self.start + div * self.end;
     }
 
     fn get_tangent(&self, s: f64) -> Coord {
