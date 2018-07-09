@@ -1,7 +1,7 @@
 [package]
+authors = ["James Waples <jamwaffles@gmail.com>"]
 name = "trajectories"
 version = "0.1.0"
-authors = ["James Waples <jamwaffles@gmail.com>"]
-
 [dependencies]
+approx = "0.2.0"
 nalgebra = "0.15.3"

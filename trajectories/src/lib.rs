@@ -1,4 +1,6 @@
 extern crate nalgebra;
+#[macro_use]
+extern crate approx;
 
 mod path;
 mod pathsegment;
