@@ -2,3 +2,7 @@
 **/*.rs.bk
 Cargo.lock
 .DS_Store
+*.o
+example
+test
+*.txt

@@ -1,12 +1,14 @@
+#include <iostream>
 #include <cstdlib>
 #include <list>
 #include <Eigen/Core>
-#include "Trajectory.h"
+#include "Trajectory.hpp"
 
 int numTests = 0;
 int numTestsFailed = 0;
 
 void test(std::string name, std::list<Eigen::VectorXd> waypoints, double maxDeviation, const Eigen::VectorXd& maxVelocities, const Eigen::VectorXd& maxAccelerations, double timeStep) {
+	std::cout << "Begin " << name << std::endl;
 	Trajectory trajectory(Path(waypoints, maxDeviation), maxVelocities, maxAccelerations, timeStep);
 	numTests++;
 	if(!trajectory.isValid()) {
