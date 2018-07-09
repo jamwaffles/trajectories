@@ -12,7 +12,12 @@ fn main() {
     // to bindgen, and lets you build up options for
     // the resulting bindings.
     let bindings = bindgen::Builder::default()
+        // macOS
         .clang_arg("-I/usr/local/Cellar/eigen/3.3.4/include/eigen3")
+
+        // Linux
+        .clang_arg("-I/usr/lib/clang/6.0/include")
+        .clang_arg("-I/usr/include/eigen3")
 
         .enable_cxx_namespaces()
 
