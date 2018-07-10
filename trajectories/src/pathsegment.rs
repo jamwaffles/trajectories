@@ -58,7 +58,7 @@ impl PathSegment for LinearPathSegment {
 
 #[derive(Copy, Clone, Debug)]
 pub struct CircularPathSegment {
-    position: f64,
+    // position: Option<f64>,
     length: f64,
     radius: f64,
     center: Coord,
@@ -68,15 +68,6 @@ pub struct CircularPathSegment {
 
 impl CircularPathSegment {
     fn new(start: Coord, intersection: Coord, end: Coord, max_deviation: f64) -> Self {
-        // if((intersection - start).norm() < 0.000001 || (end - intersection).norm() < 0.000001) {
-        //     length = 0.0;
-        //     radius = 1.0;
-        //     center = intersection;
-        //     x = Eigen::VectorXd::Zero(start.size());
-        //     y = Eigen::VectorXd::Zero(start.size());
-        //     return;
-        // }
-
         if (intersection - start).norm() < 0.000001 || (end - intersection).norm() < 0.000001 {
             return Self {
                 length: 0.0,
@@ -87,48 +78,44 @@ impl CircularPathSegment {
             };
         }
 
-        // const Eigen::VectorXd startDirection = (intersection - start).normalized();
-        // const Eigen::VectorXd endDirection = (end - intersection).normalized();
+        let start_direction = (intersection - start).normalize();
+        let end_direction = (end - intersection).normalize();
 
-        let start_direction = (intersection - start).normalized();
-        let end_direction = (end - intersection).normalized();
+        if (start_direction - end_direction).norm() < 0.000001 {
+            return Self {
+                length: 0.0,
+                radius: 1.0,
+                center: intersection,
+                x: Coord::repeat(0.0),
+                y: Coord::repeat(0.0),
+            };
+        }
 
-        // if((startDirection - endDirection).norm() < 0.000001) {
-        //     length = 0.0;
-        //     radius = 1.0;
-        //     center = intersection;
-        //     x = Eigen::VectorXd::Zero(start.size());
-        //     y = Eigen::VectorXd::Zero(start.size());
-        //     return;
-        // }
+        // let start_distance = (start - intersection).norm();
+        // let end_distance = (end - intersection).norm();
 
-        // const double startDistance = (start - intersection).norm();
-        // const double endDistance = (end - intersection).norm();
+        let mut distance = (start - intersection)
+            .norm()
+            .min((end - intersection).norm());
 
-        // double distance = std::min((start - intersection).norm(), (end - intersection).norm());
-        // const double angle = acos(startDirection.dot(endDirection));
+        let angle = start_direction.dot(&end_direction).acos();
 
-        // distance = std::min(distance, maxDeviation * sin(0.5 * angle) / (1.0 - cos(0.5 * angle)));  // enforce max deviation
+        distance = distance.min(max_deviation * (0.5 * angle).sin() / (1.0 - (0.5 * angle).cos()));
 
-        // radius = distance / tan(0.5 * angle);
-        // length = angle * radius;
+        let radius = distance / (0.5 * angle).tan();
+        let length = angle * radius;
 
-        // center = intersection + (endDirection - startDirection).normalized() * radius / cos(0.5 * angle);
-        // x = (intersection - distance * startDirection - center).normalized();
-        // y = startDirection;
-
-        // CircularPathSegment {
-        //     start,
-        //     end,
-        //     length: (end - start).norm(),
-        // }
+        let center = intersection
+            + (end_direction - start_direction).normalize() * radius / (0.5 * angle).cos();
+        let x = (intersection - distance * start_direction - center).normalize();
+        let y = start_direction;
 
         Self {
-            length: 0.0,
-            radius: 1.0,
-            center: intersection,
-            x: Coord::repeat(0.0),
-            y: Coord::repeat(0.0),
+            length,
+            radius,
+            center,
+            x,
+            y,
         }
     }
 }
