@@ -25,7 +25,7 @@ pub struct LinearPathSegment {
 }
 
 impl LinearPathSegment {
-    fn new(start: Coord, end: Coord) -> Self {
+    pub fn new(start: Coord, end: Coord) -> Self {
         LinearPathSegment {
             start,
             end,
@@ -73,7 +73,7 @@ pub struct CircularPathSegment {
 }
 
 impl CircularPathSegment {
-    fn new(start: Coord, intersection: Coord, end: Coord, max_deviation: f64) -> Self {
+    pub fn new(start: Coord, intersection: Coord, end: Coord, max_deviation: f64) -> Self {
         if (intersection - start).norm() < 0.000001 || (end - intersection).norm() < 0.000001 {
             return Self {
                 length: 0.0,
