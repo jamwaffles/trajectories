@@ -1,8 +1,8 @@
-use std::cmp;
+use std::f64;
 
 use super::Coord;
 
-pub trait PathSegment {
+pub trait PathSegment: Copy + Clone {
     fn get_length(&self) -> f64;
 
     fn get_config(&self, s: f64) -> Coord;
@@ -43,15 +43,15 @@ impl PathSegment for LinearPathSegment {
         (1.0 - clamped) * self.start + clamped * self.end
     }
 
-    fn get_tangent(&self, s: f64) -> Coord {
+    fn get_tangent(&self, _s: f64) -> Coord {
         (self.end - self.start) / self.length
     }
 
-    fn get_curvature(&self, s: f64) -> Coord {
-        Coord::repeat(0.0)
+    fn get_curvature(&self, _s: f64) -> Coord {
+        Coord::zeros()
     }
 
-    fn get_switching_points(&self, s: f64) -> Vec<f64> {
+    fn get_switching_points(&self, _s: f64) -> Vec<f64> {
         Vec::new()
     }
 }
@@ -73,8 +73,8 @@ impl CircularPathSegment {
                 length: 0.0,
                 radius: 1.0,
                 center: intersection,
-                x: Coord::repeat(0.0),
-                y: Coord::repeat(0.0),
+                x: Coord::zeros(),
+                y: Coord::zeros(),
             };
         }
 
@@ -86,8 +86,8 @@ impl CircularPathSegment {
                 length: 0.0,
                 radius: 1.0,
                 center: intersection,
-                x: Coord::repeat(0.0),
-                y: Coord::repeat(0.0),
+                x: Coord::zeros(),
+                y: Coord::zeros(),
             };
         }
 
@@ -126,18 +126,44 @@ impl PathSegment for CircularPathSegment {
     }
 
     fn get_config(&self, s: f64) -> Coord {
-        unimplemented!()
+        let angle = s / self.radius;
+
+        self.center + self.radius * (self.x * angle.cos() + self.y * angle.sin())
     }
 
     fn get_tangent(&self, s: f64) -> Coord {
-        unimplemented!()
+        let angle = s / self.radius;
+
+        -self.x * angle.sin() + self.y * angle.cos()
     }
 
     fn get_curvature(&self, s: f64) -> Coord {
-        unimplemented!()
+        let angle = s / self.radius;
+
+        -1.0 / self.radius * (self.x * angle.cos() + self.y * angle.sin())
     }
 
-    fn get_switching_points(&self, s: f64) -> Vec<f64> {
-        unimplemented!()
+    fn get_switching_points(&self, _s: f64) -> Vec<f64> {
+        let mut switching_points = Vec::new();
+
+        let dim = self.x.len();
+
+        for i in 0..dim {
+            let mut switching_angle = self.y[i].atan2(self.x[i]);
+
+            if switching_angle < 0.0 {
+                switching_angle += f64::consts::PI;
+            }
+
+            let switching_point = switching_angle + self.radius;
+
+            if switching_point < self.length {
+                switching_points.push(switching_point);
+            }
+        }
+
+        switching_points.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+        switching_points
     }
 }
