@@ -3,6 +3,8 @@ use std::f64;
 use super::Coord;
 
 pub trait PathSegment: Copy + Clone {
+    fn get_position(&self) -> f64;
+
     fn get_length(&self) -> f64;
 
     fn get_config(&self, s: f64) -> Coord;
@@ -33,6 +35,10 @@ impl LinearPathSegment {
 }
 
 impl PathSegment for LinearPathSegment {
+    fn get_position(&self) -> f64 {
+        0.0
+    }
+
     fn get_length(&self) -> f64 {
         self.length
     }
@@ -121,6 +127,10 @@ impl CircularPathSegment {
 }
 
 impl PathSegment for CircularPathSegment {
+    fn get_position(&self) -> f64 {
+        0.0
+    }
+
     fn get_length(&self) -> f64 {
         self.length
     }
