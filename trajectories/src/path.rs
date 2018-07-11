@@ -45,10 +45,17 @@ impl PathSegment for PathItem {
         }
     }
 
-    fn get_switching_points(&self, s: f64) -> Vec<f64> {
+    fn get_switching_points(&self) -> Vec<f64> {
         match self {
-            PathItem::CircularPathSegment(segment) => segment.get_switching_points(s),
-            PathItem::LinearPathSegment(segment) => segment.get_switching_points(s),
+            PathItem::CircularPathSegment(segment) => segment.get_switching_points(),
+            PathItem::LinearPathSegment(segment) => segment.get_switching_points(),
+        }
+    }
+
+    fn set_position(&mut self, position: f64) {
+        match self {
+            PathItem::CircularPathSegment(segment) => segment.set_position(position),
+            PathItem::LinearPathSegment(segment) => segment.set_position(position),
         }
     }
 }
@@ -97,24 +104,34 @@ impl Path {
             }
         }
 
-        // create list of switching point candidates, calculate total path length and absolute positions of path segments
-        // for(list<PathSegment*>::iterator segment = pathSegments.begin(); segment != pathSegments.end(); segment++) {
-        //     (*segment)->position = length;
-        //     list<double> localSwitchingPoints = (*segment)->getSwitchingPoints();
-        //     for(list<double>::const_iterator point = localSwitchingPoints.begin(); point != localSwitchingPoints.end(); point++) {
-        //         switchingPoints.push_back(make_pair(length + *point, false));
-        //     }
-        //     length += (*segment)->getLength();
-        //     while(!switchingPoints.empty() && switchingPoints.back().first >= length)
-        //         switchingPoints.pop_back();
-        //     switchingPoints.push_back(make_pair(length, true));
-        // }
-        // switchingPoints.pop_back();
+        let mut switching_points = Vec::new();
+        let mut length = 0.0;
+
+        for segment in path_segments.iter_mut() {
+            segment.set_position(length);
+
+            let local_switching_points = segment.get_switching_points();
+
+            for point in local_switching_points {
+                switching_points.push((length + point, false));
+            }
+
+            length += segment.get_length();
+
+            switching_points = switching_points
+                .into_iter()
+                .filter(|point| point.0 >= length)
+                .collect();
+
+            switching_points.push((length, true));
+        }
+
+        switching_points.pop();
 
         Self {
-            length: 0.0,
+            length,
             path_segments,
-            switching_points: Vec::new(),
+            switching_points,
         }
     }
 

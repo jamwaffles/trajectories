@@ -13,12 +13,14 @@ pub trait PathSegment: Copy + Clone {
 
     fn get_curvature(&self, s: f64) -> Coord;
 
-    fn get_switching_points(&self, s: f64) -> Vec<f64>;
+    fn get_switching_points(&self) -> Vec<f64>;
+
+    fn set_position(&mut self, position: f64);
 }
 
 #[derive(Copy, Clone, Debug)]
 pub struct LinearPathSegment {
-    // position: f64,
+    position: f64,
     length: f64,
     start: Coord,
     end: Coord,
@@ -27,6 +29,7 @@ pub struct LinearPathSegment {
 impl LinearPathSegment {
     pub fn new(start: Coord, end: Coord) -> Self {
         LinearPathSegment {
+            position: 0.0,
             start,
             end,
             length: (end - start).norm(),
@@ -36,7 +39,11 @@ impl LinearPathSegment {
 
 impl PathSegment for LinearPathSegment {
     fn get_position(&self) -> f64 {
-        0.0
+        self.position
+    }
+
+    fn set_position(&mut self, position: f64) {
+        self.position = position;
     }
 
     fn get_length(&self) -> f64 {
@@ -57,14 +64,14 @@ impl PathSegment for LinearPathSegment {
         Coord::zeros()
     }
 
-    fn get_switching_points(&self, _s: f64) -> Vec<f64> {
+    fn get_switching_points(&self) -> Vec<f64> {
         Vec::new()
     }
 }
 
 #[derive(Copy, Clone, Debug)]
 pub struct CircularPathSegment {
-    // position: Option<f64>,
+    position: f64,
     length: f64,
     radius: f64,
     center: Coord,
@@ -76,6 +83,7 @@ impl CircularPathSegment {
     pub fn new(start: Coord, intersection: Coord, end: Coord, max_deviation: f64) -> Self {
         if (intersection - start).norm() < 0.000001 || (end - intersection).norm() < 0.000001 {
             return Self {
+                position: 0.0,
                 length: 0.0,
                 radius: 1.0,
                 center: intersection,
@@ -89,6 +97,7 @@ impl CircularPathSegment {
 
         if (start_direction - end_direction).norm() < 0.000001 {
             return Self {
+                position: 0.0,
                 length: 0.0,
                 radius: 1.0,
                 center: intersection,
@@ -117,6 +126,7 @@ impl CircularPathSegment {
         let y = start_direction;
 
         Self {
+            position: 0.0,
             length,
             radius,
             center,
@@ -128,7 +138,11 @@ impl CircularPathSegment {
 
 impl PathSegment for CircularPathSegment {
     fn get_position(&self) -> f64 {
-        0.0
+        self.position
+    }
+
+    fn set_position(&mut self, position: f64) {
+        self.position = position;
     }
 
     fn get_length(&self) -> f64 {
@@ -153,7 +167,7 @@ impl PathSegment for CircularPathSegment {
         -1.0 / self.radius * (self.x * angle.cos() + self.y * angle.sin())
     }
 
-    fn get_switching_points(&self, _s: f64) -> Vec<f64> {
+    fn get_switching_points(&self) -> Vec<f64> {
         let mut switching_points = Vec::new();
 
         let dim = self.x.len();
