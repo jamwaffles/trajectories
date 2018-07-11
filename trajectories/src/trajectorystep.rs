@@ -1,7 +1,7 @@
 pub struct TrajectoryStep {
-    path_pos: f64,
-    path_vel: f64,
-    time: f64,
+    pub path_pos: f64,
+    pub path_vel: f64,
+    pub time: f64,
 }
 
 impl TrajectoryStep {
