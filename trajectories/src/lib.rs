@@ -5,6 +5,7 @@ extern crate approx;
 mod path;
 mod pathsegment;
 mod trajectory;
+mod trajectorystep;
 
 use nalgebra::Vector3;
 
