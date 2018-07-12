@@ -12,6 +12,7 @@ use nalgebra::Vector3;
 pub type Coord = Vector3<f64>;
 
 pub use path::Path;
+pub use trajectory::Trajectory;
 
 // #[cfg(test)]
 // mod tests {

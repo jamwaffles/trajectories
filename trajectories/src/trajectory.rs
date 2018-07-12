@@ -2,6 +2,9 @@ use super::path::Path;
 use super::trajectorystep::TrajectoryStep;
 use super::Coord;
 use std::f64;
+use std::fs::File;
+use std::io::Write;
+use std::path::Path as FilePath;
 
 // TODO: Change for something less rigid
 const EPS: f64 = 0.000001;
@@ -23,10 +26,114 @@ pub struct Trajectory {
 }
 
 impl Trajectory {
-    pub fn new(path: &Path, max_velocity: Coord, max_acceleration: Coord, timestep: f64) -> Self {
+    pub fn from_path(
+        path: &Path,
+        max_velocity: Coord,
+        max_acceleration: Coord,
+        timestep: f64,
+    ) -> Self {
         let trajectory = vec![TrajectoryStep::new(0.0, 0.0)];
 
         unimplemented!()
+    }
+
+    pub fn output_phase_plane_trajectory(&self) {
+        let velocity_path = FilePath::new("max_velocity.txt");
+        let trajectory_path = FilePath::new("trajectory.txt");
+        let mut velocity_file =
+            File::create(&velocity_path).expect("Could not create velocity log");
+        let mut trajectory_file =
+            File::create(&trajectory_path).expect("Could not create trajectory log");
+
+        let mut i = 0.0;
+
+        while i < self.path.get_length() {
+            writeln!(velocity_file, "Arse {}\n", i).expect("Couldn't write to file");
+
+            i += 0.1;
+        }
+
+        for t in self.trajectory.iter() {
+            writeln!(trajectory_file, "Wire {} {}\n", t.path_pos, t.path_vel)
+                .expect("Couldn't write to file");
+        }
+
+        for t in self.end_trajectory.iter() {
+            writeln!(trajectory_file, "Stuff {} {}\n", t.path_pos, t.path_vel)
+                .expect("Couldn't write to file");
+        }
+
+        unimplemented!()
+    }
+    pub fn is_valid(&self) -> bool {
+        self.valid
+    }
+    pub fn get_duration(&self) -> f64 {
+        self.trajectory.last().unwrap().time
+    }
+    pub fn get_position(&self, time: f64) -> Coord {
+        // list<TrajectoryStep>::const_iterator it = getTrajectorySegment(time);
+        // list<TrajectoryStep>::const_iterator previous = it;
+        // previous--;
+
+        // double timeStep = it->time - previous->time;
+        // const double acceleration = 2.0 * (it->pathPos - previous->pathPos - timeStep * previous->pathVel) / (timeStep * timeStep);
+
+        // timeStep = time - previous->time;
+        // const double pathPos = previous->pathPos + timeStep * previous->pathVel + 0.5 * timeStep * timeStep * acceleration;
+
+        // return path.getConfig(pathPos);
+
+        unimplemented!()
+    }
+    pub fn get_velocity(&self, time: f64) -> Coord {
+        // list<TrajectoryStep>::const_iterator it = getTrajectorySegment(time);
+        // list<TrajectoryStep>::const_iterator previous = it;
+        // previous--;
+
+        // double timeStep = it->time - previous->time;
+        // const double acceleration = 2.0 * (it->pathPos - previous->pathPos - timeStep * previous->pathVel) / (timeStep * timeStep);
+
+        // timeStep = time - previous->time;
+        // const double pathPos = previous->pathPos + timeStep * previous->pathVel + 0.5 * timeStep * timeStep * acceleration;
+        // const double pathVel = previous->pathVel + timeStep * acceleration;
+
+        // return path.getTangent(pathPos) * pathVel;
+
+        unimplemented!()
+    }
+
+    /// Get previous and current trajectory step for a given time
+    fn get_trajectory_segment(&self, time: f64) -> (&TrajectoryStep, &TrajectoryStep) {
+        // if(time >= trajectory.back().time) {
+        //     list<TrajectoryStep>::const_iterator last = trajectory.end();
+        //     last--;
+        //     return last;
+        // }
+        // else {
+        //     if(time < cachedTime) {
+        //         cachedTrajectorySegment = trajectory.begin();
+        //     }
+        //     while(time >= cachedTrajectorySegment->time) {
+        //         cachedTrajectorySegment++;
+        //     }
+        //     cachedTime = time;
+        //     return cachedTrajectorySegment;
+        // }
+
+        if time >= self.get_duration() {
+            (
+                self.trajectory
+                    .get(self.trajectory.len() - 2)
+                    .expect("Get segment out of bounds"),
+                self.trajectory
+                    .get(self.trajectory.len() - 3)
+                    .expect("Get segment out of bounds"),
+            )
+        } else {
+            // TODO
+            unimplemented!()
+        }
     }
 
     fn get_min_max_path_acceleration(&self, path_pos: f64, path_vel: f64, max: bool) -> f64 {
@@ -348,7 +455,7 @@ impl Trajectory {
 
     fn get_velocity_max_path_velocity_deriv(&self, path_pos: f64) -> f64 {
         let tangent = self.path.get_tangent(path_pos);
-        let max_path_velocity = f64::MAX;
+        let mut max_path_velocity = f64::MAX;
         let mut active_constraint: usize = 0;
 
         for i in 0..self.n {
