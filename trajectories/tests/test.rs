@@ -29,20 +29,24 @@ fn it_works() {
         println!("Trajectory duration: {}", duration);
         println!("Time      Position                  Velocity");
 
-        for t in (0.0..duration).step_by(0.1) {
+        let mut t = 0.0;
+
+        while t < duration {
             println!(
                 "{}: {:?} {:?}",
                 t,
                 trajectory.get_position(t),
                 trajectory.get_velocity(t)
             );
+
+            t += 0.1;
         }
 
         println!(
             "{}: {:?} {:?}",
             duration,
             trajectory.get_position(duration),
-            trajectory.get_velocity(t)
+            trajectory.get_velocity(duration)
         );
     } else {
         panic!("Trajectory gen failed");
