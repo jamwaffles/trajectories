@@ -72,35 +72,37 @@ impl Trajectory {
         self.trajectory.last().unwrap().time
     }
     pub fn get_position(&self, time: f64) -> Coord {
-        // list<TrajectoryStep>::const_iterator it = getTrajectorySegment(time);
-        // list<TrajectoryStep>::const_iterator previous = it;
-        // previous--;
+        let (previous, it) = self.get_trajectory_segment(time);
 
-        // double timeStep = it->time - previous->time;
-        // const double acceleration = 2.0 * (it->pathPos - previous->pathPos - timeStep * previous->pathVel) / (timeStep * timeStep);
+        let mut time_step = it.time - previous.time;
 
-        // timeStep = time - previous->time;
-        // const double pathPos = previous->pathPos + timeStep * previous->pathVel + 0.5 * timeStep * timeStep * acceleration;
+        let acceleration = 2.0 * (it.path_pos - previous.path_pos - time_step * previous.path_vel)
+            / (time_step * time_step);
 
-        // return path.getConfig(pathPos);
+        time_step = time - previous.time;
 
-        unimplemented!()
+        let path_pos = previous.path_pos
+            + time_step * previous.path_vel
+            + 0.5 * time_step * time_step * acceleration;
+
+        self.path.get_config(path_pos)
     }
     pub fn get_velocity(&self, time: f64) -> Coord {
-        // list<TrajectoryStep>::const_iterator it = getTrajectorySegment(time);
-        // list<TrajectoryStep>::const_iterator previous = it;
-        // previous--;
+        let (previous, it) = self.get_trajectory_segment(time);
 
-        // double timeStep = it->time - previous->time;
-        // const double acceleration = 2.0 * (it->pathPos - previous->pathPos - timeStep * previous->pathVel) / (timeStep * timeStep);
+        let mut time_step = it.time - previous.time;
 
-        // timeStep = time - previous->time;
-        // const double pathPos = previous->pathPos + timeStep * previous->pathVel + 0.5 * timeStep * timeStep * acceleration;
-        // const double pathVel = previous->pathVel + timeStep * acceleration;
+        let acceleration = 2.0 * (it.path_pos - previous.path_pos - time_step * previous.path_vel)
+            / (time_step * time_step);
 
-        // return path.getTangent(pathPos) * pathVel;
+        time_step = time - previous.time;
 
-        unimplemented!()
+        let path_pos = previous.path_pos
+            + time_step * previous.path_vel
+            + 0.5 * time_step * time_step * acceleration;
+        let path_vel = previous.path_vel + time_step * acceleration;
+
+        self.path.get_tangent(path_pos) * path_vel
     }
 
     /// Get previous and current trajectory step for a given time
@@ -121,17 +123,15 @@ impl Trajectory {
         //     return cachedTrajectorySegment;
         // }
 
-        if time >= self.get_duration() {
+        // If we're at or past the end, get the last two elements of the vec
+        if time >= self.trajectory.last().expect("No trajectory items").time {
+            let len = self.trajectory.len();
+
             (
-                self.trajectory
-                    .get(self.trajectory.len() - 2)
-                    .expect("Get segment out of bounds"),
-                self.trajectory
-                    .get(self.trajectory.len() - 3)
-                    .expect("Get segment out of bounds"),
+                self.trajectory.get(len - 2).unwrap(),
+                self.trajectory.get(len - 1).unwrap(),
             )
         } else {
-            // TODO
             unimplemented!()
         }
     }
