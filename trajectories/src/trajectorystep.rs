@@ -1,3 +1,4 @@
+#[derive(Debug, Clone, Copy)]
 pub struct TrajectoryStep {
     pub path_pos: f64,
     pub path_vel: f64,

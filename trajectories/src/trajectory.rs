@@ -18,8 +18,7 @@ pub struct Trajectory {
     valid: bool,
     trajectory: Vec<TrajectoryStep>,
     // non-empty only if the trajectory generation failed. (Wtf does this mean?)
-    end_trajectory: Vec<TrajectoryStep>,
-    eps: f64,
+    end_trajectory: Option<Vec<TrajectoryStep>>,
     timestep: f64,
     cached_time: f64,
     // cached_trajectory_segment: Iterator<Item = TrajectoryStep>,
@@ -32,9 +31,75 @@ impl Trajectory {
         max_acceleration: Coord,
         timestep: f64,
     ) -> Self {
-        let trajectory = vec![TrajectoryStep::new(0.0, 0.0)];
+        let mut new = Self {
+            cached_time: f64::MAX,
+            max_acceleration,
+            max_velocity,
+            n: max_velocity.len(),
+            // TODO: Stop cloning
+            path: path.clone(),
+            timestep,
+            valid: true,
+            end_trajectory: None,
+            trajectory: vec![TrajectoryStep::new(0.0, 0.0)],
+        };
 
-        unimplemented!()
+        new.initialise();
+
+        new
+    }
+
+    fn initialise(&mut self) {
+        // trajectory.push_back(TrajectoryStep(0.0, 0.0));
+        // double afterAcceleration = getMinMaxPathAcceleration(0.0, 0.0, true);
+        // while(valid && !integrateForward(trajectory, afterAcceleration) && valid) {
+        //     double beforeAcceleration;
+        //     TrajectoryStep switchingPoint;
+        //     if(getNextSwitchingPoint(trajectory.back().pathPos, switchingPoint, beforeAcceleration, afterAcceleration)) {
+        //         break;
+        //     }
+        //     integrateBackward(trajectory, switchingPoint.pathPos, switchingPoint.pathVel, beforeAcceleration);
+        // }
+
+        // if(valid) {
+        //     double beforeAcceleration = getMinMaxPathAcceleration(path.getLength(), 0.0, false);
+        //     integrateBackward(trajectory, path.getLength(), 0.0, beforeAcceleration);
+        // }
+
+        // if(valid) {
+        //     // calculate timing
+        //     list<TrajectoryStep>::iterator previous = trajectory.begin();
+        //     list<TrajectoryStep>::iterator it = previous;
+        //     it->time = 0.0;
+        //     it++;
+        //     while(it != trajectory.end()) {
+        //         it->time = previous->time + (it->pathPos - previous->pathPos) / ((it->pathVel + previous->pathVel) / 2.0);
+        //         previous = it;
+        //         it++;
+        //     }
+        // }
+
+        let mut after_acceleration = self.get_min_max_path_acceleration(0.0, 0.0, true);
+
+        while let Some(new_accel) = self.integrate_forward(after_acceleration) {
+            if !self.valid {
+                break;
+            }
+            after_acceleration = new_accel;
+            let mut before_acceleration = 0.0;
+
+            let (path_end_reached, switching_point, before_acceleration, new_after_acceleration) =
+                self.get_next_switching_point(
+                    self.trajectory
+                        .last()
+                        .expect("Trajectory is empty")
+                        .path_pos,
+                );
+
+            after_acceleration = new_after_acceleration;
+
+            if path_end_reached {}
+        }
     }
 
     pub fn output_phase_plane_trajectory(&self) {
@@ -58,12 +123,12 @@ impl Trajectory {
                 .expect("Couldn't write to file");
         }
 
-        for t in self.end_trajectory.iter() {
-            writeln!(trajectory_file, "Stuff {} {}\n", t.path_pos, t.path_vel)
-                .expect("Couldn't write to file");
+        if let Some(ref end_traj) = self.end_trajectory {
+            for t in end_traj.iter() {
+                writeln!(trajectory_file, "Stuff {} {}\n", t.path_pos, t.path_vel)
+                    .expect("Couldn't write to file");
+            }
         }
-
-        unimplemented!()
     }
     pub fn is_valid(&self) -> bool {
         self.valid
@@ -105,6 +170,206 @@ impl Trajectory {
         self.path.get_tangent(path_pos) * path_vel
     }
 
+    /// Returns new acceleration value, or none if end of path reached
+    fn integrate_forward(&mut self, acceleration: f64) -> Option<f64> {
+        // double pathPos = trajectory.back().pathPos;
+        // double pathVel = trajectory.back().pathVel;
+
+        // list<pair<double, bool> > switchingPoints = path.getSwitchingPoints();
+        // list<pair<double, bool> >::iterator nextDiscontinuity = switchingPoints.begin();
+
+        let mut path_pos = self.trajectory.last().unwrap().path_pos;
+        let mut path_vel = self.trajectory.last().unwrap().path_vel;
+
+        let switching_points = self.path.get_switching_points();
+        // let mut next_discontinuity = switching_points.iter();
+
+        // while(true)
+        // {
+        loop {
+            //     while(nextDiscontinuity != switchingPoints.end() && (nextDiscontinuity->first <= pathPos || !nextDiscontinuity->second)) {
+            //         nextDiscontinuity++;
+            //     }
+
+            let next_discontinuity = switching_points
+                .iter()
+                .find(|sp| sp.0 > path_pos && sp.1)
+                .expect("Could not find next discontinuity");
+
+            //     double oldPathPos = pathPos;
+            //     double oldPathVel = pathVel;
+
+            let old_path_pos = path_pos;
+            let old_path_vel = path_vel;
+
+            //     pathVel += timeStep * acceleration;
+            //     pathPos += timeStep * 0.5 * (oldPathVel + pathVel);
+
+            path_vel += self.timestep * acceleration;
+            path_pos += self.timestep * 0.5 * (old_path_vel + path_vel);
+
+            //     if(nextDiscontinuity != switchingPoints.end() && pathPos > nextDiscontinuity->first) {
+            //         pathVel = oldPathVel + (nextDiscontinuity->first - oldPathPos) * (pathVel - oldPathVel) / (pathPos - oldPathPos);
+            //         pathPos = nextDiscontinuity->first;
+            //     }
+
+            if path_pos > next_discontinuity.0 {
+                path_vel = old_path_vel
+                    + (next_discontinuity.0 - old_path_pos) * (path_vel - old_path_vel)
+                        / (path_pos - old_path_pos);
+                path_pos = next_discontinuity.0;
+            }
+
+            //     if(pathPos > path.getLength()) {
+            //         trajectory.push_back(TrajectoryStep(pathPos, pathVel));
+            //         return true;
+            //     }
+            //     else if(pathVel < 0.0) {
+            //         valid = false;
+            //         cout << "error" << endl;
+            //         return true;
+            //     }
+
+            if path_pos > self.path.get_length() {
+
+            } else if path_vel < 0.0 {
+                self.valid = false;
+                eprintln!("Error");
+                return None;
+            }
+
+            //     if(pathVel > getVelocityMaxPathVelocity(pathPos)
+            //         && getMinMaxPhaseSlope(oldPathPos, getVelocityMaxPathVelocity(oldPathPos), false) <= getVelocityMaxPathVelocityDeriv(oldPathPos))
+            //     {
+            //         pathVel = getVelocityMaxPathVelocity(pathPos);
+            //     }
+
+            if path_vel > self.get_velocity_max_path_velocity(path_pos)
+                && self.get_min_max_phase_slope(
+                    old_path_pos,
+                    self.get_velocity_max_path_velocity(old_path_pos),
+                    false,
+                ) <= self.get_velocity_max_path_velocity_deriv(old_path_pos)
+            {
+                path_vel = self.get_velocity_max_path_velocity(path_pos);
+            }
+
+            //     trajectory.push_back(TrajectoryStep(pathPos, pathVel));
+            //     acceleration = getMinMaxPathAcceleration(pathPos, pathVel, true);
+
+            self.trajectory
+                .push(TrajectoryStep::new(path_pos, path_vel));
+            let new_acceleration = self.get_min_max_path_acceleration(path_pos, path_vel, true);
+
+            //     if(pathVel > getAccelerationMaxPathVelocity(pathPos) || pathVel > getVelocityMaxPathVelocity(pathPos)) {
+            if path_vel > self.get_acceleration_max_path_velocity(path_pos)
+                || path_vel > self.get_velocity_max_path_velocity(path_pos)
+            {
+                //         // find more accurate intersection with max-velocity curve using bisection
+                //         TrajectoryStep overshoot = trajectory.back();
+                //         trajectory.pop_back();
+                //         double before = trajectory.back().pathPos;
+                //         double beforePathVel = trajectory.back().pathVel;
+                //         double after = overshoot.pathPos;
+                //         double afterPathVel = overshoot.pathVel;
+
+                // TODO: Fix clone
+                let overshoot = self.trajectory.last().unwrap().clone();
+                let penultimate = self.trajectory
+                    .get(self.trajectory.len() - 2)
+                    .unwrap()
+                    .clone();
+
+                let mut before = penultimate.path_pos;
+                let mut before_path_vel = penultimate.path_vel;
+                let mut after = overshoot.path_pos;
+                let mut after_path_vel = overshoot.path_vel;
+
+                //         while(after - before > eps) {
+
+                while after - before > EPS {
+                    //             const double midpoint = 0.5 * (before + after);
+                    //             double midpointPathVel = 0.5 * (beforePathVel + afterPathVel);
+
+                    let midpoint = 0.5 * (before + after);
+                    let mut midpoint_path_vel = 0.5 * (before_path_vel + after_path_vel);
+
+                    //             if(midpointPathVel > getVelocityMaxPathVelocity(midpoint)
+                    //                 && getMinMaxPhaseSlope(before, getVelocityMaxPathVelocity(before), false) <= getVelocityMaxPathVelocityDeriv(before))
+                    //             {
+                    //                 midpointPathVel = getVelocityMaxPathVelocity(midpoint);
+                    //             }
+
+                    if midpoint_path_vel > self.get_velocity_max_path_velocity(midpoint)
+                        && self.get_min_max_phase_slope(
+                            before,
+                            self.get_velocity_max_path_velocity(before),
+                            false,
+                        )
+                            <= self.get_velocity_max_path_velocity_deriv(before)
+                    {
+                        midpoint_path_vel = self.get_velocity_max_path_velocity(midpoint);
+                    }
+
+                    //             if(midpointPathVel > getAccelerationMaxPathVelocity(midpoint) || midpointPathVel > getVelocityMaxPathVelocity(midpoint)) {
+                    //                 after = midpoint;
+                    //                 afterPathVel = midpointPathVel;
+                    //             }
+                    //             else {
+                    //                 before = midpoint;
+                    //                 beforePathVel = midpointPathVel;
+                    //             }
+                    //         }
+                    if midpoint_path_vel > self.get_acceleration_max_path_velocity(midpoint)
+                        || midpoint_path_vel > self.get_velocity_max_path_velocity(midpoint)
+                    {
+                        after = midpoint;
+                        after_path_vel = midpoint_path_vel;
+                    } else {
+                        before = midpoint;
+                        before_path_vel = midpoint_path_vel;
+                    }
+                }
+
+                //         trajectory.push_back(TrajectoryStep(before, beforePathVel));
+                self.trajectory.pop();
+                self.trajectory
+                    .push(TrajectoryStep::new(before, before_path_vel));
+
+                //         if(getAccelerationMaxPathVelocity(after) < getVelocityMaxPathVelocity(after)) {
+                //             if(after > nextDiscontinuity->first) {
+                //                 return false;
+                //             }
+                //             else if(getMinMaxPhaseSlope(trajectory.back().pathPos, trajectory.back().pathVel, true) > getAccelerationMaxPathVelocityDeriv(trajectory.back().pathPos)) {
+                //                 return false;
+                //             }
+                //         }
+                //         else {
+                //             if(getMinMaxPhaseSlope(trajectory.back().pathPos, trajectory.back().pathVel, false) > getVelocityMaxPathVelocityDeriv(trajectory.back().pathPos)) {
+                //                 return false;
+                //             }
+                //         }
+
+                let last = self.trajectory.last().unwrap();
+                if self.get_acceleration_max_path_velocity(after)
+                    < self.get_velocity_max_path_velocity(after)
+                {
+                    if after > next_discontinuity.0 {
+                        return Some(new_acceleration);
+                    } else if self.get_min_max_phase_slope(last.path_pos, last.path_vel, true)
+                        > self.get_acceleration_max_path_velocity_deriv(last.path_pos)
+                    {
+                        return Some(new_acceleration);
+                    }
+                } else if self.get_min_max_phase_slope(last.path_pos, last.path_vel, false)
+                    > self.get_velocity_max_path_velocity_deriv(last.path_pos)
+                {
+                    return Some(new_acceleration);
+                }
+            }
+        }
+    }
+
     /// Get previous and current trajectory step for a given time
     fn get_trajectory_segment(&self, time: f64) -> (&TrajectoryStep, &TrajectoryStep) {
         // if(time >= trajectory.back().time) {
@@ -129,10 +394,21 @@ impl Trajectory {
 
             (
                 self.trajectory.get(len - 2).unwrap(),
-                self.trajectory.get(len - 1).unwrap(),
+                self.trajectory.last().unwrap(),
             )
         } else {
-            unimplemented!()
+            // TODO: Optimise
+            // Find the last traj segment that has a start time gt or eq to `time` (next one will start _after_ `time`)
+            let (curr_index, current) = self.trajectory
+                .iter()
+                .enumerate()
+                .skip_while(|(idx, t)| time >= t.time)
+                .next()
+                .unwrap();
+
+            let prev = self.trajectory.iter().nth(curr_index - 1).unwrap();
+
+            (prev, current)
         }
     }
 
@@ -156,12 +432,15 @@ impl Trajectory {
         factor * max_path_acceleration
     }
 
+    /// Get next switching point
+    ///
+    /// Returns (has_reached_path_end, switching_point, before_acceleration, after_acceleration)
     fn get_next_switching_point(
         &self,
         path_pos: f64,
-        next_switching_point: &TrajectoryStep,
-        before_acceleration: f64,
-        after_acceleration: f64,
+        // next_switching_point: &TrajectoryStep,
+        // before_acceleration: f64,
+        // after_acceleration: f64,
     ) -> (bool, TrajectoryStep, f64, f64) {
         let mut acceleration_switching_point = TrajectoryStep::new(path_pos, 0.0);
         let mut acceleration_before_acceleration = 0.0;
