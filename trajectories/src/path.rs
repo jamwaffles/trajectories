@@ -120,7 +120,7 @@ impl Path {
 
             switching_points = switching_points
                 .into_iter()
-                .filter(|point| point.0 >= length)
+                .filter(|point| point.0 < length)
                 .collect();
 
             switching_points.push((length, true));
