@@ -61,24 +61,6 @@ impl Trajectory {
         //     integrateBackward(trajectory, switchingPoint.pathPos, switchingPoint.pathVel, beforeAcceleration);
         // }
 
-        // if(valid) {
-        //     double beforeAcceleration = getMinMaxPathAcceleration(path.getLength(), 0.0, false);
-        //     integrateBackward(trajectory, path.getLength(), 0.0, beforeAcceleration);
-        // }
-
-        // if(valid) {
-        //     // calculate timing
-        //     list<TrajectoryStep>::iterator previous = trajectory.begin();
-        //     list<TrajectoryStep>::iterator it = previous;
-        //     it->time = 0.0;
-        //     it++;
-        //     while(it != trajectory.end()) {
-        //         it->time = previous->time + (it->pathPos - previous->pathPos) / ((it->pathVel + previous->pathVel) / 2.0);
-        //         previous = it;
-        //         it++;
-        //     }
-        // }
-
         let mut after_acceleration = self.get_min_max_path_acceleration(0.0, 0.0, true);
 
         while let Some(new_accel) = self.integrate_forward(after_acceleration) {
@@ -98,8 +80,42 @@ impl Trajectory {
 
             after_acceleration = new_after_acceleration;
 
-            if path_end_reached {}
+            if path_end_reached {
+                break;
+            }
+
+            self.integrate_backward(
+                switching_point.path_pos,
+                switching_point.path_vel,
+                after_acceleration,
+            );
         }
+
+        // if(valid) {
+        //     double beforeAcceleration = getMinMaxPathAcceleration(path.getLength(), 0.0, false);
+        //     integrateBackward(trajectory, path.getLength(), 0.0, beforeAcceleration);
+        // }
+
+        if self.valid {
+            let before_acceleration =
+                self.get_min_max_path_acceleration(self.path.get_length(), 0.0, false);
+            let len = self.path.get_length();
+
+            self.integrate_backward(len, 0.0, before_acceleration);
+        }
+
+        // if(valid) {
+        //     // calculate timing
+        //     list<TrajectoryStep>::iterator previous = trajectory.begin();
+        //     list<TrajectoryStep>::iterator it = previous;
+        //     it->time = 0.0;
+        //     it++;
+        //     while(it != trajectory.end()) {
+        //         it->time = previous->time + (it->pathPos - previous->pathPos) / ((it->pathVel + previous->pathVel) / 2.0);
+        //         previous = it;
+        //         it++;
+        //     }
+        // }
     }
 
     pub fn output_phase_plane_trajectory(&self) {
@@ -371,6 +387,8 @@ impl Trajectory {
             }
         }
     }
+
+    fn integrate_backward(&mut self, path_pos: f64, path_vel: f64, acceleration: f64) {}
 
     /// Get previous and current trajectory step for a given time
     fn get_trajectory_segment(&self, time: f64) -> (&TrajectoryStep, &TrajectoryStep) {
