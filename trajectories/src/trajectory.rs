@@ -182,6 +182,7 @@ impl Trajectory {
         let mut path_vel = self.trajectory.last().unwrap().path_vel;
 
         let switching_points = self.path.get_switching_points();
+
         // let mut next_discontinuity = switching_points.iter();
 
         // while(true)
@@ -191,10 +192,7 @@ impl Trajectory {
             //         nextDiscontinuity++;
             //     }
 
-            let next_discontinuity = switching_points
-                .iter()
-                .find(|sp| sp.0 > path_pos && sp.1)
-                .expect("Could not find next discontinuity");
+            let next_discontinuity = switching_points.iter().find(|sp| sp.0 > path_pos && sp.1);
 
             //     double oldPathPos = pathPos;
             //     double oldPathVel = pathVel;
@@ -213,11 +211,13 @@ impl Trajectory {
             //         pathPos = nextDiscontinuity->first;
             //     }
 
-            if path_pos > next_discontinuity.0 {
-                path_vel = old_path_vel
-                    + (next_discontinuity.0 - old_path_pos) * (path_vel - old_path_vel)
-                        / (path_pos - old_path_pos);
-                path_pos = next_discontinuity.0;
+            if let Some(next_dis) = next_discontinuity {
+                if path_pos > next_dis.0 {
+                    path_vel = old_path_vel
+                        + (next_dis.0 - old_path_pos) * (path_vel - old_path_vel)
+                            / (path_pos - old_path_pos);
+                    path_pos = next_dis.0;
+                }
             }
 
             //     if(pathPos > path.getLength()) {
@@ -231,7 +231,9 @@ impl Trajectory {
             //     }
 
             if path_pos > self.path.get_length() {
-
+                self.trajectory
+                    .push(TrajectoryStep::new(path_pos, path_vel));
+                return None;
             } else if path_vel < 0.0 {
                 self.valid = false;
                 eprintln!("Error");
@@ -354,7 +356,7 @@ impl Trajectory {
                 if self.get_acceleration_max_path_velocity(after)
                     < self.get_velocity_max_path_velocity(after)
                 {
-                    if after > next_discontinuity.0 {
+                    if next_discontinuity.is_some() && after > next_discontinuity.unwrap().0 {
                         return Some(new_acceleration);
                     } else if self.get_min_max_phase_slope(last.path_pos, last.path_vel, true)
                         > self.get_acceleration_max_path_velocity_deriv(last.path_pos)
