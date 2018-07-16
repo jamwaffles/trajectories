@@ -35,24 +35,33 @@ pub fn compute_circular_blend(
     let x = (current - max_blend_distance * previous_normalised - center).normalize();
     let y = previous_normalised;
 
-    println!("\n");
-    println!("--- Yi (previous normalised) {:?}", previous_normalised);
-    println!("--- next normalised {:?}", next_normalised);
-    println!("--- Alphai (angle in radians) {:?}", angle);
-    println!(
-        "--- Alphai (angle in degrees) {:?}",
-        angle * (180.0 / f64::consts::PI)
-    );
-    println!(
-        "--- Li (max deviation) {:?} from (prev_half_len {}, next_half_len {}, angle {}, rad_lim {})",
-        max_blend_distance, previous_half_length, next_half_length, angle, radius_limit
-    );
-    println!("--- Ri (radius) {:?}", radius);
-    println!("--- Ci (center) {:?}", center);
-    println!("--- (Xi, Yi) {:?} {:?}", x, y);
-    println!("\n");
+    let length = angle * radius;
 
-    CircularPathSegment::new(center, radius, x, y)
+    // println!("\n");
+    // println!("--- Yi (previous normalised) {:?}", previous_normalised);
+    // println!("--- next normalised {:?}", next_normalised);
+    // println!("--- Alphai (angle in radians) {:?}", angle);
+    // println!(
+    //     "--- Alphai (angle in degrees) {:?}",
+    //     angle * (180.0 / f64::consts::PI)
+    // );
+    // println!(
+    //     "--- Li (max deviation) {:?} from (prev_half_len {}, next_half_len {}, angle {}, rad_lim {})",
+    //     max_blend_distance, previous_half_length, next_half_length, angle, radius_limit
+    // );
+    // println!("--- Ri (radius) {:?}", radius);
+    // println!("--- Ci (center) {:?}", center);
+    // println!("--- Length {:?}", length);
+    // println!("--- (Xi, Yi) {:?} {:?}", x, y);
+    // println!("\n");
+
+    Some(CircularPathSegment {
+        center,
+        radius,
+        x,
+        y,
+        length,
+    })
 }
 
 #[cfg(test)]

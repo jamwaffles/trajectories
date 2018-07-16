@@ -21,17 +21,9 @@ pub struct CircularPathSegment {
 
     /// Second vector along which the blend circle lies
     pub y: Coord,
-}
 
-impl CircularPathSegment {
-    pub fn new(center: Coord, radius: f64, x: Coord, y: Coord) -> Self {
-        Self {
-            center,
-            radius,
-            x,
-            y,
-        }
-    }
+    /// Length of this arc
+    pub length: f64,
 }
 
 pub struct LinearPathSegment {}
