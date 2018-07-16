@@ -176,4 +176,25 @@ mod tests {
             &blend_circle,
         );
     }
+
+    #[test]
+    /// Compute a 90º blend
+    ///
+    /// |
+    /// |
+    fn it_computes_90_degree_angles() {
+        let before = Coord::new(0.0, 0.0, 0.0);
+        let current = Coord::new(0.0, 5.0, 0.0);
+        let after = Coord::new(0.0, 10.0, 0.0);
+
+        let blend_circle = compute_circular_blend(&before, &current, &after, 0.1);
+
+        debug_blend(
+            "../target/it_computes_90_degree_angles.png",
+            &before,
+            &current,
+            &after,
+            &blend_circle,
+        );
+    }
 }
