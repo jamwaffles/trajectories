@@ -11,16 +11,16 @@ pub enum PathSegment {
 /// on which the blend circle lies, with its center at `center`. Radius is radius.
 pub struct CircularPathSegment {
     /// Center point of circle
-    center: Coord,
+    pub center: Coord,
 
     /// Radius of circle
-    radius: f64,
+    pub radius: f64,
 
     /// First vector along which the blend circle lies
-    x: Coord,
+    pub x: Coord,
 
     /// Second vector along which the blend circle lies
-    y: Coord,
+    pub y: Coord,
 }
 
 impl CircularPathSegment {

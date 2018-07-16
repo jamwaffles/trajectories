@@ -2,6 +2,11 @@ extern crate nalgebra;
 #[macro_use]
 extern crate approx;
 
+#[cfg(test)]
+extern crate image;
+#[cfg(test)]
+extern crate imageproc;
+
 mod circular_blend;
 mod path_segment;
 
