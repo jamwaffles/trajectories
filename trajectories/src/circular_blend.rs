@@ -1,4 +1,4 @@
-use super::{CircularPathSegment, Coord};
+use super::{CircularPathSegment, Coord, MIN_ACCURACY};
 use std::f64;
 
 pub fn compute_circular_blend(
@@ -6,7 +6,12 @@ pub fn compute_circular_blend(
     current: &Coord,
     next: &Coord,
     max_deviation: f64,
-) -> CircularPathSegment {
+) -> Option<CircularPathSegment> {
+    // If either segment is of negligible length, we don't need to blend it
+    if (current - previous).norm() < MIN_ACCURACY || (next - current).norm() < MIN_ACCURACY {
+        return None;
+    }
+
     // Yi
     let previous_normalised = (current - previous).normalize();
     let previous_length = (previous - current).norm();
@@ -16,8 +21,12 @@ pub fn compute_circular_blend(
     let next_length = (current - next).norm();
     let next_half_length = next_length / 2.0;
 
+    // If segments are essentially parallel, they don't need blending
+    if (previous_normalised - next_normalised).norm() < MIN_ACCURACY {
+        return None;
+    }
+
     // ⍺i (outside angle in radians, i.e. 180º - angle)
-    // let angle = f64::consts::PI - previous_normalised.angle(&next_normalised);
     let angle = previous_normalised.angle(&next_normalised);
 
     let radius_limit = (max_deviation * (angle / 2.0).sin()) / (1.0 - (angle / 2.0).cos());
@@ -69,7 +78,9 @@ mod tests {
     use super::*;
 
     use image::{Rgb, RgbImage};
-    use imageproc::drawing::{draw_filled_rect_mut, draw_hollow_circle_mut, draw_line_segment_mut};
+    use imageproc::drawing::{
+        draw_cross_mut, draw_filled_rect_mut, draw_hollow_circle_mut, draw_line_segment_mut,
+    };
     use imageproc::rect::Rect;
     use std::path::Path;
 
@@ -78,7 +89,7 @@ mod tests {
         before: &Coord,
         current: &Coord,
         after: &Coord,
-        blend: &CircularPathSegment,
+        blend: &Option<CircularPathSegment>,
     ) {
         let path = Path::new(p);
 
@@ -114,12 +125,17 @@ mod tests {
             red,
         );
 
-        draw_hollow_circle_mut(
-            &mut image,
-            (xform(blend.center.x), xform(blend.center.y)),
-            (blend.radius * scale) as i32,
-            blue,
-        );
+        // Render blend circle if there is one, or a cross if there isn't
+        if let Some(bl) = blend {
+            draw_hollow_circle_mut(
+                &mut image,
+                (xform(bl.center.x), xform(bl.center.y)),
+                (bl.radius * scale) as i32,
+                blue,
+            );
+        } else {
+            draw_cross_mut(&mut image, blue, xform(current.x), xform(current.y));
+        }
 
         image.save(path).unwrap();
     }
@@ -187,11 +203,11 @@ mod tests {
     }
 
     #[test]
-    /// Compute a 90º blend
+    /// Ignore blends for straight vertical lines
     ///
     /// |
     /// |
-    fn it_computes_90_degree_angles() {
+    fn it_computes_0_degree_angles() {
         let before = Coord::new(0.0, 0.0, 0.0);
         let current = Coord::new(0.0, 5.0, 0.0);
         let after = Coord::new(0.0, 10.0, 0.0);
@@ -199,11 +215,51 @@ mod tests {
         let blend_circle = compute_circular_blend(&before, &current, &after, 0.1);
 
         debug_blend(
-            "../target/it_computes_90_degree_angles.png",
+            "../target/it_computes_0_degree_angles.png",
             &before,
             &current,
             &after,
             &blend_circle,
         );
+
+        assert!(blend_circle.is_none());
+    }
+
+    #[test]
+    /// Ignore blend for straight but diagonal lines
+    ///
+    ///  /
+    /// /
+    fn it_computes_straight_diagonals() {
+        let before = Coord::new(0.0, 0.0, 0.0);
+        let current = Coord::new(2.0, 2.0, 0.0);
+        let after = Coord::new(4.0, 4.0, 0.0);
+
+        let blend_circle = compute_circular_blend(&before, &current, &after, 0.1);
+
+        debug_blend(
+            "../target/it_computes_straight_diagonals.png",
+            &before,
+            &current,
+            &after,
+            &blend_circle,
+        );
+
+        assert!(blend_circle.is_none());
+    }
+
+    #[test]
+    /// Ignore blend for tiny lines
+    ///
+    /// |
+    /// |
+    fn it_computes_tiny_blends() {
+        let before = Coord::new(0.0, 0.0, 0.0);
+        let current = Coord::new(0.0, MIN_ACCURACY / 2.0, 0.0);
+        let after = Coord::new(0.0, MIN_ACCURACY, 0.0);
+
+        let blend_circle = compute_circular_blend(&before, &current, &after, 0.1);
+
+        assert!(blend_circle.is_none());
     }
 }
