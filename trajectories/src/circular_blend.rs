@@ -60,10 +60,7 @@ mod tests {
     use super::*;
 
     use image::{Rgb, RgbImage};
-    use imageproc::drawing::{
-        draw_cross_mut, draw_filled_circle_mut, draw_filled_rect_mut, draw_hollow_circle_mut,
-        draw_hollow_rect_mut, draw_line_segment_mut,
-    };
+    use imageproc::drawing::{draw_filled_rect_mut, draw_hollow_circle_mut, draw_line_segment_mut};
     use imageproc::rect::Rect;
     use std::path::Path;
 
@@ -80,31 +77,37 @@ mod tests {
         let blue = Rgb([0u8, 0u8, 255u8]);
         let white = Rgb([255u8, 255u8, 255u8]);
 
-        let mut image = RgbImage::new(200, 200);
         let scale = 20.0;
+        let padding = 10;
+        let max_dim = (before.amax().max(current.amax()).max(after.amax()) * scale) as u32;
 
-        draw_filled_rect_mut(&mut image, Rect::at(0, 0).of_size(200, 200), white);
+        let mut image = RgbImage::new(max_dim + padding * 2, max_dim + padding * 2);
+
+        draw_filled_rect_mut(
+            &mut image,
+            Rect::at(0, 0).of_size(max_dim + padding * 2, max_dim + padding * 2),
+            white,
+        );
+
+        let xform = |input: f64| -> i32 { (input * scale) as i32 + padding as i32 };
 
         draw_line_segment_mut(
             &mut image,
-            ((before.x * scale) as f32, (before.y * scale) as f32),
-            ((current.x * scale) as f32, (current.y * scale) as f32),
+            (xform(before.x) as f32, xform(before.y) as f32),
+            (xform(current.x) as f32, xform(current.y) as f32),
             red,
         );
 
         draw_line_segment_mut(
             &mut image,
-            ((current.x * scale) as f32, (current.y * scale) as f32),
-            ((after.x * scale) as f32, (after.y * scale) as f32),
+            (xform(current.x) as f32, xform(current.y) as f32),
+            (xform(after.x) as f32, xform(after.y) as f32),
             red,
         );
 
         draw_hollow_circle_mut(
             &mut image,
-            (
-                (blend.center.x * scale) as i32,
-                (blend.center.y * scale) as i32,
-            ),
+            (xform(blend.center.x), xform(blend.center.y)),
             (blend.radius * scale) as i32,
             blue,
         );
@@ -142,7 +145,15 @@ mod tests {
         let current = Coord::new(0.0, 1.0, 0.0);
         let after = Coord::new(1.0, 1.0, 0.0);
 
-        compute_circular_blend(&before, &current, &after, 0.1);
+        let blend_circle = compute_circular_blend(&before, &current, &after, 0.1);
+
+        debug_blend(
+            "../target/it_computes_more_right_angles.png",
+            &before,
+            &current,
+            &after,
+            &blend_circle,
+        );
     }
 
     #[test]
@@ -155,6 +166,14 @@ mod tests {
         let current = Coord::new(0.0, 5.0, 0.0);
         let after = Coord::new(5.0, 10.0, 0.0);
 
-        compute_circular_blend(&before, &current, &after, 0.1);
+        let blend_circle = compute_circular_blend(&before, &current, &after, 0.1);
+
+        debug_blend(
+            "../target/it_computes_45_degree_angles.png",
+            &before,
+            &current,
+            &after,
+            &blend_circle,
+        );
     }
 }
