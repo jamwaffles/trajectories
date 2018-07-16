@@ -13,4 +13,8 @@ impl TrajectoryStep {
             time: 0.0,
         }
     }
+
+    pub fn set_time(&mut self, time: f64) {
+        self.time = time;
+    }
 }

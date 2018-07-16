@@ -116,6 +116,32 @@ impl Trajectory {
         //         it++;
         //     }
         // }
+
+        // Calculate timing
+        if self.valid {
+            let new_traj = self.trajectory
+                .windows(2)
+                .map(|items| {
+                    println!("WINDOW {:?}", items);
+                    match items {
+                        &[previous, it] => {
+                            let mut step = it.clone();
+
+                            step.set_time(
+                                previous.time
+                                    + (it.path_pos - previous.path_pos)
+                                        / ((it.path_vel + previous.path_vel) / 2.0),
+                            );
+
+                            step
+                        }
+                        _ => unreachable!(),
+                    }
+                })
+                .collect();
+
+            self.trajectory = new_traj;
+        }
     }
 
     pub fn output_phase_plane_trajectory(&self) {
@@ -388,7 +414,74 @@ impl Trajectory {
         }
     }
 
-    fn integrate_backward(&mut self, path_pos: f64, path_vel: f64, acceleration: f64) {}
+    fn integrate_backward(&mut self, path_pos: f64, path_vel: f64, acceleration: f64) {
+        // list<TrajectoryStep>::iterator start2 = startTrajectory.end();
+        // start2--;
+        // list<TrajectoryStep>::iterator start1 = start2;
+        // start1--;
+        // list<TrajectoryStep> trajectory;
+        // double slope;
+        // assert(start1->pathPos <= pathPos);
+
+        let mut iter = self.trajectory.windows(2).rev();
+
+        // while(start1 != startTrajectory.begin() || pathPos >= 0.0)
+        // {
+
+        while let Some(&[start1, start2]) = iter.next() {
+            if path_pos < 0.0 {
+                break;
+            }
+
+            //     if(start1->pathPos <= pathPos) {
+            //         trajectory.push_front(TrajectoryStep(pathPos, pathVel));
+            //         pathVel -= timeStep * acceleration;
+            //         pathPos -= timeStep * 0.5 * (pathVel + trajectory.front().pathVel);
+            //         acceleration = getMinMaxPathAcceleration(pathPos, pathVel, false);
+            //         slope = (trajectory.front().pathVel - pathVel) / (trajectory.front().pathPos - pathPos);
+
+            //         if(pathVel < 0.0) {
+            //             valid = false;
+            //             cout << "Error while integrating backward: Negative path velocity" << endl;
+            //             endTrajectory = trajectory;
+            //             return;
+            //         }
+            //     }
+            //     else {
+            //         start1--;
+            //         start2--;
+            //     }
+
+            if start1.path_pos <= path_pos {
+                self.trajectory
+                    .insert(0, TrajectoryStep::new(path_pos, path_vel));
+            }
+
+            //     // check for intersection between current start trajectory and backward trajectory segments
+            //     const double startSlope = (start2->pathVel - start1->pathVel) / (start2->pathPos - start1->pathPos);
+            //     const double intersectionPathPos = (start1->pathVel - pathVel + slope * pathPos - startSlope * start1->pathPos) / (slope - startSlope);
+            //     if(max(start1->pathPos, pathPos) - eps <= intersectionPathPos && intersectionPathPos <= eps + min(start2->pathPos, trajectory.front().pathPos)) {
+            //         const double intersectionPathVel = start1->pathVel + startSlope * (intersectionPathPos - start1->pathPos);
+            //         startTrajectory.erase(start2, startTrajectory.end());
+            //         startTrajectory.push_back(TrajectoryStep(intersectionPathPos, intersectionPathVel));
+            //         startTrajectory.splice(startTrajectory.end(), trajectory);
+            //         return;
+            //     }
+            // }
+        }
+
+        // valid = false;
+        // cout << "Error while integrating backward: Did not hit start trajectory" << endl;
+        // endTrajectory = trajectory;
+
+        self.valid = false;
+
+        eprintln!("Error while integrating backward: Did not hit start trajectory");
+
+        self.end_trajectory = Some(self.trajectory.clone());
+
+        unimplemented!()
+    }
 
     /// Get previous and current trajectory step for a given time
     fn get_trajectory_segment(&self, time: f64) -> (&TrajectoryStep, &TrajectoryStep) {
