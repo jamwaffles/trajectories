@@ -230,16 +230,14 @@ mod tests {
             &blend_circle,
         );
 
-        assert_eq!(
-            blend_circle,
-            Some(CircularPathSegment {
-                center: Coord::new(1.2137071184544088, 4.497266050787415, 0.0),
-                radius: 1.2137071184544088,
-                x: Coord::new(-1.0, 0.0, 0.0),
-                y: Coord::new(0.0, 1.0, 0.0),
-                arc_length: 0.9532433417365019
-            })
+        assert_near!(blend_circle.unwrap().arc_length, 0.9532433417365019);
+        assert_near!(
+            blend_circle.unwrap().center,
+            Coord::new(1.2137071184544088, 4.497266050787415, 0.0)
         );
+        assert_near!(blend_circle.unwrap().radius, 1.2137071184544088);
+        assert_near!(blend_circle.unwrap().x, Coord::new(-1.0, 0.0, 0.0));
+        assert_near!(blend_circle.unwrap().y, Coord::new(0.0, 1.0, 0.0));
     }
 
     #[test]
@@ -262,16 +260,14 @@ mod tests {
             &blend_circle,
         );
 
-        assert_eq!(
-            blend_circle,
-            Some(CircularPathSegment {
-                arc_length: 4.740297244842599,
-                center: Coord::new(6.035533905932737, 2.4999999999999996, 0.0),
-                radius: 6.035533905932737,
-                x: Coord::new(-1.0, 0.00000000000000007357910944937898, 0.0),
-                y: Coord::new(0.0, 1.0, 0.0),
-            }),
+        assert_near!(blend_circle.unwrap().arc_length, 4.740297244842599);
+        assert_near!(
+            blend_circle.unwrap().center,
+            Coord::new(6.035533905932737, 2.5, 0.0)
         );
+        assert_near!(blend_circle.unwrap().radius, 6.035533905932737);
+        assert_near!(blend_circle.unwrap().x, Coord::new(-1.0, 0.0, 0.0));
+        assert_near!(blend_circle.unwrap().y, Coord::new(0.0, 1.0, 0.0));
     }
 
     #[test]

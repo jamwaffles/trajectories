@@ -7,6 +7,9 @@ extern crate image;
 #[cfg(test)]
 extern crate imageproc;
 
+#[macro_use]
+mod macros;
+
 mod circular_blend;
 mod path_segment;
 
