@@ -184,7 +184,13 @@ mod tests {
             &blend_circle,
         );
 
-        println!("{:?}", blend_circle);
+        let bc = blend_circle.expect("Expected a blend circle");
+
+        assert_near!(bc.arc_length, 0.37922377958740805);
+        assert_near!(bc.center, Coord::new(5.0, 4.658578643762691, 0.0));
+        assert_near!(bc.radius, 0.24142135623730956);
+        assert_near!(bc.x, Coord::new(-0.70710678118654, 0.70710678118654, 0.0));
+        assert_near!(bc.y, Coord::new(0.70710678118654, 0.70710678118654, 0.0));
     }
 
     #[test]
@@ -207,7 +213,13 @@ mod tests {
             &blend_circle,
         );
 
-        println!("{:?}", blend_circle);
+        let bc = blend_circle.expect("Expected a blend circle");
+
+        assert_near!(bc.arc_length, 0.37922377958740805);
+        assert_near!(bc.center, Coord::new(0.2414213562373, 0.758578643762, 0.0));
+        assert_near!(bc.radius, 0.24142135623730956);
+        assert_near!(bc.x, Coord::new(-1.0, 0.0, 0.0));
+        assert_near!(bc.y, Coord::new(0.0, 1.0, 0.0));
     }
 
     #[test]
@@ -230,14 +242,13 @@ mod tests {
             &blend_circle,
         );
 
-        assert_near!(blend_circle.unwrap().arc_length, 0.9532433417365019);
-        assert_near!(
-            blend_circle.unwrap().center,
-            Coord::new(1.2137071184544088, 4.497266050787415, 0.0)
-        );
-        assert_near!(blend_circle.unwrap().radius, 1.2137071184544088);
-        assert_near!(blend_circle.unwrap().x, Coord::new(-1.0, 0.0, 0.0));
-        assert_near!(blend_circle.unwrap().y, Coord::new(0.0, 1.0, 0.0));
+        let bc = blend_circle.expect("Expected a blend circle");
+
+        assert_near!(bc.arc_length, 0.9532433417365019);
+        assert_near!(bc.center, Coord::new(1.2137071, 4.4972660, 0.0));
+        assert_near!(bc.radius, 1.2137071184544088);
+        assert_near!(bc.x, Coord::new(-1.0, 0.0, 0.0));
+        assert_near!(bc.y, Coord::new(0.0, 1.0, 0.0));
     }
 
     #[test]
@@ -260,14 +271,13 @@ mod tests {
             &blend_circle,
         );
 
-        assert_near!(blend_circle.unwrap().arc_length, 4.740297244842599);
-        assert_near!(
-            blend_circle.unwrap().center,
-            Coord::new(6.035533905932737, 2.5, 0.0)
-        );
-        assert_near!(blend_circle.unwrap().radius, 6.035533905932737);
-        assert_near!(blend_circle.unwrap().x, Coord::new(-1.0, 0.0, 0.0));
-        assert_near!(blend_circle.unwrap().y, Coord::new(0.0, 1.0, 0.0));
+        let bc = blend_circle.expect("Expected a blend circle");
+
+        assert_near!(bc.arc_length, 4.740297244842599);
+        assert_near!(bc.center, Coord::new(6.035533905932737, 2.5, 0.0));
+        assert_near!(bc.radius, 6.035533905932737);
+        assert_near!(bc.x, Coord::new(-1.0, 0.0, 0.0));
+        assert_near!(bc.y, Coord::new(0.0, 1.0, 0.0));
     }
 
     #[test]
@@ -351,6 +361,12 @@ mod tests {
             &blend_circle,
         );
 
-        println!("{:?}", blend_circle);
+        let bc = blend_circle.expect("Expected a blend circle");
+
+        assert_near!(bc.arc_length, 0.8117106237578);
+        assert_near!(bc.center, Coord::new(10.158912720301, 6.012992370967, 0.0));
+        assert_near!(bc.radius, 0.8997186166327);
+        assert_near!(bc.x, Coord::new(-0.5734623443633, 0.8192319205190, 0.0));
+        assert_near!(bc.y, Coord::new(0.8192319205190, 0.5734623443633, 0.0));
     }
 }
