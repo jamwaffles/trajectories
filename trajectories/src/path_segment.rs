@@ -1,5 +1,6 @@
 use super::Coord;
 
+#[derive(Copy, Clone, Debug)]
 pub enum PathSegment {
     Circular,
     Linear,
@@ -9,6 +10,7 @@ pub enum PathSegment {
 ///
 /// Used to blend two straight path segments along a circular path. `x` and `y` form a plane on
 /// on which the blend circle lies, with its center at `center`. Radius is radius.
+#[derive(Copy, Clone, Debug)]
 pub struct CircularPathSegment {
     /// Center point of circle
     pub center: Coord,

@@ -94,6 +94,7 @@ mod tests {
         let path = Path::new(p);
 
         let red = Rgb([255u8, 0u8, 0u8]);
+        let green = Rgb([0u8, 255u8, 0u8]);
         let blue = Rgb([0u8, 0u8, 255u8]);
         let white = Rgb([255u8, 255u8, 255u8]);
 
@@ -133,6 +134,20 @@ mod tests {
                 (bl.radius * scale) as i32,
                 blue,
             );
+
+            // Render othonormal vectors Xi and Yi (these point to the midpoints of each line segment)
+            draw_line_segment_mut(
+                &mut image,
+                (xform(bl.center.x), xform(bl.center.y)),
+                (xform(bl.center.x + bl.x.x), xform(bl.center.y + bl.x.y)),
+                green,
+            );
+            draw_line_segment_mut(
+                &mut image,
+                (xform(bl.center.x), xform(bl.center.y)),
+                (xform(bl.center.x + bl.y.x), xform(bl.center.y + bl.y.y)),
+                green,
+            );
         } else {
             draw_cross_mut(
                 &mut image,
@@ -163,6 +178,8 @@ mod tests {
             &after,
             &blend_circle,
         );
+
+        println!("{:?}", blend_circle);
     }
 
     #[test]
@@ -184,6 +201,8 @@ mod tests {
             &after,
             &blend_circle,
         );
+
+        println!("{:?}", blend_circle);
     }
 
     #[test]
@@ -205,6 +224,8 @@ mod tests {
             &after,
             &blend_circle,
         );
+
+        println!("{:?}", blend_circle);
     }
 
     #[test]
@@ -266,5 +287,26 @@ mod tests {
         let blend_circle = compute_circular_blend(&before, &current, &after, 0.1);
 
         assert!(blend_circle.is_none());
+    }
+
+    #[test]
+    /// Really shallow angle blends
+    ///
+    ///  /
+    /// |
+    fn it_computes_blends_for_shallow_angles() {
+        let before = Coord::new(0.0, 0.0, 0.0);
+        let current = Coord::new(10.0, 7.0, 0.0);
+        let after = Coord::new(20.0, 4.0, 0.0);
+
+        let blend_circle = compute_circular_blend(&before, &current, &after, 0.1);
+
+        debug_blend(
+            "../target/it_computes_blends_for_shallow_angles.png",
+            &before,
+            &current,
+            &after,
+            &blend_circle,
+        );
     }
 }
