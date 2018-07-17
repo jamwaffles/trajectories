@@ -10,12 +10,10 @@ extern crate imageproc;
 #[macro_use]
 mod macros;
 
-mod circular_blend;
-mod path_segment;
+mod circular_path_segment;
 
-use circular_blend::*;
+use circular_path_segment::*;
 use nalgebra::Vector3;
-use path_segment::*;
 
 pub type Coord = Vector3<f64>;
 

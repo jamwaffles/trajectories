@@ -1,79 +1,102 @@
-use super::{CircularPathSegment, Coord, MIN_ACCURACY};
-use std::f64;
+use super::{Coord, MIN_ACCURACY};
 
-pub fn compute_circular_blend(
-    previous: &Coord,
-    current: &Coord,
-    next: &Coord,
-    max_deviation: f64,
-) -> Option<CircularPathSegment> {
-    // If either segment is of negligible length, we don't need to blend it
-    if (current - previous).norm() < MIN_ACCURACY || (next - current).norm() < MIN_ACCURACY {
-        return None;
+/// Circular path segment
+///
+/// Used to blend two straight path segments along a circular path. `x` and `y` form a plane on
+/// on which the blend circle lies, with its center at `center`. Radius is radius.
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct CircularPathSegment {
+    /// Center point of circle
+    pub center: Coord,
+
+    /// Radius of circle
+    pub radius: f64,
+
+    /// First vector along which the blend circle lies
+    pub x: Coord,
+
+    /// Second vector along which the blend circle lies
+    pub y: Coord,
+
+    /// Length of the arc to use in calculating the blend
+    pub arc_length: f64,
+}
+
+impl CircularPathSegment {
+    pub fn from_path_segments(
+        previous: &Coord,
+        current: &Coord,
+        next: &Coord,
+        max_deviation: f64,
+    ) -> Option<Self> {
+        // If either segment is of negligible length, we don't need to blend it
+        if (current - previous).norm() < MIN_ACCURACY || (next - current).norm() < MIN_ACCURACY {
+            return None;
+        }
+
+        // Yi
+        let previous_normalised = (current - previous).normalize();
+        let previous_length = (previous - current).norm();
+        let previous_half_length = previous_length / 2.0;
+
+        let next_normalised = (next - current).normalize();
+        let next_length = (current - next).norm();
+        let next_half_length = next_length / 2.0;
+
+        // If segments are essentially parallel, they don't need blending
+        if (previous_normalised - next_normalised).norm() < MIN_ACCURACY {
+            return None;
+        }
+
+        // ⍺i (outside angle in radians, i.e. 180º - angle)
+        let angle = previous_normalised.angle(&next_normalised);
+
+        let radius_limit = (max_deviation * (angle / 2.0).sin()) / (1.0 - (angle / 2.0).cos());
+
+        // Li
+        let max_blend_distance = previous_half_length.min(next_half_length).min(radius_limit);
+
+        // Ri (radius)
+        let radius = max_blend_distance / (angle / 2.0).tan();
+
+        // Ci (center)
+        let center = current
+            + (next_normalised - previous_normalised).normalize() * (radius / (angle / 2.0).cos());
+
+        // Xi (points from center of circle to point where circle touches previous segment)
+        // TODO: This seems to be perpendicular to Yi. Maybe I could optimise?
+        let x = (current - max_blend_distance * previous_normalised - center).normalize();
+        // Yi (direction of previous segment)
+        let y = previous_normalised;
+
+        let arc_length = angle * radius;
+
+        // println!("\n");
+        // println!("--- Yi (previous normalised) {:?}", previous_normalised);
+        // println!("--- next normalised {:?}", next_normalised);
+        // println!("--- Alphai (angle in radians) {:?}", angle);
+        // println!(
+        //     "--- Alphai (angle in degrees) {:?}",
+        //     angle * (180.0 / f64::consts::PI)
+        // );
+        // println!(
+        //     "--- Li (max deviation) {:?} from (prev_half_len {}, next_half_len {}, angle {}, rad_lim {})",
+        //     max_blend_distance, previous_half_length, next_half_length, angle, radius_limit
+        // );
+        // println!("--- Ri (radius) {:?}", radius);
+        // println!("--- Ci (center) {:?}", center);
+        // println!("--- Length {:?}", length);
+        // println!("--- (Xi, Yi) {:?} {:?}", x, y);
+        // println!("\n");
+
+        Some(CircularPathSegment {
+            center,
+            radius,
+            x,
+            y,
+            arc_length,
+        })
     }
-
-    // Yi
-    let previous_normalised = (current - previous).normalize();
-    let previous_length = (previous - current).norm();
-    let previous_half_length = previous_length / 2.0;
-
-    let next_normalised = (next - current).normalize();
-    let next_length = (current - next).norm();
-    let next_half_length = next_length / 2.0;
-
-    // If segments are essentially parallel, they don't need blending
-    if (previous_normalised - next_normalised).norm() < MIN_ACCURACY {
-        return None;
-    }
-
-    // ⍺i (outside angle in radians, i.e. 180º - angle)
-    let angle = previous_normalised.angle(&next_normalised);
-
-    let radius_limit = (max_deviation * (angle / 2.0).sin()) / (1.0 - (angle / 2.0).cos());
-
-    // Li
-    let max_blend_distance = previous_half_length.min(next_half_length).min(radius_limit);
-
-    // Ri (radius)
-    let radius = max_blend_distance / (angle / 2.0).tan();
-
-    // Ci (center)
-    let center = current
-        + (next_normalised - previous_normalised).normalize() * (radius / (angle / 2.0).cos());
-
-    // Xi (points from center of circle to point where circle touches previous segment)
-    // TODO: This seems to be perpendicular to Yi. Maybe I could optimise?
-    let x = (current - max_blend_distance * previous_normalised - center).normalize();
-    // Yi (direction of previous segment)
-    let y = previous_normalised;
-
-    let arc_length = angle * radius;
-
-    // println!("\n");
-    // println!("--- Yi (previous normalised) {:?}", previous_normalised);
-    // println!("--- next normalised {:?}", next_normalised);
-    // println!("--- Alphai (angle in radians) {:?}", angle);
-    // println!(
-    //     "--- Alphai (angle in degrees) {:?}",
-    //     angle * (180.0 / f64::consts::PI)
-    // );
-    // println!(
-    //     "--- Li (max deviation) {:?} from (prev_half_len {}, next_half_len {}, angle {}, rad_lim {})",
-    //     max_blend_distance, previous_half_length, next_half_length, angle, radius_limit
-    // );
-    // println!("--- Ri (radius) {:?}", radius);
-    // println!("--- Ci (center) {:?}", center);
-    // println!("--- Length {:?}", length);
-    // println!("--- (Xi, Yi) {:?} {:?}", x, y);
-    // println!("\n");
-
-    Some(CircularPathSegment {
-        center,
-        radius,
-        x,
-        y,
-        arc_length,
-    })
 }
 
 #[cfg(test)]
@@ -174,7 +197,7 @@ mod tests {
         let current = Coord::new(5.0, 5.0, 0.0);
         let after = Coord::new(10.0, 0.0, 0.0);
 
-        let blend_circle = compute_circular_blend(&before, &current, &after, 0.1);
+        let blend_circle = CircularPathSegment::from_path_segments(&before, &current, &after, 0.1);
 
         debug_blend(
             "../target/it_computes_right_angles.png",
@@ -203,7 +226,7 @@ mod tests {
         let current = Coord::new(0.0, 1.0, 0.0);
         let after = Coord::new(1.0, 1.0, 0.0);
 
-        let blend_circle = compute_circular_blend(&before, &current, &after, 0.1);
+        let blend_circle = CircularPathSegment::from_path_segments(&before, &current, &after, 0.1);
 
         debug_blend(
             "../target/it_computes_more_right_angles.png",
@@ -232,7 +255,7 @@ mod tests {
         let current = Coord::new(0.0, 5.0, 0.0);
         let after = Coord::new(5.0, 10.0, 0.0);
 
-        let blend_circle = compute_circular_blend(&before, &current, &after, 0.1);
+        let blend_circle = CircularPathSegment::from_path_segments(&before, &current, &after, 0.1);
 
         debug_blend(
             "../target/it_computes_45_degree_angles.png",
@@ -261,7 +284,7 @@ mod tests {
         let current = Coord::new(0.0, 5.0, 0.0);
         let after = Coord::new(5.0, 10.0, 0.0);
 
-        let blend_circle = compute_circular_blend(&before, &current, &after, 1.0);
+        let blend_circle = CircularPathSegment::from_path_segments(&before, &current, &after, 1.0);
 
         debug_blend(
             "../target/it_works_with_large_max_deviations.png",
@@ -290,7 +313,7 @@ mod tests {
         let current = Coord::new(0.0, 5.0, 0.0);
         let after = Coord::new(0.0, 10.0, 0.0);
 
-        let blend_circle = compute_circular_blend(&before, &current, &after, 0.1);
+        let blend_circle = CircularPathSegment::from_path_segments(&before, &current, &after, 0.1);
 
         debug_blend(
             "../target/it_computes_0_degree_angles.png",
@@ -313,7 +336,7 @@ mod tests {
         let current = Coord::new(2.0, 2.0, 0.0);
         let after = Coord::new(4.0, 4.0, 0.0);
 
-        let blend_circle = compute_circular_blend(&before, &current, &after, 0.1);
+        let blend_circle = CircularPathSegment::from_path_segments(&before, &current, &after, 0.1);
 
         debug_blend(
             "../target/it_computes_straight_diagonals.png",
@@ -336,7 +359,7 @@ mod tests {
         let current = Coord::new(0.0, MIN_ACCURACY / 2.0, 0.0);
         let after = Coord::new(0.0, MIN_ACCURACY, 0.0);
 
-        let blend_circle = compute_circular_blend(&before, &current, &after, 0.1);
+        let blend_circle = CircularPathSegment::from_path_segments(&before, &current, &after, 0.1);
 
         assert!(blend_circle.is_none());
     }
@@ -351,7 +374,7 @@ mod tests {
         let current = Coord::new(10.0, 7.0, 0.0);
         let after = Coord::new(20.0, 4.0, 0.0);
 
-        let blend_circle = compute_circular_blend(&before, &current, &after, 0.1);
+        let blend_circle = CircularPathSegment::from_path_segments(&before, &current, &after, 0.1);
 
         debug_blend(
             "../target/it_computes_blends_for_shallow_angles.png",
