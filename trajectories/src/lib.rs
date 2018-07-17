@@ -12,6 +12,9 @@ mod macros;
 
 mod circular_path_segment;
 
+#[cfg(test)]
+mod test_helpers;
+
 use circular_path_segment::*;
 use nalgebra::Vector3;
 
