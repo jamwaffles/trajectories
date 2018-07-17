@@ -41,10 +41,13 @@ pub fn compute_circular_blend(
     let center = current
         + (next_normalised - previous_normalised).normalize() * (radius / (angle / 2.0).cos());
 
+    // Xi (points from center of circle to point where circle touches previous segment)
+    // TODO: This seems to be perpendicular to Yi. Maybe I could optimise?
     let x = (current - max_blend_distance * previous_normalised - center).normalize();
+    // Yi (direction of previous segment)
     let y = previous_normalised;
 
-    let length = angle * radius;
+    let arc_length = angle * radius;
 
     // println!("\n");
     // println!("--- Yi (previous normalised) {:?}", previous_normalised);
@@ -69,7 +72,7 @@ pub fn compute_circular_blend(
         radius,
         x,
         y,
-        length,
+        arc_length,
     })
 }
 
@@ -95,6 +98,7 @@ mod tests {
 
         let red = Rgb([255u8, 0u8, 0u8]);
         let green = Rgb([0u8, 255u8, 0u8]);
+        let purple = Rgb([127u8, 0u8, 255u8]);
         let blue = Rgb([0u8, 0u8, 255u8]);
         let white = Rgb([255u8, 255u8, 255u8]);
 
@@ -135,18 +139,19 @@ mod tests {
                 blue,
             );
 
-            // Render othonormal vectors Xi and Yi (these point to the midpoints of each line segment)
+            // Xi (green)
             draw_line_segment_mut(
                 &mut image,
                 (xform(bl.center.x), xform(bl.center.y)),
                 (xform(bl.center.x + bl.x.x), xform(bl.center.y + bl.x.y)),
                 green,
             );
+            // Yi (purple)
             draw_line_segment_mut(
                 &mut image,
                 (xform(bl.center.x), xform(bl.center.y)),
                 (xform(bl.center.x + bl.y.x), xform(bl.center.y + bl.y.y)),
-                green,
+                purple,
             );
         } else {
             draw_cross_mut(
@@ -219,6 +224,29 @@ mod tests {
 
         debug_blend(
             "../target/it_computes_45_degree_angles.png",
+            &before,
+            &current,
+            &after,
+            &blend_circle,
+        );
+
+        println!("{:?}", blend_circle);
+    }
+
+    #[test]
+    /// Allow large deviations
+    ///
+    ///  /
+    /// |
+    fn it_works_with_large_max_deviations() {
+        let before = Coord::new(0.0, 0.0, 0.0);
+        let current = Coord::new(0.0, 5.0, 0.0);
+        let after = Coord::new(5.0, 10.0, 0.0);
+
+        let blend_circle = compute_circular_blend(&before, &current, &after, 1.0);
+
+        debug_blend(
+            "../target/it_works_with_large_max_deviations.png",
             &before,
             &current,
             &after,
@@ -308,5 +336,7 @@ mod tests {
             &after,
             &blend_circle,
         );
+
+        println!("{:?}", blend_circle);
     }
 }
