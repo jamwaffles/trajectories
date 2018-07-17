@@ -109,19 +109,19 @@ mod tests {
             white,
         );
 
-        let xform = |input: f64| -> i32 { (input * scale) as i32 + padding as i32 };
+        let xform = |input: f64| -> f32 { (input as f32 * scale as f32) + padding as f32 };
 
         draw_line_segment_mut(
             &mut image,
-            (xform(before.x) as f32, xform(before.y) as f32),
-            (xform(current.x) as f32, xform(current.y) as f32),
+            (xform(before.x), xform(before.y)),
+            (xform(current.x), xform(current.y)),
             red,
         );
 
         draw_line_segment_mut(
             &mut image,
-            (xform(current.x) as f32, xform(current.y) as f32),
-            (xform(after.x) as f32, xform(after.y) as f32),
+            (xform(current.x), xform(current.y)),
+            (xform(after.x), xform(after.y)),
             red,
         );
 
@@ -129,12 +129,17 @@ mod tests {
         if let Some(bl) = blend {
             draw_hollow_circle_mut(
                 &mut image,
-                (xform(bl.center.x), xform(bl.center.y)),
+                (xform(bl.center.x) as i32, xform(bl.center.y) as i32),
                 (bl.radius * scale) as i32,
                 blue,
             );
         } else {
-            draw_cross_mut(&mut image, blue, xform(current.x), xform(current.y));
+            draw_cross_mut(
+                &mut image,
+                blue,
+                xform(current.x) as i32,
+                xform(current.y) as i32,
+            );
         }
 
         image.save(path).unwrap();
