@@ -98,8 +98,8 @@ impl CircularPathSegment {
         })
     }
 
-    /// Get position ("robot configuration" in paper) along arc from normalised distance along
-    /// it (`s`)
+    /// Get position ("robot configuration" in paper parlance) along arc from normalised distance
+    /// along it (`s`)
     pub fn get_position(&self, distance_along_arc: f64) -> Coord {
         self.center
             + self.radius
@@ -113,7 +113,7 @@ impl CircularPathSegment {
             + self.y * (distance_along_arc / self.radius).cos()
     }
 
-    /// Get second derivative (rate of change of tangent or curvature) of point along curve
+    /// Get second derivative (rate of change of tangent, aka curvature) of point along curve
     pub fn get_curvature(&self, distance_along_arc: f64) -> Coord {
         -(1.0 / self.radius)
             * (self.x * (distance_along_arc / self.radius).sin()
