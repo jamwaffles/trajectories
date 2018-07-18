@@ -84,3 +84,53 @@ pub fn debug_blend(
 
     image.save(path).unwrap();
 }
+
+pub fn debug_blend_position(p: &str, blend: &CircularPathSegment) {
+    let path = Path::new(p);
+    let mut i = 0.0;
+
+    let scale = 100.0f64;
+    let padding = 10;
+    let max_dim = ((blend.radius * 2.0) * scale) as u32;
+
+    let red = Rgb([255u8, 0u8, 0u8]);
+    let green = Rgb([0u8, 255u8, 0u8]);
+    let purple = Rgb([127u8, 0u8, 255u8]);
+    let blue = Rgb([0u8, 0u8, 255u8]);
+    let white = Rgb([255u8, 255u8, 255u8]);
+
+    let xform_center = |input: f64| -> f32 { ((input * scale) + padding as f64) as f32 };
+
+    let mut image = RgbImage::new(max_dim + padding * 2, max_dim + padding * 2);
+
+    draw_filled_rect_mut(
+        &mut image,
+        Rect::at(0, 0).of_size(max_dim + padding * 2, max_dim + padding * 2),
+        white,
+    );
+
+    draw_hollow_circle_mut(
+        &mut image,
+        (
+            xform_center(blend.radius) as i32,
+            xform_center(blend.radius) as i32,
+        ),
+        (blend.radius * scale) as i32,
+        blue,
+    );
+
+    while i <= 1.0 {
+        let pos = blend.get_position(i);
+
+        draw_cross_mut(
+            &mut image,
+            red,
+            (pos.x * 50.0) as i32,
+            (pos.y * 50.0) as i32 - 100,
+        );
+
+        i += 0.01;
+    }
+
+    image.save(path).unwrap();
+}

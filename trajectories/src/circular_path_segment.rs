@@ -127,6 +127,18 @@ mod tests {
     use super::*;
 
     #[test]
+    fn it_gets_the_position() {
+        let before = Coord::new(0.0, 0.0, 0.0);
+        let current = Coord::new(0.0, 5.0, 0.0);
+        let after = Coord::new(5.0, 10.0, 0.0);
+
+        let blend_circle = CircularPathSegment::from_path_segments(&before, &current, &after, 0.1)
+            .expect("Expected a blend circle");
+
+        debug_blend_position("../target/it_gets_the_position.png", &blend_circle);
+    }
+
+    #[test]
     /// Compute the circular blend for an arrow head sitting on the X axis
     ///
     /// /\
