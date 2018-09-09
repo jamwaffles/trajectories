@@ -7,7 +7,7 @@
 int numTests = 0;
 int numTestsFailed = 0;
 
-void test(std::string name, std::list<Eigen::VectorXd> waypoints, double maxDeviation, const Eigen::VectorXd& maxVelocities, const Eigen::VectorXd& maxAccelerations, double timeStep) {
+void test(std::string name, std::list<Eigen::Vector3f> waypoints, double maxDeviation, const Eigen::Vector3f& maxVelocities, const Eigen::Vector3f& maxAccelerations, double timeStep) {
 	std::cout << "Begin " << name << std::endl;
 	Trajectory trajectory(Path(waypoints, maxDeviation), maxVelocities, maxAccelerations, timeStep);
 	numTests++;
@@ -19,25 +19,25 @@ void test(std::string name, std::list<Eigen::VectorXd> waypoints, double maxDevi
 }
 
 void test1() {
-	Eigen::VectorXd waypoint(4);
-	std::list<Eigen::VectorXd> waypoints;
+	Eigen::Vector3f waypoint(4);
+	std::list<Eigen::Vector3f> waypoints;
 
 	waypoint << 1424.0, 984.999694824219, 2126.0, 0.0;
 	waypoints.push_back(waypoint);
 	waypoint << 1423.0, 985.000244140625, 2126.0, 0.0;
 	waypoints.push_back(waypoint);
 
-	Eigen::VectorXd maxVelocities(4);
+	Eigen::Vector3f maxVelocities(4);
 	maxVelocities << 1.3, 0.67, 0.67, 0.5;
-	Eigen::VectorXd maxAccelerations(4);
+	Eigen::Vector3f maxAccelerations(4);
 	maxAccelerations << 0.00249, 0.00249, 0.00249, 0.00249;
 
 	test("Test 1", waypoints, 100.0, maxVelocities, maxAccelerations, 10.0);
 }
 
 void test2() {
-	Eigen::VectorXd waypoint(4);
-	std::list<Eigen::VectorXd> waypoints;
+	Eigen::Vector3f waypoint(4);
+	std::list<Eigen::Vector3f> waypoints;
 
 	waypoint << 1427.0, 368.0, 690.0, 90.0;
 	waypoints.push_back(waypoint);
@@ -50,9 +50,9 @@ void test2() {
 	waypoint << 452.5, 533.0, 951.0, 90.0;
 	waypoints.push_back(waypoint);
 
-	Eigen::VectorXd maxVelocities(4);
+	Eigen::Vector3f maxVelocities(4);
 	maxVelocities << 1.3, 0.67, 0.67, 0.5;
-	Eigen::VectorXd maxAccelerations(4);
+	Eigen::Vector3f maxAccelerations(4);
 	maxAccelerations << 0.002, 0.002, 0.002, 0.002;
 
 	test("Test 2", waypoints, 100.0, maxVelocities, maxAccelerations, 10.0);
@@ -62,11 +62,11 @@ static inline double randomInRange(double min, double max) {
 	return min + (max-min) * ((double)rand() / (double)RAND_MAX);
 }
 
-Eigen::VectorXd sampleConfig() {
-	Eigen::VectorXd maxPositions(7);
+Eigen::Vector3f sampleConfig() {
+	Eigen::Vector3f maxPositions(7);
 	maxPositions << 115.0, 105.0, 90.0, 70.0, 130.0, 90.0, 55.0;
 	maxPositions *= 3.14159 / 180.0;
-	Eigen::VectorXd config(7);
+	Eigen::Vector3f config(7);
 	for(unsigned int i = 0; i < 7; i++) {
 		config[i] = randomInRange(-maxPositions[i], maxPositions[i]);
 	}
@@ -76,12 +76,12 @@ Eigen::VectorXd sampleConfig() {
 void randomTests() {
 	const int numIterations = 10000;
 
-	Eigen::VectorXd maxVelocities(7);
+	Eigen::Vector3f maxVelocities(7);
 	maxVelocities << 1.309, 1.6406, 3.2812, 2.618, 5.236, 3.4907, 3.4907;
-	Eigen::VectorXd maxAccelerations = maxVelocities;
+	Eigen::Vector3f maxAccelerations = maxVelocities;
 
 	for(int iteration = 0; iteration < numIterations; iteration++) {
-		std::list<Eigen::VectorXd> waypoints;
+		std::list<Eigen::Vector3f> waypoints;
 		for(int numWaypoints = 0; numWaypoints < 10; numWaypoints++) {
 			waypoints.push_back(sampleConfig());
 		}

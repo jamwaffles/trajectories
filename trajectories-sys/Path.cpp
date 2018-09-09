@@ -51,25 +51,25 @@ using namespace Eigen;
 class LinearPathSegment : public PathSegment
 {
 public:
-	LinearPathSegment(const Eigen::VectorXd &start, const Eigen::VectorXd &end) :
+	LinearPathSegment(const Eigen::Vector3f &start, const Eigen::Vector3f &end) :
 		start(start),
 		end(end),
 		PathSegment((end-start).norm())
 	{
 	}
 
-	Eigen::VectorXd getConfig(double s) const {
+	Eigen::Vector3f getConfig(double s) const {
 		s /= length;
 		s = std::max(0.0, std::min(1.0, s));
 		return (1.0 - s) * start + s * end;
 	}
 
-	Eigen::VectorXd getTangent(double /* s */) const {
+	Eigen::Vector3f getTangent(double /* s */) const {
 		return (end - start) / length;
 	}
 
-	Eigen::VectorXd getCurvature(double /* s */) const {
-		return Eigen::VectorXd::Zero(start.size());
+	Eigen::Vector3f getCurvature(double /* s */) const {
+		return Eigen::Vector3f::Zero(start.size());
 	}
 
 	list<double> getSwitchingPoints() const {
@@ -81,33 +81,33 @@ public:
 	}
 
 private:
-	Eigen::VectorXd start;
-	Eigen::VectorXd end;
+	Eigen::Vector3f start;
+	Eigen::Vector3f end;
 };
 
 
 class CircularPathSegment : public PathSegment
 {
 public:
-	CircularPathSegment(const Eigen::VectorXd &start, const Eigen::VectorXd &intersection, const Eigen::VectorXd &end, double maxDeviation) {
+	CircularPathSegment(const Eigen::Vector3f &start, const Eigen::Vector3f &intersection, const Eigen::Vector3f &end, double maxDeviation) {
 		if((intersection - start).norm() < 0.000001 || (end - intersection).norm() < 0.000001) {
 			length = 0.0;
 			radius = 1.0;
 			center = intersection;
-			x = Eigen::VectorXd::Zero(start.size());
-			y = Eigen::VectorXd::Zero(start.size());
+			x = Eigen::Vector3f::Zero(start.size());
+			y = Eigen::Vector3f::Zero(start.size());
 			return;
 		}
 
-		const Eigen::VectorXd startDirection = (intersection - start).normalized();
-		const Eigen::VectorXd endDirection = (end - intersection).normalized();
+		const Eigen::Vector3f startDirection = (intersection - start).normalized();
+		const Eigen::Vector3f endDirection = (end - intersection).normalized();
 
 		if((startDirection - endDirection).norm() < 0.000001) {
 			length = 0.0;
 			radius = 1.0;
 			center = intersection;
-			x = Eigen::VectorXd::Zero(start.size());
-			y = Eigen::VectorXd::Zero(start.size());
+			x = Eigen::Vector3f::Zero(start.size());
+			y = Eigen::Vector3f::Zero(start.size());
 			return;
 		}
 
@@ -127,17 +127,17 @@ public:
 		y = startDirection;
 	}
 
-	Eigen::VectorXd getConfig(double s) const {
+	Eigen::Vector3f getConfig(double s) const {
 		const double angle = s / radius;
 		return center + radius * (x * cos(angle) + y * sin(angle));
 	}
 
-	Eigen::VectorXd getTangent(double s) const {
+	Eigen::Vector3f getTangent(double s) const {
 		const double angle = s / radius;
 		return - x * sin(angle) + y * cos(angle);
 	}
 
-	Eigen::VectorXd getCurvature(double s) const {
+	Eigen::Vector3f getCurvature(double s) const {
 		const double angle = s / radius;
 		return - 1.0 / radius * (x * cos(angle) + y * sin(angle));
 	}
@@ -165,29 +165,29 @@ public:
 
 private:
 	double radius;
-	Eigen::VectorXd center;
-	Eigen::VectorXd x;
-	Eigen::VectorXd y;
+	Eigen::Vector3f center;
+	Eigen::Vector3f x;
+	Eigen::Vector3f y;
 };
 
 
 
-Path::Path(const list<VectorXd> &path, double maxDeviation) :
+Path::Path(const list<Vector3f> &path, double maxDeviation) :
 	length(0.0)
 {
 	if(path.size() < 2)
 		return;
-	list<VectorXd>::const_iterator config1 = path.begin();
-	list<VectorXd>::const_iterator config2 = config1;
+	list<Vector3f>::const_iterator config1 = path.begin();
+	list<Vector3f>::const_iterator config2 = config1;
 	config2++;
-	list<VectorXd>::const_iterator config3;
-	VectorXd startConfig = *config1;
+	list<Vector3f>::const_iterator config3;
+	Vector3f startConfig = *config1;
 	while(config2 != path.end()) {
 		config3 = config2;
 		config3++;
 		if(maxDeviation > 0.0 && config3 != path.end()) {
 			CircularPathSegment* blendSegment = new CircularPathSegment(0.5 * (*config1 + *config2), *config2, 0.5 * (*config2 + *config3), maxDeviation);
-			VectorXd endConfig = blendSegment->getConfig(0.0);
+			Vector3f endConfig = blendSegment->getConfig(0.0);
 			if((endConfig - startConfig).norm() > 0.000001) {
 				pathSegments.push_back(new LinearPathSegment(startConfig, endConfig));
 			}
@@ -249,17 +249,17 @@ PathSegment* Path::getPathSegment(double &s) const {
 	return *it;
 }
 
-VectorXd Path::getConfig(double s) const {
+Vector3f Path::getConfig(double s) const {
 	const PathSegment* pathSegment = getPathSegment(s);
 	return pathSegment->getConfig(s);
 }
 
-VectorXd Path::getTangent(double s) const {
+Vector3f Path::getTangent(double s) const {
 	const PathSegment* pathSegment = getPathSegment(s);
 	return pathSegment->getTangent(s);
 }
 
-VectorXd Path::getCurvature(double s) const {
+Vector3f Path::getCurvature(double s) const {
 	const PathSegment* pathSegment = getPathSegment(s);
 	return pathSegment->getCurvature(s);
 }

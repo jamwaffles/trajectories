@@ -50,7 +50,7 @@ static double squared(double d) {
 	return d * d;
 }
 
-Trajectory::Trajectory(const Path &path, const VectorXd &maxVelocity, const VectorXd &maxAcceleration, double timeStep) :
+Trajectory::Trajectory(const Path &path, const Vector3f &maxVelocity, const Vector3f &maxAcceleration, double timeStep) :
 	path(path),
 	maxVelocity(maxVelocity),
 	maxAcceleration(maxAcceleration),
@@ -367,8 +367,8 @@ void Trajectory::integrateBackward(list<TrajectoryStep> &startTrajectory, double
 }
 
 double Trajectory::getMinMaxPathAcceleration(double pathPos, double pathVel, bool max) {
-	VectorXd configDeriv = path.getTangent(pathPos);
-	VectorXd configDeriv2 = path.getCurvature(pathPos);
+	Vector3f configDeriv = path.getTangent(pathPos);
+	Vector3f configDeriv2 = path.getCurvature(pathPos);
 	double factor = max ? 1.0 : -1.0;
 	double maxPathAcceleration = numeric_limits<double>::max();
 	for(unsigned int i = 0; i < n; i++) {
@@ -386,8 +386,8 @@ double Trajectory::getMinMaxPhaseSlope(double pathPos, double pathVel, bool max)
 
 double Trajectory::getAccelerationMaxPathVelocity(double pathPos) const {
 	double maxPathVelocity = numeric_limits<double>::infinity();
-	const VectorXd configDeriv = path.getTangent(pathPos);
-	const VectorXd configDeriv2 = path.getCurvature(pathPos);
+	const Vector3f configDeriv = path.getTangent(pathPos);
+	const Vector3f configDeriv2 = path.getCurvature(pathPos);
 	for(unsigned int i = 0; i < n; i++) {
 		if(configDeriv[i] != 0.0) {
 			for(unsigned int j = i + 1; j < n; j++) {
@@ -410,7 +410,7 @@ double Trajectory::getAccelerationMaxPathVelocity(double pathPos) const {
 
 
 double Trajectory::getVelocityMaxPathVelocity(double pathPos) const {
-	const VectorXd tangent = path.getTangent(pathPos);
+	const Vector3f tangent = path.getTangent(pathPos);
 	double maxPathVelocity = numeric_limits<double>::max();
 	for(unsigned int i = 0; i < n; i++) {
 		maxPathVelocity = min(maxPathVelocity, maxVelocity[i] / abs(tangent[i]));
@@ -423,7 +423,7 @@ double Trajectory::getAccelerationMaxPathVelocityDeriv(double pathPos) {
 }
 
 double Trajectory::getVelocityMaxPathVelocityDeriv(double pathPos) {
-	const VectorXd tangent = path.getTangent(pathPos);
+	const Vector3f tangent = path.getTangent(pathPos);
 	double maxPathVelocity = numeric_limits<double>::max();
 	unsigned int activeConstraint;
 	for(unsigned int i = 0; i < n; i++) {
@@ -463,7 +463,7 @@ list<Trajectory::TrajectoryStep>::const_iterator Trajectory::getTrajectorySegmen
 	}
 }
 
-VectorXd Trajectory::getPosition(double time) const {
+Vector3f Trajectory::getPosition(double time) const {
 	list<TrajectoryStep>::const_iterator it = getTrajectorySegment(time);
 	list<TrajectoryStep>::const_iterator previous = it;
 	previous--;
@@ -477,7 +477,7 @@ VectorXd Trajectory::getPosition(double time) const {
 	return path.getConfig(pathPos);
 }
 
-VectorXd Trajectory::getVelocity(double time) const {
+Vector3f Trajectory::getVelocity(double time) const {
 	list<TrajectoryStep>::const_iterator it = getTrajectorySegment(time);
 	list<TrajectoryStep>::const_iterator previous = it;
 	previous--;
