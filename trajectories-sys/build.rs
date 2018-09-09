@@ -20,19 +20,19 @@ fn main() {
         .clang_arg("-I/usr/lib/clang/6.0/include")
         .clang_arg("-I/usr/include/eigen3")
 
-        .enable_cxx_namespaces()
+        // .enable_cxx_namespaces()
 
         .whitelist_type("CircularPathSegment")
         .whitelist_type("LinearPathSegment")
 
         .whitelist_type("Trajectory")
 
-        .opaque_type("std::list")
+        .opaque_type("std::vector")
         .opaque_type("Eigen::.*")
-        // .blacklist_type("Eigen::.*")
+        .blacklist_type("Eigen::Vector3f")
 
-        .whitelist_type("Eigen::VectorXd")
-        // .whitelist_type("std::list")
+        // .whitelist_type("Eigen::VectorXd")
+        // .whitelist_type("std::vector")
         // .whitelist_type("std::pair")
 
         // .emit_ir_graphviz("./bindings.dot")
