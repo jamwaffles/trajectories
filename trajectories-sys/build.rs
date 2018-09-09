@@ -6,7 +6,8 @@ use std::path::PathBuf;
 fn main() {
     // Tell cargo to tell rustc to link the system Eigen
     // shared library. Install on macOS with `brew install eigen`
-    println!("cargo:rustc-link-lib=eigen");
+    // println!("cargo:rustc-link-lib=libeigen");
+    // println!("cargo:rustc-link-lib=libeigen3");
 
     // The bindgen::Builder is the main entry point
     // to bindgen, and lets you build up options for
@@ -30,11 +31,11 @@ fn main() {
         .opaque_type("Eigen::.*")
         // .blacklist_type("Eigen::.*")
 
-        // .whitelist_type("Eigen::VectorXd")
+        .whitelist_type("Eigen::VectorXd")
         // .whitelist_type("std::list")
         // .whitelist_type("std::pair")
 
-        .emit_ir_graphviz("./bindings.dot")
+        // .emit_ir_graphviz("./bindings.dot")
 
         // The input header we would like to generate
         // bindings for.
