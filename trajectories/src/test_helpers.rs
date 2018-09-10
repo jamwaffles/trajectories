@@ -17,6 +17,7 @@ pub fn debug_blend(
     let path = Path::new(p);
 
     let red = Rgb([255u8, 0u8, 0u8]);
+    let black = Rgb([0u8, 0, 0]);
     let green = Rgb([0u8, 255u8, 0u8]);
     let purple = Rgb([127u8, 0u8, 255u8]);
     let blue = Rgb([0u8, 0u8, 255u8]);
@@ -76,7 +77,7 @@ pub fn debug_blend(
     } else {
         draw_cross_mut(
             &mut image,
-            blue,
+            black,
             xform(current.x) as i32,
             xform(current.y) as i32,
         );
