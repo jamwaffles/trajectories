@@ -2,9 +2,13 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
-type Eigen_Vector3f = [f32; 3usize];
+// type Eigen_Vector3f = [f32; 3usize];
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
+
+extern "C" {
+    fn create_path(items: *const [f64; 3], len: usize, step: f64) -> *mut Path;
+}
 
 #[cfg(test)]
 mod tests {
@@ -12,12 +16,19 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let mut waypoints: Vec<f32> =
-            vec![0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 3.0];
+        let waypoints: Vec<[f64; 3]> = vec![
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [0.0, 2.0, 0.0],
+            [0.0, 0.0, 3.0],
+        ];
 
-        let path = unsafe { create_path(waypoints.as_mut_ptr(), 0.1) };
+        println!("Len: {}", waypoints.len());
 
-        println!("{:?}", path);
+        let path = unsafe { create_path(waypoints.as_ptr(), waypoints.len() * 3, 0.1) };
+
+        println!("Expected: {:?}", waypoints);
+        println!("Path: {:?}", path);
 
         // let mut wp = std_list::new();
 

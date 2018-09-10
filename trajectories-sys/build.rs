@@ -1,4 +1,5 @@
 extern crate bindgen;
+extern crate cc;
 
 use std::env;
 use std::path::PathBuf;
@@ -6,8 +7,10 @@ use std::path::PathBuf;
 fn main() {
     // Tell cargo to tell rustc to link the system Eigen
     // shared library. Install on macOS with `brew install eigen`
-    // println!("cargo:rustc-link-lib=libeigen");
-    // println!("cargo:rustc-link-lib=libeigen3");
+    // println!("cargo:rustc-link-lib=dylib=stdc++");
+    // println!("cargo:rustc-link-lib=static=traj");
+    // println!("cargo:rustc-link-search=/home/james/Repositories/trajectories/trajectories-sys");
+    // // println!("cargo:rustc-link-lib=libeigen3");
 
     // The bindgen::Builder is the main entry point
     // to bindgen, and lets you build up options for
@@ -27,17 +30,11 @@ fn main() {
         .whitelist_type("LinearPathSegment")
 
         .whitelist_type("Trajectory")
+        .whitelist_type("Path")
 
-        .opaque_type("std::vector")
+        .opaque_type("std::.*")
         .opaque_type("Eigen::.*")
         .blacklist_type("Eigen::Vector3f")
-        .whitelist_function("create_path")
-
-        // .whitelist_type("Eigen::VectorXd")
-        // .whitelist_type("std::vector")
-        // .whitelist_type("std::pair")
-
-        // .emit_ir_graphviz("./bindings.dot")
 
         // The input header we would like to generate
         // bindings for.
@@ -48,8 +45,17 @@ fn main() {
         .expect("Unable to generate bindings");
 
     // Write the bindings to the $OUT_DIR/bindings.rs file.
-    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
+    let out_path = PathBuf::from(env::var("OUT_DIR").expect("No OUT_DIR set"));
     bindings
         .write_to_file(out_path.join("bindings.rs"))
         .expect("Couldn't write bindings!");
+
+    cc::Build::new()
+        .cpp(true)
+        .file("Path.cpp")
+        .file("Trajectory.cpp")
+        .file("CBindings.cpp")
+        .shared_flag(true)
+        .include("/usr/include/eigen3")
+        .compile("libtraj.a");
 }
