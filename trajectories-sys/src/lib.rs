@@ -12,24 +12,24 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let waypoints: Vec<Eigen_Vector3f> = vec![
-            [0.0, 0.0, 0.0],
-            [1.0, 0.0, 0.0],
-            [0.0, 2.0, 0.0],
-            [0.0, 0.0, 3.0],
-        ];
+        let mut waypoints: Vec<f32> =
+            vec![0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 3.0];
 
-        let mut wp = std_list::new();
+        let path = unsafe { create_path(waypoints.as_mut_ptr(), 0.1) };
 
-        let max_velocity = [1.0, 1.0, 1.0];
-        let max_acceleration = [1.0, 1.0, 1.0];
+        println!("{:?}", path);
 
-        let traj = Trajectory::new(
-            &Path::new(waypoints.as_ptr(), 0.1),
-            &max_velocity,
-            &max_acceleration,
-            0.1,
-        );
+        // let mut wp = std_list::new();
+
+        // let max_velocity = [1.0, 1.0, 1.0];
+        // let max_acceleration = [1.0, 1.0, 1.0];
+
+        // let traj = Trajectory::new(
+        //     &Path::new(waypoints.as_ptr(), 0.1),
+        //     &max_velocity,
+        //     &max_acceleration,
+        //     0.1,
+        // );
 
         assert_eq!(2 + 2, 4);
     }

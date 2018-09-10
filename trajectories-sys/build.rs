@@ -13,6 +13,7 @@ fn main() {
     // to bindgen, and lets you build up options for
     // the resulting bindings.
     let bindings = bindgen::Builder::default()
+        .rustfmt_bindings(true)
         // macOS
         .clang_arg("-I/usr/local/Cellar/eigen/3.3.4/include/eigen3")
 
@@ -30,6 +31,7 @@ fn main() {
         .opaque_type("std::vector")
         .opaque_type("Eigen::.*")
         .blacklist_type("Eigen::Vector3f")
+        .whitelist_function("create_path")
 
         // .whitelist_type("Eigen::VectorXd")
         // .whitelist_type("std::vector")
