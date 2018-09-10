@@ -16,7 +16,9 @@ fn main() {
     // to bindgen, and lets you build up options for
     // the resulting bindings.
     let bindings = bindgen::Builder::default()
-        .rustfmt_bindings(true)
+        // Disabled so CI passes
+        .rustfmt_bindings(false)
+
         // macOS
         .clang_arg("-I/usr/local/Cellar/eigen/3.3.4/include/eigen3")
 
@@ -55,6 +57,7 @@ fn main() {
         .file("Path.cpp")
         .file("Trajectory.cpp")
         .file("CBindings.cpp")
+        .flag("-std=c++11")
         .shared_flag(true)
         .include("/usr/include/eigen3")
         .compile("libtraj.a");

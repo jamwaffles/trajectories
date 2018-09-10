@@ -7,11 +7,15 @@ rust:
   - stable
   - beta
   - nightly
-sudo: required
+sudo: false
 addons:
   apt:
     packages:
       - libeigen3-dev
+      - gcc-4.8
+      - g++-4.8
+      - build-essential
+      - libstdc++-4.8-dev
 
 before_install:
   - set -e
