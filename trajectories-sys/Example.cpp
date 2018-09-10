@@ -46,8 +46,8 @@ using namespace std;
 using namespace Eigen;
 
 int main() {
-	list<Vector3f> waypoints;
-	Vector3f waypoint;
+	list<Vector3d> waypoints;
+	Vector3d waypoint;
 	waypoint << 0.0, 0.0, 0.0;
 	waypoints.push_back(waypoint);
 	waypoint << 0.0, 0.2, 1.0;
@@ -63,9 +63,9 @@ int main() {
 	waypoint << 0.0, 0.0, 1.0;
 	waypoints.push_back(waypoint);
 
-	Vector3f maxAcceleration(3);
+	Vector3d maxAcceleration(3);
 	maxAcceleration << 1.0, 1.0, 1.0;
-	Vector3f maxVelocity(3);
+	Vector3d maxVelocity(3);
 	maxVelocity << 1.0, 1.0, 1.0;
 
 	Trajectory trajectory(Path(waypoints, 0.1), maxVelocity, maxAcceleration);

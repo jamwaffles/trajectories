@@ -54,9 +54,9 @@ public:
 	double getLength() const {
 		return length;
 	}
-	virtual Eigen::Vector3f getConfig(double s) const = 0;
-	virtual Eigen::Vector3f getTangent(double s) const = 0;
-	virtual Eigen::Vector3f getCurvature(double s) const = 0;
+	virtual Eigen::Vector3d getConfig(double s) const = 0;
+	virtual Eigen::Vector3d getTangent(double s) const = 0;
+	virtual Eigen::Vector3d getCurvature(double s) const = 0;
 	virtual std::list<double> getSwitchingPoints() const = 0;
 	virtual PathSegment* clone() const = 0;
 
@@ -70,13 +70,13 @@ protected:
 class Path
 {
 public:
-	Path(const std::list<Eigen::Vector3f> &path, double maxDeviation = 0.0);
+	Path(const std::list<Eigen::Vector3d> &path, double maxDeviation = 0.0);
 	Path(const Path &path);
 	~Path();
 	double getLength() const;
-	Eigen::Vector3f getConfig(double s) const;
-	Eigen::Vector3f getTangent(double s) const;
-	Eigen::Vector3f getCurvature(double s) const;
+	Eigen::Vector3d getConfig(double s) const;
+	Eigen::Vector3d getTangent(double s) const;
+	Eigen::Vector3d getCurvature(double s) const;
 	double getNextSwitchingPoint(double s, bool &discontinuity) const;
 	std::list<std::pair<double, bool> > getSwitchingPoints() const;
 private:

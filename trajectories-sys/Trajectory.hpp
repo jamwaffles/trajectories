@@ -45,7 +45,7 @@ class Trajectory
 {
 public:
 	// Generates a time-optimal trajectory
-	Trajectory(const Path &path, const Eigen::Vector3f &maxVelocity, const Eigen::Vector3f &maxAcceleration, double timeStep = 0.001);
+	Trajectory(const Path &path, const Eigen::Vector3d &maxVelocity, const Eigen::Vector3d &maxAcceleration, double timeStep = 0.001);
 
 	~Trajectory(void);
 
@@ -57,8 +57,8 @@ public:
 	double getDuration() const;
 
 	// Return the position/configuration or velocity vector of the robot for a given point in time within the trajectory.
-	Eigen::Vector3f getPosition(double time) const;
-	Eigen::Vector3f getVelocity(double time) const;
+	Eigen::Vector3d getPosition(double time) const;
+	Eigen::Vector3d getVelocity(double time) const;
 
 	// Outputs the phase trajectory and the velocity limit curve in 2 files for debugging purposes.
 	void outputPhasePlaneTrajectory() const;
@@ -90,8 +90,8 @@ private:
 	std::list<TrajectoryStep>::const_iterator getTrajectorySegment(double time) const;
 
 	Path path;
-	Eigen::Vector3f maxVelocity;
-	Eigen::Vector3f maxAcceleration;
+	Eigen::Vector3d maxVelocity;
+	Eigen::Vector3d maxAcceleration;
 	unsigned int n;
 	bool valid;
 	std::list<TrajectoryStep> trajectory;
