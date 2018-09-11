@@ -2,7 +2,30 @@
 
 extern crate trajectories_sys;
 
+use std::fmt;
 use trajectories_sys::*;
+
+struct Point {
+    x: f64,
+    y: f64,
+    z: f64,
+}
+
+impl From<[f64; 3]> for Point {
+    fn from(other: [f64; 3]) -> Self {
+        Point {
+            x: other[0],
+            y: other[1],
+            z: other[2],
+        }
+    }
+}
+
+impl fmt::Display for Point {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}, {}, {}", self.x, self.y, self.z)
+    }
+}
 
 #[test]
 fn it_works() {
@@ -22,21 +45,30 @@ fn it_works() {
 
     println!("Expected: {:?}", waypoints);
 
-    let config = unsafe { Path_getConfig(path, 0.1) };
+    let max_velocity = [1.0, 1.0, 1.0];
+    let max_acceleration = [1.0, 1.0, 1.0];
 
-    println!("Config: {:?}", config);
+    let traj = unsafe { Trajectory::new(path, &max_velocity, &max_acceleration, 0.1) };
 
-    // let mut wp = std_list::new();
+    let duration = unsafe { traj.getDuration() };
 
-    // let max_velocity = [1.0, 1.0, 1.0];
-    // let max_acceleration = [1.0, 1.0, 1.0];
+    // println!("TRAJ DURATION {}\n", duration);
 
-    // let traj = Trajectory::new(
-    //     &Path::new(waypoints.as_ptr(), 0.1),
-    //     &max_velocity,
-    //     &max_acceleration,
-    //     0.1,
-    // );
+    let mut t = 0.0;
+
+    println!("t,px,py,pz,vx,vy,vz");
+
+    while t <= duration {
+        let p = unsafe { traj.getPosition(t) };
+        let v = unsafe { traj.getVelocity(t) };
+
+        let pos: Point = p.into();
+        let vel: Point = v.into();
+
+        println!("{},{},{}", t, pos, vel);
+
+        t += 0.1;
+    }
 
     assert_eq!(2 + 2, 4);
 }
