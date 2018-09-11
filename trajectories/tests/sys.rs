@@ -29,19 +29,14 @@ impl fmt::Display for Point {
 
 #[test]
 fn it_works() {
-    let waypoints: Vec<[f64; 3]> = vec![
-        [0.0, 0.0, 0.0],
-        [0.0, 0.2, 1.0],
-        [0.0, 3.0, 0.5],
-        [1.1, 2.0, 0.0],
-        [1.0, 0.0, 0.0],
-        [0.0, 1.0, 0.0],
-        [0.0, 0.0, 1.0],
+    let waypoints: Vec<f64> = vec![
+        0.0, 0.0, 0.0, 0.0, 0.2, 1.0, 0.0, 3.0, 0.5, 1.1, 2.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0,
+        0.0, 0.0, 1.0,
     ];
 
     println!("Len: {}", waypoints.len());
 
-    let path = unsafe { path_create(waypoints.as_ptr(), waypoints.len() * 3, 0.1) };
+    let path = unsafe { path_create(waypoints.as_ptr(), waypoints.len(), 0.1) };
 
     println!("Expected: {:?}", waypoints);
 
@@ -52,20 +47,24 @@ fn it_works() {
 
     let duration = unsafe { traj.getDuration() };
 
-    // println!("TRAJ DURATION {}\n", duration);
+    println!("TRAJ DURATION {}\n", duration);
 
     let mut t = 0.0;
 
     println!("t,px,py,pz,vx,vy,vz");
 
     while t <= duration {
-        let p = unsafe { traj.getPosition(t) };
-        let v = unsafe { traj.getVelocity(t) };
+        println!("Get things for T = {}...", t);
 
-        let pos: Point = p.into();
-        let vel: Point = v.into();
+        // let p = unsafe { Trajectory_getPosition(&traj, t) };
+        let v = unsafe { Trajectory_getVelocity(&traj, t) };
 
-        println!("{},{},{}", t, pos, vel);
+        // println!("      [[{}]] {:?}", t, v);
+
+        // let pos: Point = p.into();
+        // let vel: Point = v.into();
+
+        // println!("{},{},{}", t, pos, vel);
 
         t += 0.1;
     }

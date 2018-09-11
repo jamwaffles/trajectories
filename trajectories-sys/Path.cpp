@@ -65,6 +65,7 @@ public:
 	}
 
 	Eigen::Vector3d getTangent(double /* s */) const {
+		// std::cout << "TANGENT " << (end - start) / length << " from " << end << " " << start << " " << length << std::endl;
 		return (end - start) / length;
 	}
 
@@ -241,11 +242,14 @@ PathSegment* Path::getPathSegment(double &s) const {
 	list<PathSegment*>::const_iterator it = pathSegments.begin();
 	list<PathSegment*>::const_iterator next = it;
 	next++;
+
 	while(next != pathSegments.end() && s >= (*next)->position) {
+	// std::cout << "S, pos " <<  s << "   "<< (*next)->position << std::endl;
 		it = next;
 		next++;
 	}
 	s -= (*it)->position;
+	// std::cout << "final pos " << (*it)->position << "   " << s << std::endl;
 	return *it;
 }
 
@@ -256,6 +260,9 @@ Vector3d Path::getConfig(double s) const {
 
 Vector3d Path::getTangent(double s) const {
 	const PathSegment* pathSegment = getPathSegment(s);
+
+	// std::cout << "REF " << pathSegment << std::endl;
+
 	return pathSegment->getTangent(s);
 }
 

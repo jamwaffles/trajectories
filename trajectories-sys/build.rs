@@ -18,28 +18,21 @@ fn main() {
     let bindings = bindgen::Builder::default()
         // Disabled so CI passes
         .rustfmt_bindings(false)
-
         // macOS
         .clang_arg("-I/usr/local/Cellar/eigen/3.3.4/include/eigen3")
-
         // Linux
         .clang_arg("-I/usr/lib/clang/6.0/include")
         .clang_arg("-I/usr/include/eigen3")
-
         // .enable_cxx_namespaces()
-
         .whitelist_type("CircularPathSegment")
         .whitelist_type("LinearPathSegment")
-
         .whitelist_type("Trajectory")
         .whitelist_type("Path")
-
         .opaque_type("std::.*")
         .opaque_type("Eigen::.*")
         .blacklist_type("Eigen::Vector3f")
         .blacklist_type("Eigen::Vector3d")
         .blacklist_type("Eigen_Vector3d")
-
         // The input header we would like to generate
         // bindings for.
         .header("wrapper.hpp")
@@ -65,5 +58,5 @@ fn main() {
         .include("/usr/include/eigen3")
         // macOS
         .include("/usr/local/Cellar/eigen/3.3.4/include/eigen3")
-        .compile("libtraj.a");
+        .compile("traj");
 }
