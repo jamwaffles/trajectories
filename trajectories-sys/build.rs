@@ -61,6 +61,9 @@ fn main() {
         .file("CBindings.cpp")
         .flag("-std=c++11")
         .shared_flag(true)
+        // Linux
         .include("/usr/include/eigen3")
+        // macOS
+        .include("/usr/local/Cellar/eigen/3.3.4/include/eigen3")
         .compile("libtraj.a");
 }
