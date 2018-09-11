@@ -37,6 +37,8 @@ fn main() {
         .opaque_type("std::.*")
         .opaque_type("Eigen::.*")
         .blacklist_type("Eigen::Vector3f")
+        .blacklist_type("Eigen::Vector3d")
+        .blacklist_type("Eigen_Vector3d")
 
         // The input header we would like to generate
         // bindings for.

@@ -7,7 +7,7 @@
 #include "Trajectory.hpp"
 
 // Take a C-style pointer to a list of floats and make a Path with it
-extern "C" void* create_path(double *waypoints, int len, double step) {
+extern "C" void* path_create(double *waypoints, int len, double step) {
 	std::vector<double> nums(waypoints, waypoints + len);
 
 	std::list<Eigen::Vector3d> wps;
