@@ -8,7 +8,7 @@
 
 // Take a C-style pointer to a list of floats and make a Path with it
 extern "C" void* path_create(double *waypoints, int len, double step) {
-	int n = sizeof(waypoints) / sizeof(waypoints[0]);
+	// int n = sizeof(waypoints) / sizeof(waypoints[0]);
 
 	// std::vector<double> nums(waypoints, waypoints + n);
 	std::vector<double> nums;
@@ -16,8 +16,7 @@ extern "C" void* path_create(double *waypoints, int len, double step) {
 
 	std::list<Eigen::Vector3d> wps;
 
-
-	std::cout << "NUM " << nums.size() << std::endl;
+	// std::cout << "NUM " << nums.size() << std::endl;
 
 	for (auto i = nums.begin(); i != nums.end();) {
 		Eigen::Vector3d wp;
@@ -35,16 +34,16 @@ extern "C" void* path_create(double *waypoints, int len, double step) {
 		z = *i;
 		i++;
 
-		std::cout << "X " << x << std::endl;
-		std::cout << "Y " << y << std::endl;
-		std::cout << "Z " << z << std::endl;
+		// std::cout << "X " << x << std::endl;
+		// std::cout << "Y " << y << std::endl;
+		// std::cout << "Z " << z << std::endl;
 
 		wp << x, y, z;
 
 		wps.push_back(wp);
 	}
 
-	std::cout << "WAYPOINTS " << wps.size() << std::endl;
+	// std::cout << "WAYPOINTS " << wps.size() << std::endl;
 
 	return new Path(wps, step);
 }
