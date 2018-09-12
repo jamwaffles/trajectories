@@ -36,38 +36,46 @@ fn it_works() {
 
     println!("Len: {}", waypoints.len());
 
-    let path = unsafe { path_create(waypoints.as_ptr(), waypoints.len(), 0.1) };
+    let path = unsafe { path_create(waypoints.as_ptr(), waypoints.len(), 0.1f64) };
 
     println!("Expected: {:?}", waypoints);
 
     let max_velocity = [1.0, 1.0, 1.0];
     let max_acceleration = [1.0, 1.0, 1.0];
 
-    let traj = unsafe { Trajectory::new(path, &max_velocity, &max_acceleration, 0.1) };
+    let traj = unsafe { Trajectory::new(path, &max_velocity, &max_acceleration, 0.001f64) };
 
     let duration = unsafe { traj.getDuration() };
 
     println!("TRAJ DURATION {}\n", duration);
 
-    let mut t = 0.0;
+    unsafe { assert!(traj.isValid(), "Invalid trajectory") };
+
+    let mut t = 0u64;
 
     println!("t,px,py,pz,vx,vy,vz");
 
-    while t <= duration {
-        println!("Get things for T = {}...", t);
+    while t < (duration * 1000.0) as u64 {
+        let divided: f64 = t as f64 / 1000.0;
 
-        // let p = unsafe { Trajectory_getPosition(&traj, t) };
-        let v = unsafe { Trajectory_getVelocity(&traj, t) };
+        let p = unsafe { Trajectory_getPosition(&traj, divided) };
+        let v = unsafe { Trajectory_getVelocity(&traj, divided) };
 
-        // println!("      [[{}]] {:?}", t, v);
+        let pos: Point = p.into();
+        let vel: Point = v.into();
 
-        // let pos: Point = p.into();
-        // let vel: Point = v.into();
+        println!("{},{},{}", divided, pos, vel);
 
-        // println!("{},{},{}", t, pos, vel);
-
-        t += 0.1;
+        t += 100;
     }
+
+    let p = unsafe { Trajectory_getPosition(&traj, duration) };
+    let v = unsafe { Trajectory_getVelocity(&traj, duration) };
+
+    let pos: Point = p.into();
+    let vel: Point = v.into();
+
+    println!("{},{},{}", duration, pos, vel);
 
     assert_eq!(2 + 2, 4);
 }
