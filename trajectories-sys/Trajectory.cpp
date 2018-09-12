@@ -83,7 +83,8 @@ Trajectory::Trajectory(const Path &path, const Vector3d &maxVelocity, const Vect
 		it++;
 		while(it != trajectory.end()) {
 			it->time = previous->time + (it->pathPos - previous->pathPos) / ((it->pathVel + previous->pathVel) / 2.0);
-			previous = it;
+
+			previous++;
 			it++;
 		}
 	}
@@ -483,24 +484,11 @@ Vector3d Trajectory::getVelocity(double time) const {
 	previous--;
 
 	double timeStep = it->time - previous->time;
-	// std::cout << "Timestep " << timeStep << std::endl;
 	const double acceleration = 2.0 * (it->pathPos - previous->pathPos - timeStep * previous->pathVel) / (timeStep * timeStep);
-	// std::cout << "Accel " << acceleration << std::endl;
 
 	timeStep = time - previous->time;
 	const double pathPos = previous->pathPos + timeStep * previous->pathVel + 0.5 * timeStep * timeStep * acceleration;
 	const double pathVel = previous->pathVel + timeStep * acceleration;
 
-
-	const Eigen::Vector3d res = path.getTangent(pathPos) * pathVel;
-
-	// std::cout << "DBG " << timeStep << " pathpos " << pathPos << " pathvel " << pathVel << " res " << res << std::endl;
-
-	// std::cout << "--> vel " << pathVel << " pos " << pathPos << " tangent " << path.getTangent(pathPos) << " mul " << res << std::endl;
-
-	// return res;
-
-	Vector3d v(3);
-
-	return v;
+	return path.getTangent(pathPos) * pathVel;
 }
