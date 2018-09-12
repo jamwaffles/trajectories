@@ -29,6 +29,7 @@ extern crate serde_derive;
 mod macros;
 
 mod circular_path_segment;
+mod linear_path_segment;
 
 pub mod test_helpers;
 
