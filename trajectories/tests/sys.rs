@@ -37,8 +37,8 @@ fn it_works() {
     while t < (duration * 1000.0) as u64 {
         let divided: f64 = t as f64 / 1000.0;
 
-        let p = unsafe { Trajectory_getPosition(&traj, divided) };
-        let v = unsafe { Trajectory_getVelocity(&traj, divided) };
+        let p = unsafe { traj.getPosition(divided) };
+        let v = unsafe { traj.getVelocity(divided) };
 
         let pos: TestPoint = p.into();
         let vel: TestPoint = v.into();
@@ -48,8 +48,8 @@ fn it_works() {
         t += 100;
     }
 
-    let p = unsafe { Trajectory_getPosition(&traj, duration) };
-    let v = unsafe { Trajectory_getVelocity(&traj, duration) };
+    let p = unsafe { traj.getPosition(duration) };
+    let v = unsafe { traj.getVelocity(duration) };
 
     let pos: TestPoint = p.into();
     let vel: TestPoint = v.into();
