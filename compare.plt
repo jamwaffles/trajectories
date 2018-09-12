@@ -3,10 +3,12 @@ set datafile separator ","
 
 set term png size 1440,900
 
-set output 'compare_cpp.png'
+set output 'target/compare_cpp.png'
+set title 'C++ Rust bindings'
 
-plot 'example_cpp.csv' using 1:2 with lines title 'Position X', 'example_cpp.csv' using 1:3 with lines title 'Position Y', 'example_cpp.csv' using 1:4 with lines title 'Position Z', 'example_cpp.csv' using 1:5 with lines title 'Accel X', 'example_cpp.csv' using 1:6 with lines title 'Accel X', 'example_cpp.csv' using 1:7 with lines title 'Accel X'
+plot 'target/plot_cpp_bindings.csv' using 1:2 with lines title 'Position X', 'target/plot_cpp_bindings.csv' using 1:3 with lines title 'Position Y', 'target/plot_cpp_bindings.csv' using 1:4 with lines title 'Position Z' , 'target/plot_cpp_bindings.csv' using 1:5 with lines title 'Accel X', 'target/plot_cpp_bindings.csv' using 1:6 with lines title 'Accel Y', 'target/plot_cpp_bindings.csv' using 1:7 with lines title 'Accel Z'
 
-set output 'compare_bindings.png'
+set output 'target/compare_bindings.png'
+set title 'C++ native'
 
-plot 'test_sys.csv' using 1:2 with lines title 'Position X', 'test_sys.csv' using 1:3 with lines title 'Position Y', 'test_sys.csv' using 1:4 with lines title 'Position Z', 'test_sys.csv' using 1:5 with lines title 'Accel X', 'test_sys.csv' using 1:6 with lines title 'Accel X', 'test_sys.csv' using 1:7 with lines title 'Accel X'
+plot 'target/plot_cpp_native.csv' using 1:2 with lines title 'Position X', 'target/plot_cpp_native.csv' using 1:3 with lines title 'Position Y', 'target/plot_cpp_native.csv' using 1:4 with lines title 'Position Z' , 'target/plot_cpp_native.csv' using 1:5 with lines title 'Accel X', 'target/plot_cpp_native.csv' using 1:6 with lines title 'Accel Y', 'target/plot_cpp_native.csv' using 1:7 with lines title 'Accel Z'

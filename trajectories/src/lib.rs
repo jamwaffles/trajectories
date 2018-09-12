@@ -19,19 +19,18 @@
 extern crate nalgebra;
 #[macro_use]
 extern crate approx;
-
-#[cfg(test)]
+extern crate csv;
 extern crate image;
-#[cfg(test)]
 extern crate imageproc;
+#[macro_use]
+extern crate serde_derive;
 
 #[macro_use]
 mod macros;
 
 mod circular_path_segment;
 
-#[cfg(test)]
-mod test_helpers;
+pub mod test_helpers;
 
 use circular_path_segment::*;
 use nalgebra::Vector3;
