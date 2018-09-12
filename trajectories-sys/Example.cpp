@@ -68,7 +68,7 @@ int main() {
 	Vector3d maxVelocity(3);
 	maxVelocity << 1.0, 1.0, 1.0;
 
-	Trajectory trajectory(Path(waypoints, 0.1), maxVelocity, maxAcceleration);
+	Trajectory trajectory(Path(waypoints, 0.001), maxVelocity, maxAcceleration);
 	trajectory.outputPhasePlaneTrajectory();
 	if(trajectory.isValid()) {
 		double duration = trajectory.getDuration();

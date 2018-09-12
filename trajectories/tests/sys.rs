@@ -15,7 +15,7 @@ fn it_works() {
 
     println!("Len: {}", waypoints.len());
 
-    let path = unsafe { path_create(waypoints.as_ptr(), waypoints.len(), 0.1f64) };
+    let path = unsafe { path_create(waypoints.as_ptr(), waypoints.len(), 0.001f64) };
 
     println!("Expected: {:?}", waypoints);
 
