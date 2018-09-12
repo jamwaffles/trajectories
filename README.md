@@ -38,3 +38,7 @@ g++ -I/usr/local/Cellar/eigen/3.3.4/include/eigen3 -I/usr/include/eigen3 Example
 g++ -I/usr/local/Cellar/eigen/3.3.4/include/eigen3 -I/usr/include/eigen3 Test.cpp Trajectory.cpp Path.cpp -o test -O3
 ./test
 ```
+
+## TODO
+
+* [ ] Prepare path; introduce circular blends between straight segments, shorten straight segments
