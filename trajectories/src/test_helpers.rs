@@ -18,7 +18,7 @@ pub fn debug_blend(
     before: &Coord,
     current: &Coord,
     after: &Coord,
-    blend: &Option<CircularPathSegment>,
+    blend: &CircularPathSegment,
 ) {
     let path = Path::new(p);
 
@@ -58,36 +58,34 @@ pub fn debug_blend(
     );
 
     // Render blend circle if there is one, or a cross if there isn't
-    if let Some(bl) = blend {
-        draw_hollow_circle_mut(
-            &mut image,
-            (xform(bl.center.x) as i32, xform(bl.center.y) as i32),
-            (bl.radius * scale) as i32,
-            blue,
-        );
 
-        // Xi (green)
-        draw_line_segment_mut(
-            &mut image,
-            (xform(bl.center.x), xform(bl.center.y)),
-            (xform(bl.center.x + bl.x.x), xform(bl.center.y + bl.x.y)),
-            green,
-        );
-        // Yi (purple)
-        draw_line_segment_mut(
-            &mut image,
-            (xform(bl.center.x), xform(bl.center.y)),
-            (xform(bl.center.x + bl.y.x), xform(bl.center.y + bl.y.y)),
-            purple,
-        );
-    } else {
-        draw_cross_mut(
-            &mut image,
-            black,
-            xform(current.x) as i32,
-            xform(current.y) as i32,
-        );
-    }
+    draw_hollow_circle_mut(
+        &mut image,
+        (xform(blend.center.x) as i32, xform(blend.center.y) as i32),
+        (blend.radius * scale) as i32,
+        blue,
+    );
+
+    // Xi (green)
+    draw_line_segment_mut(
+        &mut image,
+        (xform(blend.center.x), xform(blend.center.y)),
+        (
+            xform(blend.center.x + blend.x.x),
+            xform(blend.center.y + blend.x.y),
+        ),
+        green,
+    );
+    // Yi (purple)
+    draw_line_segment_mut(
+        &mut image,
+        (xform(blend.center.x), xform(blend.center.y)),
+        (
+            xform(blend.center.x + blend.y.x),
+            xform(blend.center.y + blend.y.y),
+        ),
+        purple,
+    );
 
     image.save(path).unwrap();
 }

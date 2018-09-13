@@ -28,10 +28,17 @@ impl CircularPathSegment {
         current: &Coord,
         next: &Coord,
         max_deviation: f64,
-    ) -> Option<Self> {
-        // If either segment is of negligible length, we don't need to blend it
+    ) -> Self {
+        // If either segment is of negligible length, we don't need to blend it, however a blend
+        // is still required to make the path differentiable.
         if (current - previous).norm() < MIN_ACCURACY || (next - current).norm() < MIN_ACCURACY {
-            return None;
+            return CircularPathSegment {
+                center: current.clone(),
+                radius: 1.0,
+                x: Coord::zeros(),
+                y: Coord::zeros(),
+                arc_length: 0.0,
+            };
         }
 
         // Yi
@@ -43,9 +50,16 @@ impl CircularPathSegment {
         let next_length = (current - next).norm();
         let next_half_length = next_length / 2.0;
 
-        // If segments are essentially parallel, they don't need blending
+        // If segments are essentially parallel, they don't need blending, however a blend
+        // is still required to make the path differentiable.
         if (previous_normalised - next_normalised).norm() < MIN_ACCURACY {
-            return None;
+            return CircularPathSegment {
+                center: current.clone(),
+                radius: 1.0,
+                x: Coord::zeros(),
+                y: Coord::zeros(),
+                arc_length: 0.0,
+            };
         }
 
         // ⍺i (outside angle in radians, i.e. 180º - angle)
@@ -89,13 +103,13 @@ impl CircularPathSegment {
         // println!("--- (Xi, Yi) {:?} {:?}", x, y);
         // println!("\n");
 
-        Some(CircularPathSegment {
+        CircularPathSegment {
             center,
             radius,
             x,
             y,
             arc_length,
-        })
+        }
     }
 
     /// Get position ("robot configuration" in paper parlance) along arc from normalised distance
@@ -132,8 +146,7 @@ mod tests {
         let current = Coord::new(0.0, 5.0, 0.0);
         let after = Coord::new(5.0, 10.0, 0.0);
 
-        let blend_circle = CircularPathSegment::from_path_segments(&before, &current, &after, 0.1)
-            .expect("Expected a blend circle");
+        let blend_circle = CircularPathSegment::from_path_segments(&before, &current, &after, 0.1);
 
         debug_blend_position("../target/it_gets_the_position.png", &blend_circle);
     }
@@ -157,7 +170,7 @@ mod tests {
             &blend_circle,
         );
 
-        let bc = blend_circle.expect("Expected a blend circle");
+        let bc = blend_circle;
 
         assert_near!(bc.arc_length, 0.37922377958740805);
         assert_near!(bc.center, Coord::new(5.0, 4.658578643762691, 0.0));
@@ -186,7 +199,7 @@ mod tests {
             &blend_circle,
         );
 
-        let bc = blend_circle.expect("Expected a blend circle");
+        let bc = blend_circle;
 
         assert_near!(bc.arc_length, 0.37922377958740805);
         assert_near!(bc.center, Coord::new(0.2414213562373, 0.758578643762, 0.0));
@@ -215,7 +228,7 @@ mod tests {
             &blend_circle,
         );
 
-        let bc = blend_circle.expect("Expected a blend circle");
+        let bc = blend_circle;
 
         assert_near!(bc.arc_length, 0.9532433417365019);
         assert_near!(bc.center, Coord::new(1.2137071, 4.4972660, 0.0));
@@ -244,7 +257,7 @@ mod tests {
             &blend_circle,
         );
 
-        let bc = blend_circle.expect("Expected a blend circle");
+        let bc = blend_circle;
 
         assert_near!(bc.arc_length, 4.740297244842599);
         assert_near!(bc.center, Coord::new(6.035533905932737, 2.5, 0.0));
@@ -273,7 +286,16 @@ mod tests {
             &blend_circle,
         );
 
-        assert!(blend_circle.is_none());
+        assert_eq!(
+            blend_circle,
+            CircularPathSegment {
+                center: current,
+                radius: 1.0,
+                x: Coord::zeros(),
+                y: Coord::zeros(),
+                arc_length: 0.0,
+            }
+        );
     }
 
     #[test]
@@ -296,7 +318,16 @@ mod tests {
             &blend_circle,
         );
 
-        assert!(blend_circle.is_none());
+        assert_eq!(
+            blend_circle,
+            CircularPathSegment {
+                center: current,
+                radius: 1.0,
+                x: Coord::zeros(),
+                y: Coord::zeros(),
+                arc_length: 0.0,
+            }
+        );
     }
 
     #[test]
@@ -311,7 +342,16 @@ mod tests {
 
         let blend_circle = CircularPathSegment::from_path_segments(&before, &current, &after, 0.1);
 
-        assert!(blend_circle.is_none());
+        assert_eq!(
+            blend_circle,
+            CircularPathSegment {
+                center: current,
+                radius: 1.0,
+                x: Coord::zeros(),
+                y: Coord::zeros(),
+                arc_length: 0.0,
+            }
+        );
     }
 
     #[test]
@@ -334,7 +374,7 @@ mod tests {
             &blend_circle,
         );
 
-        let bc = blend_circle.expect("Expected a blend circle");
+        let bc = blend_circle;
 
         assert_near!(bc.arc_length, 0.8117106237578);
         assert_near!(bc.center, Coord::new(10.158912720301, 6.012992370967, 0.0));
