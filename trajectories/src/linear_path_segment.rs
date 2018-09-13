@@ -1,4 +1,4 @@
-use super::{Coord, MIN_ACCURACY};
+use super::Coord;
 
 /// Circular path segment
 ///
@@ -17,10 +17,10 @@ pub struct LinearPathSegment {
 }
 
 impl LinearPathSegment {
-    pub fn from_path_segments(start: Coord, end: Coord, length: f64) -> Option<Self> {
-        let lenth = (end - start).norm();
+    pub fn from_waypoints(start: Coord, end: Coord) -> Self {
+        let length = (end - start).norm();
 
-        Some(Self { start, end, length })
+        Self { start, end, length }
     }
 
     /// Get position ("robot configuration" in paper parlance) along path from normalised distance

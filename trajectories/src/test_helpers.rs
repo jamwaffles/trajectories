@@ -6,6 +6,7 @@ use imageproc::drawing::{
     draw_cross_mut, draw_filled_rect_mut, draw_hollow_circle_mut, draw_line_segment_mut,
 };
 use imageproc::rect::Rect;
+use path::{Path as TrajPath, PathSegment};
 use std::fmt;
 use std::fs::File;
 use std::path::Path;
@@ -90,7 +91,7 @@ pub fn debug_blend(
     image.save(path).unwrap();
 }
 
-/// Can't remember what this does
+/// Draw points along a blend curve
 pub fn debug_blend_position(p: &str, blend: &CircularPathSegment) {
     let path = Path::new(p);
     let mut i = 0.0;
@@ -139,6 +140,48 @@ pub fn debug_blend_position(p: &str, blend: &CircularPathSegment) {
     }
 
     image.save(path).unwrap();
+}
+
+/// Debug an entire path
+pub fn debug_path(file_path: &'static str, path: &TrajPath) {
+    let image_path = Path::new(file_path);
+    let scale = 80.0;
+    let padding = 10.0;
+
+    let red = Rgb([255u8, 0u8, 0u8]);
+    let green = Rgb([0u8, 255u8, 0u8]);
+    let purple = Rgb([127u8, 0u8, 255u8]);
+    let blue = Rgb([0u8, 0u8, 255u8]);
+    let white = Rgb([255u8, 255u8, 255u8]);
+
+    let xform = |input: f64| -> f32 { ((input * scale) + padding) as f32 };
+
+    let mut image = RgbImage::new(800, 600);
+
+    draw_filled_rect_mut(&mut image, Rect::at(0, 0).of_size(800, 600), white);
+
+    for segment in path.segments.iter() {
+        match segment {
+            PathSegment::Linear(ref line) => {
+                draw_line_segment_mut(
+                    &mut image,
+                    (xform(line.start[0]), xform(line.start[1])),
+                    (xform(line.end[0]), xform(line.end[1])),
+                    red,
+                );
+            }
+            PathSegment::Circular(ref circ) => {
+                draw_hollow_circle_mut(
+                    &mut image,
+                    (xform(circ.center.x) as i32, xform(circ.center.y) as i32),
+                    (circ.radius * scale) as i32,
+                    blue,
+                );
+            }
+        }
+    }
+
+    image.save(image_path).unwrap();
 }
 
 /// 3 element vector for testing C++ bindings

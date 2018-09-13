@@ -27,10 +27,9 @@ extern crate serde_derive;
 
 #[macro_use]
 mod macros;
-
 mod circular_path_segment;
 mod linear_path_segment;
-
+mod path;
 pub mod test_helpers;
 
 use circular_path_segment::*;
@@ -43,3 +42,6 @@ pub type Coord = Vector3<f64>;
 
 /// Custom defined epsilon for "near enough" float comparisons and accuracy checks
 pub const MIN_ACCURACY: f64 = 0.000001;
+
+/// Maximum deviation from true path
+pub const MAX_DEVIATION: f64 = 0.001;

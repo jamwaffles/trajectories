@@ -23,7 +23,7 @@ pub struct CircularPathSegment {
 }
 
 impl CircularPathSegment {
-    pub fn from_path_segments(
+    pub fn from_waypoints(
         previous: &Coord,
         current: &Coord,
         next: &Coord,
@@ -47,7 +47,7 @@ impl CircularPathSegment {
         let previous_half_length = previous_length / 2.0;
 
         let next_normalised = (next - current).normalize();
-        let next_length = (current - next).norm();
+        let next_length = (next - current).norm();
         let next_half_length = next_length / 2.0;
 
         // If segments are essentially parallel, they don't need blending, however a blend
@@ -78,7 +78,6 @@ impl CircularPathSegment {
             + (next_normalised - previous_normalised).normalize() * (radius / (angle / 2.0).cos());
 
         // Xi (points from center of circle to point where circle touches previous segment)
-        // TODO: This seems to be perpendicular to Yi. Maybe I could optimise?
         let x = (current - max_blend_distance * previous_normalised - center).normalize();
         // Yi (direction of previous segment)
         let y = previous_normalised;
@@ -112,26 +111,31 @@ impl CircularPathSegment {
         }
     }
 
+    /// Get the arc length of this segment
+    pub fn get_length(&self) -> f64 {
+        self.arc_length
+    }
+
     /// Get position ("robot configuration" in paper parlance) along arc from normalised distance
     /// along it (`s`)
     pub fn get_position(&self, distance_along_arc: f64) -> Coord {
-        self.center
-            + self.radius
-                * ((self.x * (distance_along_arc / self.radius).cos())
-                    + (self.y * (distance_along_arc / self.radius).sin()))
+        let angle = distance_along_arc / self.radius;
+
+        self.center + self.radius * ((self.x * angle.cos()) + (self.y * angle.sin()))
     }
 
     /// Get derivative (tangent) of point along curve
     pub fn get_tangent(&self, distance_along_arc: f64) -> Coord {
-        -self.x * (distance_along_arc / self.radius).sin()
-            + self.y * (distance_along_arc / self.radius).cos()
+        let angle = distance_along_arc / self.radius;
+
+        -self.x * angle.sin() + self.y * angle.cos()
     }
 
     /// Get second derivative (rate of change of tangent, aka curvature) of point along curve
     pub fn get_curvature(&self, distance_along_arc: f64) -> Coord {
-        -(1.0 / self.radius)
-            * (self.x * (distance_along_arc / self.radius).sin()
-                + self.y * (distance_along_arc / self.radius).cos())
+        let angle = distance_along_arc / self.radius;
+
+        -(1.0 / self.radius) * (self.x * angle.sin() + self.y * angle.cos())
     }
 }
 
@@ -146,7 +150,7 @@ mod tests {
         let current = Coord::new(0.0, 5.0, 0.0);
         let after = Coord::new(5.0, 10.0, 0.0);
 
-        let blend_circle = CircularPathSegment::from_path_segments(&before, &current, &after, 0.1);
+        let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
 
         debug_blend_position("../target/it_gets_the_position.png", &blend_circle);
     }
@@ -160,7 +164,7 @@ mod tests {
         let current = Coord::new(5.0, 5.0, 0.0);
         let after = Coord::new(10.0, 0.0, 0.0);
 
-        let blend_circle = CircularPathSegment::from_path_segments(&before, &current, &after, 0.1);
+        let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
 
         debug_blend(
             "../target/it_computes_right_angles.png",
@@ -189,7 +193,7 @@ mod tests {
         let current = Coord::new(0.0, 1.0, 0.0);
         let after = Coord::new(1.0, 1.0, 0.0);
 
-        let blend_circle = CircularPathSegment::from_path_segments(&before, &current, &after, 0.1);
+        let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
 
         debug_blend(
             "../target/it_computes_more_right_angles.png",
@@ -218,7 +222,7 @@ mod tests {
         let current = Coord::new(0.0, 5.0, 0.0);
         let after = Coord::new(5.0, 10.0, 0.0);
 
-        let blend_circle = CircularPathSegment::from_path_segments(&before, &current, &after, 0.1);
+        let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
 
         debug_blend(
             "../target/it_computes_45_degree_angles.png",
@@ -247,7 +251,7 @@ mod tests {
         let current = Coord::new(0.0, 5.0, 0.0);
         let after = Coord::new(5.0, 10.0, 0.0);
 
-        let blend_circle = CircularPathSegment::from_path_segments(&before, &current, &after, 1.0);
+        let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 1.0);
 
         debug_blend(
             "../target/it_works_with_large_max_deviations.png",
@@ -276,7 +280,7 @@ mod tests {
         let current = Coord::new(0.0, 5.0, 0.0);
         let after = Coord::new(0.0, 10.0, 0.0);
 
-        let blend_circle = CircularPathSegment::from_path_segments(&before, &current, &after, 0.1);
+        let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
 
         debug_blend(
             "../target/it_computes_0_degree_angles.png",
@@ -308,7 +312,7 @@ mod tests {
         let current = Coord::new(2.0, 2.0, 0.0);
         let after = Coord::new(4.0, 4.0, 0.0);
 
-        let blend_circle = CircularPathSegment::from_path_segments(&before, &current, &after, 0.1);
+        let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
 
         debug_blend(
             "../target/it_computes_straight_diagonals.png",
@@ -340,7 +344,7 @@ mod tests {
         let current = Coord::new(0.0, MIN_ACCURACY / 2.0, 0.0);
         let after = Coord::new(0.0, MIN_ACCURACY, 0.0);
 
-        let blend_circle = CircularPathSegment::from_path_segments(&before, &current, &after, 0.1);
+        let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
 
         assert_eq!(
             blend_circle,
@@ -364,7 +368,7 @@ mod tests {
         let current = Coord::new(10.0, 7.0, 0.0);
         let after = Coord::new(20.0, 4.0, 0.0);
 
-        let blend_circle = CircularPathSegment::from_path_segments(&before, &current, &after, 0.1);
+        let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
 
         debug_blend(
             "../target/it_computes_blends_for_shallow_angles.png",
