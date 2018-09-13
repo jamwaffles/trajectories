@@ -145,8 +145,10 @@ pub fn debug_blend_position(p: &str, blend: &CircularPathSegment) {
 /// Debug an entire path
 pub fn debug_path(file_path: &'static str, path: &TrajPath) {
     let image_path = Path::new(file_path);
-    let scale = 80.0;
+    let scale = 100.0;
     let padding = 10.0;
+    let w = 1280;
+    let h = 1024;
 
     let red = Rgb([255u8, 0u8, 0u8]);
     let green = Rgb([0u8, 255u8, 0u8]);
@@ -156,9 +158,9 @@ pub fn debug_path(file_path: &'static str, path: &TrajPath) {
 
     let xform = |input: f64| -> f32 { ((input * scale) + padding) as f32 };
 
-    let mut image = RgbImage::new(800, 600);
+    let mut image = RgbImage::new(w, h);
 
-    draw_filled_rect_mut(&mut image, Rect::at(0, 0).of_size(800, 600), white);
+    draw_filled_rect_mut(&mut image, Rect::at(0, 0).of_size(w, h), white);
 
     for segment in path.segments.iter() {
         match segment {
