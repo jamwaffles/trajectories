@@ -20,10 +20,9 @@ extern crate nalgebra;
 #[macro_use]
 extern crate approx;
 extern crate csv;
-extern crate image;
-extern crate imageproc;
 #[macro_use]
 extern crate serde_derive;
+extern crate svg;
 
 #[macro_use]
 mod macros;

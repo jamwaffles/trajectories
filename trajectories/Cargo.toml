@@ -4,10 +4,11 @@ name = "trajectories"
 version = "0.1.0"
 [dependencies]
 approx = "0.3.0"
-image = "0.19.0"
-imageproc = "0.15.0"
-nalgebra = "0.16.0"
-trajectories-sys = { path = "../trajectories-sys" }
 csv = "1.0.1"
+nalgebra = "0.16.0"
 serde = "1.0.78"
 serde_derive = "1.0.78"
+svg = "0.5.11"
+
+[dependencies.trajectories-sys]
+path = "../trajectories-sys"

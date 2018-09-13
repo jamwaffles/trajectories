@@ -1,17 +1,59 @@
 //! Test helpers
 
 use csv;
-use image::{Rgb, RgbImage};
-use imageproc::drawing::{
-    draw_cross_mut, draw_filled_rect_mut, draw_hollow_circle_mut, draw_line_segment_mut,
-};
-use imageproc::rect::Rect;
 use path::{Path as TrajPath, PathSegment};
 use std::fmt;
 use std::fs::File;
-use std::path::Path;
+use svg;
+use svg::node::element::path::Data;
+use svg::node::element::{Circle, Path as SvgPath, Rectangle};
+use svg::Document;
 
 use super::{CircularPathSegment, Coord};
+
+fn blend_circle(blend: &CircularPathSegment) -> Circle {
+    Circle::new()
+        .set("cx", blend.center.x)
+        .set("cy", blend.center.y)
+        .set("stroke-width", 1)
+        .set("stroke", "blue")
+        .set("fill", "none")
+        .set("vector-effect", "non-scaling-stroke")
+        .set("r", blend.radius)
+}
+
+fn single_line(from: &Coord, to: &Coord, stroke: &str, stroke_width: u32) -> SvgPath {
+    SvgPath::new()
+        .set("fill", "none")
+        .set("stroke", stroke)
+        .set("stroke-width", stroke_width)
+        .set("vector-effect", "non-scaling-stroke")
+        .set(
+            "d",
+            Data::new().move_to((from.x, from.y)).line_to((to.x, to.y)),
+        )
+}
+
+fn border(top_left: &Coord, bottom_right: &Coord) -> Rectangle {
+    Rectangle::new()
+        .set("fill", "none")
+        .set("stroke", "black")
+        .set("stroke-width", 1)
+        .set("vector-effect", "non-scaling-stroke")
+        .set("x", top_left.x)
+        .set("y", top_left.y)
+        .set("width", bottom_right.x)
+        .set("height", bottom_right.y)
+}
+
+fn create_document(top_left: &Coord, bottom_right: &Coord) -> Document {
+    Document::new()
+        .set("shape-rendering", "geometricPrecision")
+        .set(
+            "viewBox",
+            (top_left.x, top_left.y, bottom_right.x, bottom_right.y),
+        ).add(border(&top_left, &bottom_right))
+}
 
 /// Produce an image of the blend between two path segments
 pub fn debug_blend(
@@ -21,169 +63,99 @@ pub fn debug_blend(
     after: &Coord,
     blend: &CircularPathSegment,
 ) {
-    let path = Path::new(p);
+    let padding = 1.0;
 
-    let red = Rgb([255u8, 0u8, 0u8]);
-    let black = Rgb([0u8, 0, 0]);
-    let green = Rgb([0u8, 255u8, 0u8]);
-    let purple = Rgb([127u8, 0u8, 255u8]);
-    let blue = Rgb([0u8, 0u8, 255u8]);
-    let white = Rgb([255u8, 255u8, 255u8]);
+    let data = Data::new()
+        .move_to((0, 0))
+        .line_to((before.x, before.y))
+        .line_to((current.x, current.y))
+        .line_to((after.x, after.y));
 
-    let scale = 20.0;
-    let padding = 10;
-    let max_dim = (before.amax().max(current.amax()).max(after.amax()) * scale) as u32;
+    let top_left = before - Coord::repeat(padding);
+    let bottom_right = after + Coord::repeat(padding * 2.0);
 
-    let mut image = RgbImage::new(max_dim + padding * 2, max_dim + padding * 2);
+    // The two path segments
+    let path = SvgPath::new()
+        .set("fill", "none")
+        .set("stroke", "red")
+        .set("stroke-width", 1)
+        .set("vector-effect", "non-scaling-stroke")
+        .set("d", data);
 
-    draw_filled_rect_mut(
-        &mut image,
-        Rect::at(0, 0).of_size(max_dim + padding * 2, max_dim + padding * 2),
-        white,
-    );
-
-    let xform = |input: f64| -> f32 { (input as f32 * scale as f32) + padding as f32 };
-
-    draw_line_segment_mut(
-        &mut image,
-        (xform(before.x), xform(before.y)),
-        (xform(current.x), xform(current.y)),
-        red,
-    );
-
-    draw_line_segment_mut(
-        &mut image,
-        (xform(current.x), xform(current.y)),
-        (xform(after.x), xform(after.y)),
-        red,
-    );
-
-    // Render blend circle if there is one, or a cross if there isn't
-
-    draw_hollow_circle_mut(
-        &mut image,
-        (xform(blend.center.x) as i32, xform(blend.center.y) as i32),
-        (blend.radius * scale) as i32,
-        blue,
-    );
+    // Blend circle
+    let circle = blend_circle(&blend);
 
     // Xi (green)
-    draw_line_segment_mut(
-        &mut image,
-        (xform(blend.center.x), xform(blend.center.y)),
-        (
-            xform(blend.center.x + blend.x.x),
-            xform(blend.center.y + blend.x.y),
-        ),
-        green,
-    );
-    // Yi (purple)
-    draw_line_segment_mut(
-        &mut image,
-        (xform(blend.center.x), xform(blend.center.y)),
-        (
-            xform(blend.center.x + blend.y.x),
-            xform(blend.center.y + blend.y.y),
-        ),
-        purple,
-    );
+    let xi = single_line(&blend.center, &(blend.center + blend.x), "green", 1);
 
-    image.save(path).unwrap();
+    // Yi (purple)
+    let yi = single_line(&blend.center, &(blend.center + blend.y), "purple", 1);
+
+    let document = create_document(&top_left, &bottom_right)
+        .add(circle)
+        .add(xi)
+        .add(yi)
+        .add(path);
+
+    svg::save(format!("{}.svg", p), &document).unwrap();
 }
 
 /// Draw points along a blend curve
 pub fn debug_blend_position(p: &str, blend: &CircularPathSegment) {
-    let path = Path::new(p);
+    let padding = 1.0;
+
+    let top_left = blend.center - Coord::repeat(blend.radius + padding);
+    let bottom_right = blend.center + Coord::repeat(blend.radius + padding * 2.0);
+
+    let circle = blend_circle(&blend);
+
+    let start = blend.get_position(0.0);
+
     let mut i = 0.0;
+    let mut data = Data::new().move_to((start.x, start.y));
 
-    let scale = 100.0f64;
-    let padding = 10;
-    let max_dim = ((blend.radius * 2.0) * scale) as u32;
+    while i <= blend.get_length() {
+        i += 0.1;
 
-    let red = Rgb([255u8, 0u8, 0u8]);
-    let green = Rgb([0u8, 255u8, 0u8]);
-    let purple = Rgb([127u8, 0u8, 255u8]);
-    let blue = Rgb([0u8, 0u8, 255u8]);
-    let white = Rgb([255u8, 255u8, 255u8]);
-
-    let xform_center = |input: f64| -> f32 { ((input * scale) + padding as f64) as f32 };
-
-    let mut image = RgbImage::new(max_dim + padding * 2, max_dim + padding * 2);
-
-    draw_filled_rect_mut(
-        &mut image,
-        Rect::at(0, 0).of_size(max_dim + padding * 2, max_dim + padding * 2),
-        white,
-    );
-
-    draw_hollow_circle_mut(
-        &mut image,
-        (
-            xform_center(blend.radius) as i32,
-            xform_center(blend.radius) as i32,
-        ),
-        (blend.radius * scale) as i32,
-        blue,
-    );
-
-    while i <= 1.0 {
         let pos = blend.get_position(i);
 
-        draw_cross_mut(
-            &mut image,
-            red,
-            (pos.x * 50.0) as i32,
-            (pos.y * 50.0) as i32 - 100,
-        );
-
-        i += 0.01;
+        data = data.line_to((pos.x, pos.y));
     }
 
-    image.save(path).unwrap();
+    let path = SvgPath::new()
+        .set("fill", "none")
+        .set("stroke", "red")
+        .set("stroke-width", 4)
+        .set("vector-effect", "non-scaling-stroke")
+        .set("d", data.clone());
+
+    let document = create_document(&top_left, &bottom_right)
+        .add(circle)
+        .add(path);
+
+    svg::save(format!("{}.svg", p), &document).unwrap();
 }
 
 /// Debug an entire path
 pub fn debug_path(file_path: &'static str, path: &TrajPath) {
-    let image_path = Path::new(file_path);
-    let scale = 100.0;
-    let padding = 10.0;
-    let w = 1280;
-    let h = 1024;
+    let padding = 1.0;
 
-    let red = Rgb([255u8, 0u8, 0u8]);
-    let green = Rgb([0u8, 255u8, 0u8]);
-    let purple = Rgb([127u8, 0u8, 255u8]);
-    let blue = Rgb([0u8, 0u8, 255u8]);
-    let white = Rgb([255u8, 255u8, 255u8]);
+    let top_left = Coord::repeat(0.0) - Coord::repeat(padding);
+    let bottom_right = Coord::repeat(10.0) + Coord::repeat(padding * 2.0);
 
-    let xform = |input: f64| -> f32 { ((input * scale) + padding) as f32 };
-
-    let mut image = RgbImage::new(w, h);
-
-    draw_filled_rect_mut(&mut image, Rect::at(0, 0).of_size(w, h), white);
+    let mut document = create_document(&top_left, &bottom_right);
 
     for segment in path.segments.iter() {
         match segment {
             PathSegment::Linear(ref line) => {
-                draw_line_segment_mut(
-                    &mut image,
-                    (xform(line.start[0]), xform(line.start[1])),
-                    (xform(line.end[0]), xform(line.end[1])),
-                    red,
-                );
+                document = document.add(single_line(&line.start, &line.end, "red", 1))
             }
-            PathSegment::Circular(ref circ) => {
-                draw_hollow_circle_mut(
-                    &mut image,
-                    (xform(circ.center.x) as i32, xform(circ.center.y) as i32),
-                    (circ.radius * scale) as i32,
-                    blue,
-                );
-            }
+
+            PathSegment::Circular(ref circ) => document = document.add(blend_circle(&circ)),
         }
     }
 
-    image.save(image_path).unwrap();
+    svg::save(format!("{}.svg", file_path), &document).unwrap();
 }
 
 /// 3 element vector for testing C++ bindings

@@ -152,7 +152,7 @@ mod tests {
 
         let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
 
-        debug_blend_position("../target/it_gets_the_position.png", &blend_circle);
+        debug_blend_position("../target/it_gets_the_position", &blend_circle);
     }
 
     #[test]
@@ -167,7 +167,7 @@ mod tests {
         let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
 
         debug_blend(
-            "../target/it_computes_right_angles.png",
+            "../target/it_computes_right_angles",
             &before,
             &current,
             &after,
@@ -196,7 +196,7 @@ mod tests {
         let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
 
         debug_blend(
-            "../target/it_computes_more_right_angles.png",
+            "../target/it_computes_more_right_angles",
             &before,
             &current,
             &after,
@@ -225,7 +225,7 @@ mod tests {
         let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
 
         debug_blend(
-            "../target/it_computes_45_degree_angles.png",
+            "../target/it_computes_45_degree_angles",
             &before,
             &current,
             &after,
@@ -254,7 +254,7 @@ mod tests {
         let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 1.0);
 
         debug_blend(
-            "../target/it_works_with_large_max_deviations.png",
+            "../target/it_works_with_large_max_deviations",
             &before,
             &current,
             &after,
@@ -283,7 +283,7 @@ mod tests {
         let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
 
         debug_blend(
-            "../target/it_computes_0_degree_angles.png",
+            "../target/it_computes_0_degree_angles",
             &before,
             &current,
             &after,
@@ -315,7 +315,7 @@ mod tests {
         let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
 
         debug_blend(
-            "../target/it_computes_straight_diagonals.png",
+            "../target/it_computes_straight_diagonals",
             &before,
             &current,
             &after,
@@ -371,7 +371,7 @@ mod tests {
         let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
 
         debug_blend(
-            "../target/it_computes_blends_for_shallow_angles.png",
+            "../target/it_computes_blends_for_shallow_angles",
             &before,
             &current,
             &after,

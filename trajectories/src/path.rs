@@ -99,7 +99,7 @@ mod tests {
 
         // println!("{:#?}", path.segments);
 
-        debug_path("../target/path_with_blends.png", &path);
+        debug_path("../target/path_with_blends", &path);
 
         assert!(true);
     }
