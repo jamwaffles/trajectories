@@ -70,7 +70,7 @@ protected:
 class Path
 {
 public:
-	Path(const std::list<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> &path, double maxDeviation = 0.0);
+	Path(const std::list<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > &path, double maxDeviation = 0.0);
 	Path(const Path &path);
 	~Path();
 	double getLength() const;

@@ -54,6 +54,7 @@ fn main() {
         .file("CBindings.cpp")
         .flag("-std=c++11")
         .shared_flag(true)
+        .flag("-lm")
         // Linux
         .include("/usr/include/eigen3")
         // macOS

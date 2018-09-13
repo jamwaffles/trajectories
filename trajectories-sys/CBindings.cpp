@@ -19,7 +19,7 @@ extern "C" void* path_create(double *waypoints, int len, double step) {
 
 	// std::cout << "NUM " << nums.size() << std::endl;
 
-	for (auto i = nums.begin(); i != nums.end();) {
+	for(std::vector<double>::iterator i = nums.begin(); i != nums.end();) {
 		Eigen::Vector3d wp;
 
 		double x = 0.0;

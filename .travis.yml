@@ -10,16 +10,22 @@ rust:
 sudo: false
 addons:
   apt:
+    sources:
+      - ubuntu-toolchain-r-test
     packages:
       - libeigen3-dev
-      - gcc-4.8
-      - g++-4.8
+      - gcc-5
+      - g++-5
       - build-essential
-      - libstdc++-4.8-dev
+      - libstdc++-5-dev
 
-before_install:
-  - set -e
-  - rustup self update
+# before_install:
+#   - apt-get update
+#   - wget http://de.archive.ubuntu.com/ubuntu/pool/universe/e/eigen3/libeigen3-dev_3.3~beta1-2_all.deb
+#   - dpkg -i libeigen3-dev_3.3~beta1-2_all.deb
+#   - apt-get upgrade -y
+#   - set -e
+#   - rustup self update
 
 # install:
 #   - cargo install cargo-travis || true

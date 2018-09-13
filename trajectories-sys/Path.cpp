@@ -53,9 +53,9 @@ class LinearPathSegment : public PathSegment
 {
 public:
 	LinearPathSegment(const Eigen::Vector3d &start, const Eigen::Vector3d &end) :
+		PathSegment((end-start).norm()),
 		start(start),
-		end(end),
-		PathSegment((end-start).norm())
+		end(end)
 	{
 	}
 
@@ -65,7 +65,7 @@ public:
 		return (1.0 - s) * start + s * end;
 	}
 
-	Eigen::Vector3d getTangent(double s) const {
+	Eigen::Vector3d getTangent(double /* s */) const {
 		return (end - start) / length;
 	}
 
@@ -112,8 +112,8 @@ public:
 			return;
 		}
 
-		const double startDistance = (start - intersection).norm();
-		const double endDistance = (end - intersection).norm();
+		// const double startDistance = (start - intersection).norm();
+		// const double endDistance = (end - intersection).norm();
 
 		double distance = std::min((start - intersection).norm(), (end - intersection).norm());
 		const double angle = acos(startDirection.dot(endDirection));
@@ -243,7 +243,7 @@ PathSegment* Path::getPathSegment(double &s) const {
 	list<PathSegment*>::const_iterator next = pathSegments.begin();
 	std::advance(next, 1);
 
-	int i = 1;
+	unsigned int i = 1;
 
 	// while(next != pathSegments.end() && s >= (*next)->position) {
 	while(i < pathSegments.size() && s >= (*next)->position) {
