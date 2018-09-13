@@ -2,6 +2,7 @@
 #include <list>
 #include <iostream>
 #include <Eigen/Core>
+#include <Eigen/StdVector>
 
 #include "Path.hpp"
 #include "Trajectory.hpp"
@@ -14,7 +15,7 @@ extern "C" void* path_create(double *waypoints, int len, double step) {
 	std::vector<double> nums;
 	nums.assign(waypoints, waypoints + len);
 
-	std::list<Eigen::Vector3d> wps;
+	std::list<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > wps;
 
 	// std::cout << "NUM " << nums.size() << std::endl;
 

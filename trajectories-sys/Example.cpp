@@ -46,7 +46,7 @@ using namespace std;
 using namespace Eigen;
 
 int main() {
-	list<Vector3d> waypoints;
+	list<Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > waypoints;
 	Vector3d waypoint;
 	waypoint << 0.0, 0.0, 0.0;
 	waypoints.push_back(waypoint);

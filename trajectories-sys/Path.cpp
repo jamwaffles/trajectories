@@ -43,6 +43,7 @@
 #include <algorithm>
 #include <cmath>
 #include <Eigen/Geometry>
+#include <Eigen/StdVector>
 
 using namespace std;
 using namespace Eigen;
@@ -172,15 +173,15 @@ private:
 
 
 
-Path::Path(const list<Vector3d> &path, double maxDeviation) :
+Path::Path(const list<Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > &path, double maxDeviation) :
 	length(0.0)
 {
 	if(path.size() < 2)
 		return;
-	list<Vector3d>::const_iterator config1 = path.begin();
-	list<Vector3d>::const_iterator config2 = config1;
+	list<Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >::const_iterator config1 = path.begin();
+	list<Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >::const_iterator config2 = config1;
 	config2++;
-	list<Vector3d>::const_iterator config3;
+	list<Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >::const_iterator config3;
 	Vector3d startConfig = *config1;
 	while(config2 != path.end()) {
 		config3 = config2;
