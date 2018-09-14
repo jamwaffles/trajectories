@@ -64,7 +64,7 @@ impl Path {
         let mut segments: Vec<PathSegment> = Vec::new();
 
         // Create a bunch of linear segments from a load of points
-        let linear_segments = waypoints.windows(3).for_each(|parts| {
+        waypoints.windows(3).for_each(|parts| {
             if let &[prev, curr, next] = parts {
                 let blend_segment =
                     CircularPathSegment::from_waypoints(&prev, &curr, &next, max_deviation);
@@ -120,8 +120,6 @@ impl Path {
 
     /// Get a path segment for a position along the entire path
     pub fn get_segment_at_position(&self, position_along_path: f64) -> Option<&(f64, PathSegment)> {
-        // Find first segment past the segment where this position lies, then pick the segment
-        // previous to that one
         self.segments_with_offsets
             .iter()
             .position(|(offset, _)| offset > &position_along_path)
