@@ -35,6 +35,24 @@ fn single_line(from: &Coord, to: &Coord, stroke: &str, stroke_width: u32) -> Svg
         )
 }
 
+fn cross_centered_at(center: &Coord, stroke: &str, stroke_width: u32) -> SvgPath {
+    let size = 0.1;
+
+    SvgPath::new()
+        .set("fill", "none")
+        .set("stroke", stroke)
+        .set("stroke-width", stroke_width)
+        .set("vector-effect", "non-scaling-stroke")
+        .set(
+            "d",
+            Data::new()
+                .move_to((center.x, center.y - size))
+                .line_to((center.x, center.y + size))
+                .move_to((center.x - size, center.y))
+                .line_to((center.x + size, center.y)),
+        )
+}
+
 fn border(top_left: &Coord, bottom_right: &Coord) -> Rectangle {
     Rectangle::new()
         .set("fill", "none")
@@ -191,6 +209,61 @@ pub fn debug_path(file_path: &'static str, path: &TrajPath, waypoints: &Vec<Coor
             }
         }
     }
+
+    svg::save(format!("{}.svg", file_path), &document).unwrap();
+}
+
+/// Draw a complete path with a given point marked on it
+pub fn debug_path_point(
+    file_path: &'static str,
+    path: &TrajPath,
+    waypoints: &Vec<Coord>,
+    point: &Coord,
+) {
+    let padding = 1.0;
+
+    let top_left = Coord::repeat(0.0) - Coord::repeat(padding);
+    let bottom_right = Coord::repeat(10.0) + Coord::repeat(padding * 2.0);
+
+    let mut document = create_document(&top_left, &bottom_right);
+
+    // Generated segments with blends
+    for segment in path.segments_with_offsets.iter() {
+        match segment {
+            (offs, PathSegment::Linear(ref line)) => {
+                document = document
+                    .add(single_line(&line.start, &line.end, "red", 3))
+                    // Print start offset for line
+                    .add(
+                        Text::new()
+                            .set("x", line.start.x)
+                            .set("y", line.start.y)
+                            .set("fill", "red")
+                            .set("style", "font-size: 0.18px; font-family: monospace")
+                            .add(TextContent::new(format!("Line offs. {:.*}", 3, offs))),
+                    )
+            }
+
+            (offs, PathSegment::Circular(ref circ)) => {
+                document = document
+                    .add(blend_circle(&circ, 1))
+                    // Print start offset for arc
+                    .add({
+                        let start = circ.get_position(0.0);
+
+                        Text::new()
+                            .set("x", start.x)
+                            .set("y", start.y)
+                            .set("fill", "blue")
+                            .set("style", "font-size: 0.18px; font-family: monospace")
+                            .add(TextContent::new(format!("Circ offs. {:.*}", 3, offs)))
+                    })
+            }
+        }
+    }
+
+    // Point to debug
+    document = document.add(cross_centered_at(&point, "orange", 1));
 
     svg::save(format!("{}.svg", file_path), &document).unwrap();
 }
