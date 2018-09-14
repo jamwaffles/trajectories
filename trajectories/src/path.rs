@@ -60,36 +60,20 @@ impl Path {
     /// Create a blended path from a set of waypoints
     ///
     /// The path must be differentiable, so small blends are added between linear segments
-    // TODO: Optimise a bunch
     pub fn from_waypoints(waypoints: &Vec<Coord>, max_deviation: f64) -> Self {
-        // Create a bunch of linear segments from a load of points
-        let linear_segments = waypoints
-            .windows(2)
-            .map(|parts| {
-                if let &[start, end] = parts {
-                    LinearPathSegment::from_waypoints(start, end)
-                } else {
-                    panic!("Linear segments");
-                }
-            }).collect::<Vec<LinearPathSegment>>();
-
         let mut segments: Vec<PathSegment> = Vec::new();
 
-        // Iterate over pairs of lines, adding a blend between each one
-        linear_segments.windows(2).for_each(|parts| {
-            if let &[prev, curr] = parts {
-                let blend_segment = CircularPathSegment::from_waypoints(
-                    &prev.start,
-                    &curr.start,
-                    &curr.end,
-                    max_deviation,
-                );
+        // Create a bunch of linear segments from a load of points
+        let linear_segments = waypoints.windows(3).for_each(|parts| {
+            if let &[prev, curr, next] = parts {
+                let blend_segment =
+                    CircularPathSegment::from_waypoints(&prev, &curr, &next, max_deviation);
 
                 let new_prev_end = blend_segment.get_position(0.0);
                 let new_curr_start = blend_segment.get_position(blend_segment.get_length());
 
-                let new_prev = LinearPathSegment::from_waypoints(prev.start, new_prev_end);
-                let new_curr = LinearPathSegment::from_waypoints(new_curr_start, curr.end);
+                let new_prev = LinearPathSegment::from_waypoints(prev, new_prev_end);
+                let new_curr = LinearPathSegment::from_waypoints(new_curr_start, next);
 
                 // If there's a previous segment, update its end point to sit tangent to the blend
                 // segment circle. If there is no previous segment, push a new one.
