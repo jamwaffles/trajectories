@@ -47,6 +47,7 @@ impl PathItem for PathSegment {
 pub struct Path {
     pub segments: Vec<PathSegment>,
     pub segments_with_offsets: Vec<(f64, PathSegment)>,
+    length: f64,
 }
 
 impl Path {
@@ -121,17 +122,61 @@ impl Path {
                 Some(ret)
             }).collect();
 
+        let length = segments
+            .iter()
+            .fold(0.0, |acc, segment| acc + segment.get_length());
+
         Self {
             segments,
             segments_with_offsets,
+            length,
         }
     }
 
-    /// Get the length of the complete path
-    pub fn get_length(&self) -> f64 {
-        self.segments
+    /// Get a path segment for a position along the entire path
+    pub fn get_segment_at_position(&self, position_along_path: f64) -> Option<&(f64, PathSegment)> {
+        self.segments_with_offsets
             .iter()
-            .fold(0.0, |acc, segment| acc + segment.get_length())
+            .skip_while(|(offs, _)| offs < &position_along_path)
+            .next()
+    }
+}
+
+impl PathItem for Path {
+    /// Get the length of the complete path
+    fn get_length(&self) -> f64 {
+        self.length
+    }
+
+    /// Get position at a point along path
+    fn get_position(&self, distance_along_line: f64) -> Coord {
+        self.get_segment_at_position(distance_along_line)
+            .map(|(start_offset, segment)| segment.get_position(distance_along_line - start_offset))
+            .expect(&format!(
+                "Could not get position for path offset {}",
+                distance_along_line
+            ))
+    }
+
+    /// Get first derivative (tangent) at a point
+    fn get_tangent(&self, distance_along_line: f64) -> Coord {
+        self.get_segment_at_position(distance_along_line)
+            .map(|(start_offset, segment)| segment.get_tangent(distance_along_line - start_offset))
+            .expect(&format!(
+                "Could not get position for path offset {}",
+                distance_along_line
+            ))
+    }
+
+    /// Get second derivative (curvature) at a point
+    fn get_curvature(&self, distance_along_line: f64) -> Coord {
+        self.get_segment_at_position(distance_along_line)
+            .map(|(start_offset, segment)| {
+                segment.get_curvature(distance_along_line - start_offset)
+            }).expect(&format!(
+                "Could not get position for path offset {}",
+                distance_along_line
+            ))
     }
 }
 
