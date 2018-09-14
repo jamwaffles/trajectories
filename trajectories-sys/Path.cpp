@@ -81,6 +81,8 @@ public:
 		return new LinearPathSegment(*this);
 	}
 
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 private:
 	Eigen::Vector3d start;
 	Eigen::Vector3d end;
@@ -163,6 +165,8 @@ public:
 	CircularPathSegment* clone() const {
 		return new CircularPathSegment(*this);
 	}
+
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 private:
 	double radius;

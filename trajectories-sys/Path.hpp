@@ -61,6 +61,8 @@ public:
 	virtual PathSegment* clone() const = 0;
 
 	double position;
+
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 protected:
 	double length;
 };
@@ -79,6 +81,8 @@ public:
 	Eigen::Vector3d getCurvature(double s) const;
 	double getNextSwitchingPoint(double s, bool &discontinuity) const;
 	std::list<std::pair<double, bool> > getSwitchingPoints() const;
+
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 private:
 	PathSegment* getPathSegment(double &s) const;
 	double length;
