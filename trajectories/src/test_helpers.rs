@@ -12,11 +12,11 @@ use svg::node::Text as TextContent;
 use svg::Document;
 use PathItem;
 
-fn blend_circle(blend: &CircularPathSegment) -> Circle {
+fn blend_circle(blend: &CircularPathSegment, width: u32) -> Circle {
     Circle::new()
         .set("cx", blend.center.x)
         .set("cy", blend.center.y)
-        .set("stroke-width", 1)
+        .set("stroke-width", width)
         .set("stroke", "blue")
         .set("fill", "none")
         .set("vector-effect", "non-scaling-stroke")
@@ -86,7 +86,7 @@ pub fn debug_blend(
         .set("d", data);
 
     // Blend circle
-    let circle = blend_circle(&blend);
+    let circle = blend_circle(&blend, 1);
 
     // Xi (green)
     let xi = single_line(&blend.center, &(blend.center + blend.x), "green", 1);
@@ -110,7 +110,7 @@ pub fn debug_blend_position(p: &str, blend: &CircularPathSegment) {
     let top_left = blend.center - Coord::repeat(blend.radius + padding);
     let bottom_right = blend.center + Coord::repeat(blend.radius + padding * 2.0);
 
-    let circle = blend_circle(&blend);
+    let circle = blend_circle(&blend, 1);
 
     let start = blend.get_position(0.0);
 
@@ -140,7 +140,7 @@ pub fn debug_blend_position(p: &str, blend: &CircularPathSegment) {
 }
 
 /// Debug an entire path
-pub fn debug_path(file_path: &'static str, path: &TrajPath) {
+pub fn debug_path(file_path: &'static str, path: &TrajPath, waypoints: &Vec<Coord>) {
     let padding = 1.0;
 
     let top_left = Coord::repeat(0.0) - Coord::repeat(padding);
@@ -148,11 +148,21 @@ pub fn debug_path(file_path: &'static str, path: &TrajPath) {
 
     let mut document = create_document(&top_left, &bottom_right);
 
+    // Original waypoints in background to compare
+    for parts in waypoints.windows(2) {
+        if let &[curr, next] = parts {
+            document = document.add(single_line(&curr, &next, "black", 1));
+        } else {
+            panic!("Debug blend path failed");
+        }
+    }
+
+    // Generated segments with blends
     for segment in path.segments_with_offsets.iter() {
         match segment {
             (offs, PathSegment::Linear(ref line)) => {
                 document = document
-                    .add(single_line(&line.start, &line.end, "red", 1))
+                    .add(single_line(&line.start, &line.end, "red", 3))
                     // Print start offset for line
                     .add(
                         Text::new()
@@ -166,7 +176,7 @@ pub fn debug_path(file_path: &'static str, path: &TrajPath) {
 
             (offs, PathSegment::Circular(ref circ)) => {
                 document = document
-                    .add(blend_circle(&circ))
+                    .add(blend_circle(&circ, 1))
                     // Print start offset for arc
                     .add({
                         let start = circ.get_position(0.0);

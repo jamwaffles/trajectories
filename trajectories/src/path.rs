@@ -214,7 +214,7 @@ mod tests {
 
         // println!("{:#?}", path.segments);
 
-        debug_path("../target/path_with_blends", &path);
+        debug_path("../target/path_with_blends", &path, &waypoints);
 
         assert!(true);
     }
