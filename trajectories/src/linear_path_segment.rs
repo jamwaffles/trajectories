@@ -29,19 +29,7 @@ impl PathItem for LinearPathSegment {
     /// Get position ("robot configuration" in paper parlance) along path from normalised distance
     /// along it (`s`)
     fn get_position(&self, distance_along_line: f64) -> Coord {
-        // s /= length;
-        // s = std::max(0.0, std::min(1.0, s));
-        // return (1.0 - s) * start + s * end;
-
-        // let pos = distance_along_line / self.length;
-
-        // if pos < 0.0 || pos > 1.0 {
-        //     None
-        // } else {
-        //     Some((1.0 - pos) * self.start + pos * self.end)
-        // }
-
-        (self.start + self.end) * distance_along_line
+        self.start + ((self.end - self.start) * distance_along_line)
     }
 
     /// Get derivative (tangent) of point along path
