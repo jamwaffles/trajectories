@@ -47,9 +47,9 @@ fn cross_centered_at(center: &Coord, stroke: &str, stroke_width: u32) -> SvgPath
             "d",
             Data::new()
                 .move_to((center.x, center.y - size))
-                .line_to((center.x, center.y + size))
+                .line_by((0, size * 2.0))
                 .move_to((center.x - size, center.y))
-                .line_to((center.x + size, center.y)),
+                .line_by((size * 2.0, 0)),
         )
 }
 

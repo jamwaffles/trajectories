@@ -135,20 +135,14 @@ impl Path {
     }
 
     /// Get a path segment for a position along the entire path
-    // TODO: Use iterators for this, this code stinks
     pub fn get_segment_at_position(&self, position_along_path: f64) -> Option<&(f64, PathSegment)> {
-        let mut it = self.segments_with_offsets.iter();
-        let mut ret = None;
-
-        while let Some(item) = it.next() {
-            if item.0 > position_along_path {
-                break;
-            }
-
-            ret = Some(item);
-        }
-
-        ret
+        // Find first segment past the segment where this position lies, then pick the segment
+        // previous to that one
+        self.segments_with_offsets
+            .iter()
+            .position(|(offset, _)| offset > &position_along_path)
+            .and_then(|pos| self.segments_with_offsets.get(pos - 1))
+            .or(self.segments_with_offsets.last())
     }
 }
 
@@ -196,7 +190,7 @@ impl PathItem for Path {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test_helpers::debug_path;
+    use test_helpers::*;
 
     #[test]
     fn it_creates_path_with_blends() {
@@ -212,10 +206,53 @@ mod tests {
 
         let path = Path::from_waypoints(&waypoints, 0.1);
 
-        // println!("{:#?}", path.segments);
-
         debug_path("../target/path_with_blends", &path, &waypoints);
 
         assert!(true);
+    }
+
+    #[test]
+    fn get_pos_in_first_segment() {
+        let waypoints = vec![
+            Coord::new(0.0, 0.0, 0.0),
+            Coord::new(0.0, 1.0, 0.0),
+            Coord::new(1.0, 1.0, 0.0),
+            Coord::new(2.0, 2.0, 0.0),
+        ];
+
+        let path = Path::from_waypoints(&waypoints, 0.1);
+        let pos = path.get_position(0.5);
+
+        debug_path_point(
+            "../target/get_pos_in_first_segment",
+            &path,
+            &waypoints,
+            &pos,
+        );
+
+        assert_near!(path.get_length(), 3.7586540784544042);
+        assert_near!(pos.x, 0.0);
+        assert_near!(pos.y, 0.37928932188134523);
+    }
+
+    #[test]
+    fn get_pos_in_last_segment() {
+        let waypoints = vec![
+            Coord::new(0.0, 0.0, 0.0),
+            Coord::new(0.0, 1.0, 0.0),
+            Coord::new(1.0, 1.0, 0.0),
+            Coord::new(2.0, 2.0, 0.0),
+        ];
+
+        let path = Path::from_waypoints(&waypoints, 0.1);
+        let pos = path.get_position(path.get_length() - 0.1);
+
+        println!("LEN {}", path.get_length());
+
+        debug_path_point("../target/get_pos_in_last_segment", &path, &waypoints, &pos);
+
+        assert_near!(path.get_length(), 3.7586540784544042);
+        assert_near!(pos.x, 1.879898987322333);
+        assert_near!(pos.y, 1.879898987322333);
     }
 }
