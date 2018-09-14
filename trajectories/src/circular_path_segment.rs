@@ -1,4 +1,5 @@
 use super::{Coord, MIN_ACCURACY};
+use PathItem;
 
 /// Circular path segment
 ///
@@ -110,29 +111,31 @@ impl CircularPathSegment {
             arc_length,
         }
     }
+}
 
+impl PathItem for CircularPathSegment {
     /// Get the arc length of this segment
-    pub fn get_length(&self) -> f64 {
+    fn get_length(&self) -> f64 {
         self.arc_length
     }
 
     /// Get position ("robot configuration" in paper parlance) along arc from normalised distance
     /// along it (`s`)
-    pub fn get_position(&self, distance_along_arc: f64) -> Coord {
+    fn get_position(&self, distance_along_arc: f64) -> Coord {
         let angle = distance_along_arc / self.radius;
 
         self.center + self.radius * ((self.x * angle.cos()) + (self.y * angle.sin()))
     }
 
     /// Get derivative (tangent) of point along curve
-    pub fn get_tangent(&self, distance_along_arc: f64) -> Coord {
+    fn get_tangent(&self, distance_along_arc: f64) -> Coord {
         let angle = distance_along_arc / self.radius;
 
         -self.x * angle.sin() + self.y * angle.cos()
     }
 
     /// Get second derivative (rate of change of tangent, aka curvature) of point along curve
-    pub fn get_curvature(&self, distance_along_arc: f64) -> Coord {
+    fn get_curvature(&self, distance_along_arc: f64) -> Coord {
         let angle = distance_along_arc / self.radius;
 
         -(1.0 / self.radius) * (self.x * angle.sin() + self.y * angle.cos())

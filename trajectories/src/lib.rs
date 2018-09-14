@@ -44,3 +44,18 @@ pub const MIN_ACCURACY: f64 = 0.000001;
 
 /// Maximum deviation from true path
 pub const MAX_DEVIATION: f64 = 0.001;
+
+/// Helpful methods to get information about a path
+pub trait PathItem {
+    /// Get length of path
+    fn get_length(&self) -> f64;
+
+    /// Get position at a point along path
+    fn get_position(&self, distance_along_line: f64) -> Coord;
+
+    /// Get first derivative (tangent) at a point
+    fn get_tangent(&self, distance_along_line: f64) -> Coord;
+
+    /// Get second derivative (curvature) at a point
+    fn get_curvature(&self, distance_along_line: f64) -> Coord;
+}

@@ -1,15 +1,16 @@
 //! Test helpers
 
+use super::{CircularPathSegment, Coord};
 use csv;
 use path::{Path as TrajPath, PathSegment};
 use std::fmt;
 use std::fs::File;
 use svg;
 use svg::node::element::path::Data;
-use svg::node::element::{Circle, Path as SvgPath, Rectangle};
+use svg::node::element::{Circle, Path as SvgPath, Rectangle, Text};
+use svg::node::Text as TextContent;
 use svg::Document;
-
-use super::{CircularPathSegment, Coord};
+use PathItem;
 
 fn blend_circle(blend: &CircularPathSegment) -> Circle {
     Circle::new()
@@ -49,6 +50,8 @@ fn border(top_left: &Coord, bottom_right: &Coord) -> Rectangle {
 fn create_document(top_left: &Coord, bottom_right: &Coord) -> Document {
     Document::new()
         .set("shape-rendering", "geometricPrecision")
+        .set("width", 1024)
+        .set("height", 768)
         .set(
             "viewBox",
             (top_left.x, top_left.y, bottom_right.x, bottom_right.y),
@@ -145,13 +148,37 @@ pub fn debug_path(file_path: &'static str, path: &TrajPath) {
 
     let mut document = create_document(&top_left, &bottom_right);
 
-    for segment in path.segments.iter() {
+    for segment in path.segments_with_offsets.iter() {
         match segment {
-            PathSegment::Linear(ref line) => {
-                document = document.add(single_line(&line.start, &line.end, "red", 1))
+            (offs, PathSegment::Linear(ref line)) => {
+                document = document
+                    .add(single_line(&line.start, &line.end, "red", 1))
+                    // Print start offset for line
+                    .add(
+                        Text::new()
+                            .set("x", line.start.x)
+                            .set("y", line.start.y)
+                            .set("fill", "red")
+                            .set("style", "font-size: 0.18px; font-family: monospace")
+                            .add(TextContent::new(format!("Line offs. {:.*}", 3, offs))),
+                    )
             }
 
-            PathSegment::Circular(ref circ) => document = document.add(blend_circle(&circ)),
+            (offs, PathSegment::Circular(ref circ)) => {
+                document = document
+                    .add(blend_circle(&circ))
+                    // Print start offset for arc
+                    .add({
+                        let start = circ.get_position(0.0);
+
+                        Text::new()
+                            .set("x", start.x)
+                            .set("y", start.y)
+                            .set("fill", "blue")
+                            .set("style", "font-size: 0.18px; font-family: monospace")
+                            .add(TextContent::new(format!("Circ offs. {:.*}", 3, offs)))
+                    })
+            }
         }
     }
 

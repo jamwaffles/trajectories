@@ -1,17 +1,52 @@
 use circular_path_segment::CircularPathSegment;
 use linear_path_segment::LinearPathSegment;
 use Coord;
-use MAX_DEVIATION;
+use PathItem;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum PathSegment {
     Linear(LinearPathSegment),
     Circular(CircularPathSegment),
 }
 
+impl PathItem for PathSegment {
+    /// Get length of path
+    fn get_length(&self) -> f64 {
+        match self {
+            PathSegment::Linear(s) => s.get_length(),
+            PathSegment::Circular(s) => s.get_length(),
+        }
+    }
+
+    /// Get position at a point along path
+    fn get_position(&self, distance_along_line: f64) -> Coord {
+        match self {
+            PathSegment::Linear(s) => s.get_position(distance_along_line),
+            PathSegment::Circular(s) => s.get_position(distance_along_line),
+        }
+    }
+
+    /// Get first derivative (tangent) at a point
+    fn get_tangent(&self, distance_along_line: f64) -> Coord {
+        match self {
+            PathSegment::Linear(s) => s.get_tangent(distance_along_line),
+            PathSegment::Circular(s) => s.get_tangent(distance_along_line),
+        }
+    }
+
+    /// Get second derivative (curvature) at a point
+    fn get_curvature(&self, distance_along_line: f64) -> Coord {
+        match self {
+            PathSegment::Linear(s) => s.get_curvature(distance_along_line),
+            PathSegment::Circular(s) => s.get_curvature(distance_along_line),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Path {
     pub segments: Vec<PathSegment>,
+    pub segments_with_offsets: Vec<(f64, PathSegment)>,
 }
 
 impl Path {
@@ -74,7 +109,29 @@ impl Path {
             }
         });
 
-        Self { segments }
+        // Add start offsets to the beginning of each segment
+        let segments_with_offsets = segments
+            .iter()
+            .cloned()
+            .scan(0.0, |offset, segment| {
+                let ret = (*offset, segment.clone());
+
+                *offset += segment.get_length();
+
+                Some(ret)
+            }).collect();
+
+        Self {
+            segments,
+            segments_with_offsets,
+        }
+    }
+
+    /// Get the length of the complete path
+    pub fn get_length(&self) -> f64 {
+        self.segments
+            .iter()
+            .fold(0.0, |acc, segment| acc + segment.get_length())
     }
 }
 
