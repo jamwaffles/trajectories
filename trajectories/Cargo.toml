@@ -9,6 +9,11 @@ nalgebra = "0.16.0"
 serde = "1.0.78"
 serde_derive = "1.0.78"
 svg = "0.5.11"
+criterion = "0.2.5"
 
 [dependencies.trajectories-sys]
 path = "../trajectories-sys"
+
+[[bench]]
+name = "path"
+harness = false

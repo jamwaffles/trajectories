@@ -43,10 +43,16 @@ impl PathItem for PathSegment {
     }
 }
 
+/// A path with circular blends between segments
 #[derive(Debug)]
 pub struct Path {
+    /// Linear path segments and circular blends
     pub segments: Vec<PathSegment>,
+
+    /// Path segments paired with offset from path start (0.0)
     pub segments_with_offsets: Vec<(f64, PathSegment)>,
+
+    /// Total path length
     length: f64,
 }
 
@@ -54,6 +60,7 @@ impl Path {
     /// Create a blended path from a set of waypoints
     ///
     /// The path must be differentiable, so small blends are added between linear segments
+    // TODO: Optimise a bunch
     pub fn from_waypoints(waypoints: &Vec<Coord>, max_deviation: f64) -> Self {
         // Create a bunch of linear segments from a load of points
         let linear_segments = waypoints
@@ -88,18 +95,12 @@ impl Path {
                 // segment circle. If there is no previous segment, push a new one.
                 segments
                     .last_mut()
-                    .map(|old_prev| {
-                        println!("Existing previous segment");
-
-                        match old_prev {
-                            PathSegment::Linear(old_prev) => {
-                                old_prev.end = new_prev_end;
-                            }
-                            _ => panic!("Malformed path: previous element should be linear"),
+                    .map(|old_prev| match old_prev {
+                        PathSegment::Linear(old_prev) => {
+                            old_prev.end = new_prev_end;
                         }
+                        _ => panic!("Malformed path: previous element should be linear"),
                     }).unwrap_or_else(|| {
-                        println!("New previous segment");
-
                         segments.push(PathSegment::Linear(new_prev));
                     });
 
@@ -134,11 +135,20 @@ impl Path {
     }
 
     /// Get a path segment for a position along the entire path
+    // TODO: Use iterators for this, this code stinks
     pub fn get_segment_at_position(&self, position_along_path: f64) -> Option<&(f64, PathSegment)> {
-        self.segments_with_offsets
-            .iter()
-            .skip_while(|(offs, _)| offs < &position_along_path)
-            .next()
+        let mut it = self.segments_with_offsets.iter();
+        let mut ret = None;
+
+        while let Some(item) = it.next() {
+            if item.0 > position_along_path {
+                break;
+            }
+
+            ret = Some(item);
+        }
+
+        ret
     }
 }
 
@@ -153,8 +163,9 @@ impl PathItem for Path {
         self.get_segment_at_position(distance_along_line)
             .map(|(start_offset, segment)| segment.get_position(distance_along_line - start_offset))
             .expect(&format!(
-                "Could not get position for path offset {}",
-                distance_along_line
+                "Could not get position for path offset {}, total length {}",
+                distance_along_line,
+                self.get_length()
             ))
     }
 
@@ -163,8 +174,9 @@ impl PathItem for Path {
         self.get_segment_at_position(distance_along_line)
             .map(|(start_offset, segment)| segment.get_tangent(distance_along_line - start_offset))
             .expect(&format!(
-                "Could not get position for path offset {}",
-                distance_along_line
+                "Could not get derivative for path offset {}, total length {}",
+                distance_along_line,
+                self.get_length()
             ))
     }
 
@@ -174,8 +186,9 @@ impl PathItem for Path {
             .map(|(start_offset, segment)| {
                 segment.get_curvature(distance_along_line - start_offset)
             }).expect(&format!(
-                "Could not get position for path offset {}",
-                distance_along_line
+                "Could not get second derivative for path offset {}, total length {}",
+                distance_along_line,
+                self.get_length()
             ))
     }
 }

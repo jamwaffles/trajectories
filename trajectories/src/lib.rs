@@ -33,6 +33,7 @@ pub mod test_helpers;
 
 use circular_path_segment::*;
 use nalgebra::Vector3;
+pub use path::Path;
 
 /// Type alias for all vector operations
 ///
