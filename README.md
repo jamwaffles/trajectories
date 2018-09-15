@@ -42,3 +42,4 @@ g++ -I/usr/local/Cellar/eigen/3.3.4/include/eigen3 -I/usr/include/eigen3 Test.cp
 ## TODO
 
 * [x] Prepare path; introduce circular blends between straight segments, shorten straight segments
+* [ ] Implement [some `approx` traits](https://docs.rs/approx/0.3.0/approx/#implementing-approximate-equality-for-custom-types) for `Coord`

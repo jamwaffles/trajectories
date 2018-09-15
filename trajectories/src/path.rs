@@ -78,61 +78,60 @@ impl Path {
     ///
     /// The path must be differentiable, so small blends are added between linear segments
     pub fn from_waypoints(waypoints: &Vec<Coord>, max_deviation: f64) -> Self {
-        let mut segments: Vec<PathSegment> = Vec::with_capacity(waypoints.len());
-
-        // Create a bunch of linear segments from a load of points
-        waypoints.windows(3).for_each(|parts| {
-            if let &[prev, curr, next] = parts {
-                let blend_segment =
-                    CircularPathSegment::from_waypoints(&prev, &curr, &next, max_deviation);
-
-                let new_prev_end = blend_segment.get_position(0.0);
-                let new_curr_start = blend_segment.get_position(blend_segment.get_length());
-
-                let new_curr = LinearPathSegment::from_waypoints(new_curr_start, next);
-
-                // If there's a previous segment, update its end point to sit tangent to the blend
-                // segment circle. If there is no previous segment, push a new one.
-                segments
-                    .last_mut()
-                    .map(|old_prev| match old_prev {
-                        PathSegment::Linear(old_prev) => {
-                            *old_prev =
-                                LinearPathSegment::from_waypoints(old_prev.start, new_prev_end);
-                        }
-                        _ => panic!("Malformed path: previous element should be linear"),
-                    }).unwrap_or_else(|| {
-                        segments.push(PathSegment::Linear(LinearPathSegment::from_waypoints(
-                            prev,
-                            new_prev_end,
-                        )));
-                    });
-
-                segments.push(PathSegment::Circular(blend_segment));
-                segments.push(PathSegment::Linear(new_curr));
-            } else {
-                panic!("Linear segments each");
-            }
-        });
-
+        // let mut segments: Vec<PathSegment> = Vec::with_capacity(waypoints.len());
         let mut length = 0.0;
+        let mut start_offset = 0.0;
 
-        // Add start offsets to the beginning of each segment
-        let segments_with_offsets = segments
-            .iter()
-            .scan(0.0, |offset, segment| {
-                let new_seg = segment.with_start_offset(*offset);
+        let segments =
+            waypoints
+                .windows(3)
+                .fold(Vec::new(), |mut segments: Vec<PathSegment>, parts| {
+                    if let &[prev, curr, next] = parts {
+                        let blend_segment =
+                            CircularPathSegment::from_waypoints(&prev, &curr, &next, max_deviation);
 
-                *offset += new_seg.get_length();
-                length = *offset;
+                        let blend_start = blend_segment.get_position(0.0);
+                        let blend_end = blend_segment.get_position(blend_segment.get_length());
 
-                Some(new_seg)
-            }).collect();
+                        // Update previous segment with new end point, or create a new one if we're
+                        // at the beginning of the path
+                        let prev_segment = segments
+                            .pop()
+                            .map(|segment| match segment {
+                                PathSegment::Linear(s) => {
+                                    LinearPathSegment::from_waypoints(s.start, blend_start)
+                                        .with_start_offset(s.start_offset)
+                                }
+                                _ => panic!("Invalid path: expected last segment to be linear"),
+                            }).unwrap_or(
+                                LinearPathSegment::from_waypoints(prev, blend_start)
+                                    .with_start_offset(start_offset),
+                            );
 
-        Self {
-            segments: segments_with_offsets,
-            length,
-        }
+                        segments.push(PathSegment::Linear(prev_segment));
+
+                        start_offset += prev_segment.get_length();
+
+                        segments.push(PathSegment::Circular(
+                            blend_segment.with_start_offset(start_offset),
+                        ));
+
+                        start_offset += blend_segment.get_length();
+
+                        let next_segment = LinearPathSegment::from_waypoints(blend_end, next)
+                            .with_start_offset(start_offset);
+
+                        segments.push(PathSegment::Linear(next_segment));
+
+                        segments
+                    } else {
+                        panic!("Linear segments");
+                    }
+                });
+
+        length = start_offset + segments.last().unwrap().get_length();
+
+        Self { segments, length }
     }
 
     /// Get a path segment for a position along the entire path
@@ -230,7 +229,7 @@ mod tests {
 
         assert_near!(path.get_length(), 3.2586540784544042);
         assert_near!(pos.x, 0.0);
-        assert_near!(pos.y, 0.37928932188134523);
+        assert_near!(pos.y, 0.5);
     }
 
     #[test]
@@ -243,14 +242,55 @@ mod tests {
         ];
 
         let path = Path::from_waypoints(&waypoints, 0.1);
-        let pos = path.get_position(path.get_length() - 0.1);
-
-        println!("LEN {}", path.get_length());
+        let pos = path.get_position(path.get_length() - 0.70710678118);
 
         debug_path_point("../target/get_pos_in_last_segment", &path, &waypoints, &pos);
 
         assert_near!(path.get_length(), 3.2586540784544042);
-        assert_near!(pos.x, 1.879898987322333);
-        assert_near!(pos.y, 1.879898987322333);
+        assert_near!(pos.x, 1.5);
+        assert_near!(pos.y, 1.5);
+    }
+
+    #[test]
+    fn get_pos_in_last_segment_other() {
+        let waypoints = vec![
+            Coord::new(0.0, 0.0, 0.0),
+            Coord::new(0.0, 1.0, 0.0),
+            Coord::new(1.0, 1.0, 0.0),
+            Coord::new(2.5, 0.5, 0.0),
+        ];
+
+        let path = Path::from_waypoints(&waypoints, 0.1);
+        let pos = path.get_position(path.get_length() - 0.2);
+
+        debug_path_point(
+            "../target/get_pos_in_last_segment_other",
+            &path,
+            &waypoints,
+            &pos,
+        );
+
+        assert_near!(path.get_length(), 3.4688780239495878);
+        assert_near!(pos.x, 2.310263340389897);
+        assert_near!(pos.y, 0.5632455532033677);
+    }
+
+    #[test]
+    fn get_final_position() {
+        let waypoints = vec![
+            Coord::new(0.0, 0.0, 0.0),
+            Coord::new(0.0, 1.0, 0.0),
+            Coord::new(1.0, 1.0, 0.0),
+            Coord::new(2.0, 2.0, 0.0),
+        ];
+
+        let path = Path::from_waypoints(&waypoints, 0.1);
+        let pos = path.get_position(path.get_length());
+
+        debug_path_point("../target/get_pos_in_last_segment", &path, &waypoints, &pos);
+
+        assert_near!(path.get_length(), 3.2586540784544042);
+        assert_near!(pos.x, 2.0);
+        assert_near!(pos.y, 2.0);
     }
 }

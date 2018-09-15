@@ -19,7 +19,7 @@ pub struct CircularPathSegment {
     /// Second vector along which the blend circle lies
     pub y: Coord,
 
-    /// Length of the arc to use in calculating the blend
+    /// Length of the arc in radians to use in calculating the blend
     pub arc_length: f64,
 
     /// Path start offset

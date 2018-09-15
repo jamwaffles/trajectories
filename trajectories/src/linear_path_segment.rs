@@ -45,7 +45,7 @@ impl PathItem for LinearPathSegment {
     /// Get position ("robot configuration" in paper parlance) along path from normalised distance
     /// along it (`s`)
     fn get_position(&self, distance_along_line: f64) -> Coord {
-        self.start + ((self.end - self.start) * distance_along_line)
+        self.start + ((self.end - self.start) * distance_along_line / self.length)
     }
 
     /// Get derivative (tangent) of point along path
@@ -69,4 +69,76 @@ impl PathItem for LinearPathSegment {
 #[cfg(test)]
 mod tests {
     // TODO
+    use super::*;
+
+    #[test]
+    fn line_length_1_position() {
+        let line = LinearPathSegment::from_waypoints(Coord::repeat(0.0), Coord::new(1.0, 0.0, 0.0));
+        let pos_start = line.get_position(0.0);
+        let pos_quarter = line.get_position(0.25);
+        let pos_three_quarter = line.get_position(0.75);
+        let pos_end = line.get_position(1.0);
+
+        assert_near!(pos_start.x, 0.0);
+        assert_near!(pos_start.y, 0.0);
+        assert_near!(pos_quarter.x, 0.25);
+        assert_near!(pos_quarter.y, 0.0);
+        assert_near!(pos_three_quarter.x, 0.75);
+        assert_near!(pos_three_quarter.y, 0.0);
+        assert_near!(pos_end.x, 1.0);
+        assert_near!(pos_end.y, 0.0);
+    }
+
+    #[test]
+    fn diagonal_line_position() {
+        let line = LinearPathSegment::from_waypoints(Coord::repeat(0.0), Coord::new(1.0, 1.0, 0.0));
+        let pos_start = line.get_position(0.0);
+        let pos_quarter = line.get_position(0.25);
+        let pos_three_quarter = line.get_position(0.75);
+        let pos_1 = line.get_position(1.0);
+        let pos_end = line.get_position(1.41421356237);
+
+        let len = 2.0_f64.sqrt();
+
+        // Sqrt(2)
+        assert_eq!(line.get_length(), len);
+
+        assert_near!(pos_start.x, 0.0);
+        assert_near!(pos_start.y, 0.0);
+        assert_near!(pos_quarter.x, 0.17677669529663687);
+        assert_near!(pos_quarter.y, 0.17677669529663687);
+        assert_near!(pos_three_quarter.x, 0.5303300858899106);
+        assert_near!(pos_three_quarter.y, 0.5303300858899106);
+        assert_near!(pos_1.x, 0.7071067811865475);
+        assert_near!(pos_1.y, 0.7071067811865475);
+        assert_near!(pos_end.x, 1.0);
+        assert_near!(pos_end.y, 1.0);
+    }
+
+    #[test]
+    fn diagonal_not_at_zero() {
+        let line =
+            LinearPathSegment::from_waypoints(Coord::new(2.0, 2.0, 0.0), Coord::new(3.0, 3.0, 0.0));
+        let pos_start = line.get_position(0.0);
+        let pos_quarter = line.get_position(0.25);
+        let pos_three_quarter = line.get_position(0.75);
+        let pos_1 = line.get_position(1.0);
+        let pos_end = line.get_position(1.41421356237);
+
+        let len = 2.0_f64.sqrt();
+
+        // Sqrt(2)
+        assert_eq!(line.get_length(), len);
+
+        assert_near!(pos_start.x, 2.0);
+        assert_near!(pos_start.y, 2.0);
+        assert_near!(pos_quarter.x, 2.176776695296637);
+        assert_near!(pos_quarter.y, 2.176776695296637);
+        assert_near!(pos_three_quarter.x, 2.5303300858899105);
+        assert_near!(pos_three_quarter.y, 2.5303300858899105);
+        assert_near!(pos_1.x, 2.7071067811865475);
+        assert_near!(pos_1.y, 2.7071067811865475);
+        assert_near!(pos_end.x, 3.0);
+        assert_near!(pos_end.y, 3.0);
+    }
 }
