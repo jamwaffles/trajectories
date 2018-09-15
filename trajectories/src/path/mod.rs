@@ -1,66 +1,25 @@
-use circular_path_segment::CircularPathSegment;
-use linear_path_segment::LinearPathSegment;
+mod circular_segment;
+mod linear_segment;
+mod segment;
+
+pub use self::circular_segment::CircularPathSegment;
+pub use self::linear_segment::LinearPathSegment;
+pub use self::segment::PathSegment;
 use Coord;
-use PathItem;
 
-#[derive(Debug, Clone)]
-pub enum PathSegment {
-    Linear(LinearPathSegment),
-    Circular(CircularPathSegment),
-}
-
-impl PathItem for PathSegment {
+/// Helpful methods to get information about a path
+pub trait PathItem {
     /// Get length of path
-    fn get_length(&self) -> f64 {
-        match self {
-            PathSegment::Linear(s) => s.get_length(),
-            PathSegment::Circular(s) => s.get_length(),
-        }
-    }
+    fn get_length(&self) -> f64;
 
     /// Get position at a point along path
-    fn get_position(&self, distance_along_line: f64) -> Coord {
-        match self {
-            PathSegment::Linear(s) => s.get_position(distance_along_line),
-            PathSegment::Circular(s) => s.get_position(distance_along_line),
-        }
-    }
+    fn get_position(&self, distance_along_line: f64) -> Coord;
 
     /// Get first derivative (tangent) at a point
-    fn get_tangent(&self, distance_along_line: f64) -> Coord {
-        match self {
-            PathSegment::Linear(s) => s.get_tangent(distance_along_line),
-            PathSegment::Circular(s) => s.get_tangent(distance_along_line),
-        }
-    }
+    fn get_tangent(&self, distance_along_line: f64) -> Coord;
 
     /// Get second derivative (curvature) at a point
-    fn get_curvature(&self, distance_along_line: f64) -> Coord {
-        match self {
-            PathSegment::Linear(s) => s.get_curvature(distance_along_line),
-            PathSegment::Circular(s) => s.get_curvature(distance_along_line),
-        }
-    }
-}
-
-impl PathSegment {
-    /// Clone segment and give it a start offset
-    // TODO: Trait
-    fn with_start_offset(&self, offset: f64) -> Self {
-        match self {
-            PathSegment::Linear(s) => PathSegment::Linear(s.with_start_offset(offset)),
-            PathSegment::Circular(s) => PathSegment::Circular(s.with_start_offset(offset)),
-        }
-    }
-
-    /// Get start offset of this segment
-    // TODO: Trait
-    fn get_start_offset(&self) -> f64 {
-        match self {
-            PathSegment::Linear(s) => s.start_offset,
-            PathSegment::Circular(s) => s.start_offset,
-        }
-    }
+    fn get_curvature(&self, distance_along_line: f64) -> Coord;
 }
 
 /// A path with circular blends between segments
@@ -78,8 +37,6 @@ impl Path {
     ///
     /// The path must be differentiable, so small blends are added between linear segments
     pub fn from_waypoints(waypoints: &Vec<Coord>, max_deviation: f64) -> Self {
-        // let mut segments: Vec<PathSegment> = Vec::with_capacity(waypoints.len());
-        let mut length = 0.0;
         let mut start_offset = 0.0;
 
         let segments =
@@ -129,7 +86,7 @@ impl Path {
                     }
                 });
 
-        length = start_offset + segments.last().unwrap().get_length();
+        let length = start_offset + segments.last().unwrap().get_length();
 
         Self { segments, length }
     }

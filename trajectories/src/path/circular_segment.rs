@@ -1,5 +1,6 @@
-use super::{Coord, MIN_ACCURACY};
-use PathItem;
+use super::PathItem;
+use Coord;
+use MIN_ACCURACY;
 
 /// Circular path segment
 ///
@@ -158,8 +159,8 @@ impl PathItem for CircularPathSegment {
 
 #[cfg(test)]
 mod tests {
-    use super::super::test_helpers::*;
     use super::*;
+    use test_helpers::*;
 
     #[test]
     fn it_gets_the_position() {

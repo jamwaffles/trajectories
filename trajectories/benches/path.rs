@@ -3,7 +3,7 @@ extern crate criterion;
 extern crate trajectories;
 
 use criterion::Criterion;
-use trajectories::PathItem;
+use trajectories::prelude::*;
 use trajectories::{Coord, Path};
 
 const DEVIATION: f64 = 0.01;

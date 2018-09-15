@@ -1,5 +1,5 @@
-use super::Coord;
-use PathItem;
+use super::PathItem;
+use Coord;
 
 /// Circular path segment
 ///
@@ -68,7 +68,6 @@ impl PathItem for LinearPathSegment {
 
 #[cfg(test)]
 mod tests {
-    // TODO
     use super::*;
 
     #[test]

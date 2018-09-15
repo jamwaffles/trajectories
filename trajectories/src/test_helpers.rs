@@ -1,7 +1,7 @@
 //! Test helpers
 
-use super::{CircularPathSegment, Coord};
 use csv;
+use path::{CircularPathSegment, PathItem};
 use path::{Path as TrajPath, PathSegment};
 use std::fmt;
 use std::fs::File;
@@ -10,7 +10,7 @@ use svg::node::element::path::Data;
 use svg::node::element::{Circle, Path as SvgPath, Rectangle, Text};
 use svg::node::Text as TextContent;
 use svg::Document;
-use PathItem;
+use Coord;
 
 fn blend_circle(blend: &CircularPathSegment, width: u32) -> Circle {
     Circle::new()
