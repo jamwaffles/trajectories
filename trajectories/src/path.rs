@@ -62,6 +62,8 @@ impl Path {
     /// The path must be differentiable, so small blends are added between linear segments
     pub fn from_waypoints(waypoints: &Vec<Coord>, max_deviation: f64) -> Self {
         let mut segments: Vec<PathSegment> = Vec::new();
+        let mut start_offset = 0.0;
+        let mut total_length = 0.0;
 
         // Create a bunch of linear segments from a load of points
         waypoints.windows(3).for_each(|parts| {
@@ -72,7 +74,6 @@ impl Path {
                 let new_prev_end = blend_segment.get_position(0.0);
                 let new_curr_start = blend_segment.get_position(blend_segment.get_length());
 
-                let new_prev = LinearPathSegment::from_waypoints(prev, new_prev_end);
                 let new_curr = LinearPathSegment::from_waypoints(new_curr_start, next);
 
                 // If there's a previous segment, update its end point to sit tangent to the blend
@@ -81,11 +82,15 @@ impl Path {
                     .last_mut()
                     .map(|old_prev| match old_prev {
                         PathSegment::Linear(old_prev) => {
-                            old_prev.end = new_prev_end;
+                            *old_prev =
+                                LinearPathSegment::from_waypoints(old_prev.start, new_prev_end);
                         }
                         _ => panic!("Malformed path: previous element should be linear"),
                     }).unwrap_or_else(|| {
-                        segments.push(PathSegment::Linear(new_prev));
+                        segments.push(PathSegment::Linear(LinearPathSegment::from_waypoints(
+                            prev,
+                            new_prev_end,
+                        )));
                     });
 
                 segments.push(PathSegment::Circular(blend_segment));
@@ -212,7 +217,7 @@ mod tests {
             &pos,
         );
 
-        assert_near!(path.get_length(), 3.7586540784544042);
+        assert_near!(path.get_length(), 3.2586540784544042);
         assert_near!(pos.x, 0.0);
         assert_near!(pos.y, 0.37928932188134523);
     }
@@ -233,7 +238,7 @@ mod tests {
 
         debug_path_point("../target/get_pos_in_last_segment", &path, &waypoints, &pos);
 
-        assert_near!(path.get_length(), 3.7586540784544042);
+        assert_near!(path.get_length(), 3.2586540784544042);
         assert_near!(pos.x, 1.879898987322333);
         assert_near!(pos.y, 1.879898987322333);
     }
