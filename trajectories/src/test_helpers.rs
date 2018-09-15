@@ -176,9 +176,9 @@ pub fn debug_path(file_path: &'static str, path: &TrajPath, waypoints: &Vec<Coor
     }
 
     // Generated segments with blends
-    for segment in path.segments_with_offsets.iter() {
+    for segment in path.segments.iter() {
         match segment {
-            (offs, PathSegment::Linear(ref line)) => {
+            PathSegment::Linear(ref line) => {
                 document = document
                     .add(single_line(&line.start, &line.end, "red", 3))
                     // Print start offset for line
@@ -188,11 +188,11 @@ pub fn debug_path(file_path: &'static str, path: &TrajPath, waypoints: &Vec<Coor
                             .set("y", line.start.y)
                             .set("fill", "red")
                             .set("style", "font-size: 0.18px; font-family: monospace")
-                            .add(TextContent::new(format!("Line offs. {:.*}", 3, offs))),
+                            .add(TextContent::new(format!("Line offs. {:.*}", 3, line.start_offset))),
                     )
             }
 
-            (offs, PathSegment::Circular(ref circ)) => {
+            PathSegment::Circular(ref circ) => {
                 document = document
                     .add(blend_circle(&circ, 1))
                     // Print start offset for arc
@@ -204,7 +204,7 @@ pub fn debug_path(file_path: &'static str, path: &TrajPath, waypoints: &Vec<Coor
                             .set("y", start.y)
                             .set("fill", "blue")
                             .set("style", "font-size: 0.18px; font-family: monospace")
-                            .add(TextContent::new(format!("Circ offs. {:.*}", 3, offs)))
+                            .add(TextContent::new(format!("Circ offs. {:.*}", 3, circ.start_offset)))
                     })
             }
         }
@@ -217,7 +217,7 @@ pub fn debug_path(file_path: &'static str, path: &TrajPath, waypoints: &Vec<Coor
 pub fn debug_path_point(
     file_path: &'static str,
     path: &TrajPath,
-    waypoints: &Vec<Coord>,
+    _waypoints: &Vec<Coord>,
     point: &Coord,
 ) {
     let padding = 1.0;
@@ -228,9 +228,9 @@ pub fn debug_path_point(
     let mut document = create_document(&top_left, &bottom_right);
 
     // Generated segments with blends
-    for segment in path.segments_with_offsets.iter() {
+    for segment in path.segments.iter() {
         match segment {
-            (offs, PathSegment::Linear(ref line)) => {
+            PathSegment::Linear(ref line) => {
                 document = document
                     .add(single_line(&line.start, &line.end, "red", 3))
                     // Print start offset for line
@@ -240,11 +240,11 @@ pub fn debug_path_point(
                             .set("y", line.start.y)
                             .set("fill", "red")
                             .set("style", "font-size: 0.18px; font-family: monospace")
-                            .add(TextContent::new(format!("Line offs. {:.*}", 3, offs))),
+                            .add(TextContent::new(format!("Line offs. {:.*}", 3, line.start_offset))),
                     )
             }
 
-            (offs, PathSegment::Circular(ref circ)) => {
+            PathSegment::Circular(ref circ) => {
                 document = document
                     .add(blend_circle(&circ, 1))
                     // Print start offset for arc
@@ -256,7 +256,7 @@ pub fn debug_path_point(
                             .set("y", start.y)
                             .set("fill", "blue")
                             .set("style", "font-size: 0.18px; font-family: monospace")
-                            .add(TextContent::new(format!("Circ offs. {:.*}", 3, offs)))
+                            .add(TextContent::new(format!("Circ offs. {:.*}", 3, circ.start_offset)))
                     })
             }
         }

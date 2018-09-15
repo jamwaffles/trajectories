@@ -15,13 +15,29 @@ pub struct LinearPathSegment {
 
     /// Length of this segment
     pub length: f64,
+
+    /// Path start offset
+    pub start_offset: f64,
 }
 
 impl LinearPathSegment {
     pub fn from_waypoints(start: Coord, end: Coord) -> Self {
         let length = (end - start).norm();
 
-        Self { start, end, length }
+        Self {
+            start,
+            end,
+            length,
+            start_offset: 0.0,
+        }
+    }
+
+    /// Clone with a start offset
+    pub fn with_start_offset(&self, start_offset: f64) -> Self {
+        Self {
+            start_offset,
+            ..self.clone()
+        }
     }
 }
 

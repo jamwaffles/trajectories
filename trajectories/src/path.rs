@@ -43,14 +43,31 @@ impl PathItem for PathSegment {
     }
 }
 
+impl PathSegment {
+    /// Clone segment and give it a start offset
+    // TODO: Trait
+    fn with_start_offset(&self, offset: f64) -> Self {
+        match self {
+            PathSegment::Linear(s) => PathSegment::Linear(s.with_start_offset(offset)),
+            PathSegment::Circular(s) => PathSegment::Circular(s.with_start_offset(offset)),
+        }
+    }
+
+    /// Get start offset of this segment
+    // TODO: Trait
+    fn get_start_offset(&self) -> f64 {
+        match self {
+            PathSegment::Linear(s) => s.start_offset,
+            PathSegment::Circular(s) => s.start_offset,
+        }
+    }
+}
+
 /// A path with circular blends between segments
 #[derive(Debug)]
 pub struct Path {
     /// Linear path segments and circular blends
     pub segments: Vec<PathSegment>,
-
-    /// Path segments paired with offset from path start (0.0)
-    pub segments_with_offsets: Vec<(f64, PathSegment)>,
 
     /// Total path length
     length: f64,
@@ -61,9 +78,7 @@ impl Path {
     ///
     /// The path must be differentiable, so small blends are added between linear segments
     pub fn from_waypoints(waypoints: &Vec<Coord>, max_deviation: f64) -> Self {
-        let mut segments: Vec<PathSegment> = Vec::new();
-        let mut start_offset = 0.0;
-        let mut total_length = 0.0;
+        let mut segments: Vec<PathSegment> = Vec::with_capacity(waypoints.len());
 
         // Create a bunch of linear segments from a load of points
         waypoints.windows(3).for_each(|parts| {
@@ -100,36 +115,33 @@ impl Path {
             }
         });
 
+        let mut length = 0.0;
+
         // Add start offsets to the beginning of each segment
         let segments_with_offsets = segments
             .iter()
-            .cloned()
             .scan(0.0, |offset, segment| {
-                let ret = (*offset, segment.clone());
+                let new_seg = segment.with_start_offset(*offset);
 
-                *offset += segment.get_length();
+                *offset += new_seg.get_length();
+                length = *offset;
 
-                Some(ret)
+                Some(new_seg)
             }).collect();
 
-        let length = segments
-            .iter()
-            .fold(0.0, |acc, segment| acc + segment.get_length());
-
         Self {
-            segments,
-            segments_with_offsets,
+            segments: segments_with_offsets,
             length,
         }
     }
 
     /// Get a path segment for a position along the entire path
-    pub fn get_segment_at_position(&self, position_along_path: f64) -> Option<&(f64, PathSegment)> {
-        self.segments_with_offsets
+    pub fn get_segment_at_position(&self, position_along_path: f64) -> Option<&PathSegment> {
+        self.segments
             .iter()
-            .position(|(offset, _)| offset > &position_along_path)
-            .and_then(|pos| self.segments_with_offsets.get(pos - 1))
-            .or(self.segments_with_offsets.last())
+            .position(|segment| segment.get_start_offset() > position_along_path)
+            .and_then(|pos| self.segments.get(pos - 1))
+            .or(self.segments.last())
     }
 }
 
@@ -142,7 +154,7 @@ impl PathItem for Path {
     /// Get position at a point along path
     fn get_position(&self, distance_along_line: f64) -> Coord {
         self.get_segment_at_position(distance_along_line)
-            .map(|(start_offset, segment)| segment.get_position(distance_along_line - start_offset))
+            .map(|segment| segment.get_position(distance_along_line - segment.get_start_offset()))
             .expect(&format!(
                 "Could not get position for path offset {}, total length {}",
                 distance_along_line,
@@ -153,7 +165,7 @@ impl PathItem for Path {
     /// Get first derivative (tangent) at a point
     fn get_tangent(&self, distance_along_line: f64) -> Coord {
         self.get_segment_at_position(distance_along_line)
-            .map(|(start_offset, segment)| segment.get_tangent(distance_along_line - start_offset))
+            .map(|segment| segment.get_tangent(distance_along_line - segment.get_start_offset()))
             .expect(&format!(
                 "Could not get derivative for path offset {}, total length {}",
                 distance_along_line,
@@ -164,9 +176,8 @@ impl PathItem for Path {
     /// Get second derivative (curvature) at a point
     fn get_curvature(&self, distance_along_line: f64) -> Coord {
         self.get_segment_at_position(distance_along_line)
-            .map(|(start_offset, segment)| {
-                segment.get_curvature(distance_along_line - start_offset)
-            }).expect(&format!(
+            .map(|segment| segment.get_curvature(distance_along_line - segment.get_start_offset()))
+            .expect(&format!(
                 "Could not get second derivative for path offset {}, total length {}",
                 distance_along_line,
                 self.get_length()

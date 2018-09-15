@@ -21,6 +21,9 @@ pub struct CircularPathSegment {
 
     /// Length of the arc to use in calculating the blend
     pub arc_length: f64,
+
+    /// Path start offset
+    pub start_offset: f64,
 }
 
 impl CircularPathSegment {
@@ -39,6 +42,7 @@ impl CircularPathSegment {
                 x: Coord::zeros(),
                 y: Coord::zeros(),
                 arc_length: 0.0,
+                start_offset: 0.0,
             };
         }
 
@@ -60,6 +64,7 @@ impl CircularPathSegment {
                 x: Coord::zeros(),
                 y: Coord::zeros(),
                 arc_length: 0.0,
+                start_offset: 0.0,
             };
         }
 
@@ -109,6 +114,15 @@ impl CircularPathSegment {
             x,
             y,
             arc_length,
+            start_offset: 0.0,
+        }
+    }
+
+    /// Clone with a start offset
+    pub fn with_start_offset(&self, start_offset: f64) -> Self {
+        Self {
+            start_offset,
+            ..self.clone()
         }
     }
 }
@@ -301,6 +315,7 @@ mod tests {
                 x: Coord::zeros(),
                 y: Coord::zeros(),
                 arc_length: 0.0,
+                start_offset: 0.0,
             }
         );
     }
@@ -333,6 +348,7 @@ mod tests {
                 x: Coord::zeros(),
                 y: Coord::zeros(),
                 arc_length: 0.0,
+                start_offset: 0.0,
             }
         );
     }
@@ -357,6 +373,7 @@ mod tests {
                 x: Coord::zeros(),
                 y: Coord::zeros(),
                 arc_length: 0.0,
+                start_offset: 0.0,
             }
         );
     }
