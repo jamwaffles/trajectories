@@ -155,6 +155,24 @@ mod tests {
     use test_helpers::*;
 
     #[test]
+    fn length_limit_blend_size() {
+        let waypoints = vec![
+            Coord::new(0.0, 0.0, 0.0),
+            Coord::new(0.0, 1.0, 0.0),
+            Coord::new(1.0, 1.0, 0.0),
+            Coord::new(1.0, 2.0, 0.0),
+        ];
+
+        let path = Path::from_waypoints(&waypoints, 1.5);
+
+        debug_path("length_limit_blend_size", &path, &waypoints);
+
+        // TODO: Better assertion than overall length. This test is "tested" by looking at the
+        // rendered output. This should be fixed.
+        assert_near!(path.get_length(), 2.5707963267948974);
+    }
+
+    #[test]
     fn correct_switching_points() {
         // Data from Example.cpp in C++ example code
         let waypoints = vec![
