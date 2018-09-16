@@ -28,6 +28,19 @@ pub struct CircularPathSegment {
     pub start_offset: f64,
 }
 
+impl Default for CircularPathSegment {
+    fn default() -> Self {
+        Self {
+            arc_length: 0.0,
+            center: Coord::zeros(),
+            radius: 1.0,
+            start_offset: 0.0,
+            x: Coord::zeros(),
+            y: Coord::zeros(),
+        }
+    }
+}
+
 impl CircularPathSegment {
     /// Create a blend segment for two line segments comprised of three points
     pub fn from_waypoints(
@@ -42,11 +55,7 @@ impl CircularPathSegment {
             // TODO: Implement Default so this section and others like it are shorter
             return CircularPathSegment {
                 center: current.clone(),
-                radius: 1.0,
-                x: Coord::zeros(),
-                y: Coord::zeros(),
-                arc_length: 0.0,
-                start_offset: 0.0,
+                ..Self::default()
             };
         }
 
@@ -64,11 +73,7 @@ impl CircularPathSegment {
         if (previous_normalised - next_normalised).norm() < MIN_ACCURACY {
             return CircularPathSegment {
                 center: current.clone(),
-                radius: 1.0,
-                x: Coord::zeros(),
-                y: Coord::zeros(),
-                arc_length: 0.0,
-                start_offset: 0.0,
+                ..Self::default()
             };
         }
 
@@ -367,11 +372,7 @@ mod tests {
             blend_circle,
             CircularPathSegment {
                 center: current,
-                radius: 1.0,
-                x: Coord::zeros(),
-                y: Coord::zeros(),
-                arc_length: 0.0,
-                start_offset: 0.0,
+                ..CircularPathSegment::default()
             }
         );
     }
@@ -400,11 +401,7 @@ mod tests {
             blend_circle,
             CircularPathSegment {
                 center: current,
-                radius: 1.0,
-                x: Coord::zeros(),
-                y: Coord::zeros(),
-                arc_length: 0.0,
-                start_offset: 0.0,
+                ..CircularPathSegment::default()
             }
         );
     }
@@ -425,11 +422,7 @@ mod tests {
             blend_circle,
             CircularPathSegment {
                 center: current,
-                radius: 1.0,
-                x: Coord::zeros(),
-                y: Coord::zeros(),
-                arc_length: 0.0,
-                start_offset: 0.0,
+                ..CircularPathSegment::default()
             }
         );
     }

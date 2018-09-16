@@ -93,14 +93,10 @@ mod tests {
         let pos_three_quarter = line.get_position(0.75);
         let pos_end = line.get_position(1.0);
 
-        assert_near!(pos_start.x, 0.0);
-        assert_near!(pos_start.y, 0.0);
-        assert_near!(pos_quarter.x, 0.25);
-        assert_near!(pos_quarter.y, 0.0);
-        assert_near!(pos_three_quarter.x, 0.75);
-        assert_near!(pos_three_quarter.y, 0.0);
-        assert_near!(pos_end.x, 1.0);
-        assert_near!(pos_end.y, 0.0);
+        assert_near!(pos_start, Coord::new(0.0, 0.0, 0.0));
+        assert_near!(pos_quarter, Coord::new(0.25, 0.0, 0.0));
+        assert_near!(pos_three_quarter, Coord::new(0.75, 0.0, 0.0));
+        assert_near!(pos_end, Coord::new(1.0, 0.0, 0.0));
     }
 
     #[test]
@@ -117,16 +113,11 @@ mod tests {
         // Sqrt(2)
         assert_eq!(line.get_length(), len);
 
-        assert_near!(pos_start.x, 0.0);
-        assert_near!(pos_start.y, 0.0);
-        assert_near!(pos_quarter.x, 0.17677669529663687);
-        assert_near!(pos_quarter.y, 0.17677669529663687);
-        assert_near!(pos_three_quarter.x, 0.5303300858899106);
-        assert_near!(pos_three_quarter.y, 0.5303300858899106);
-        assert_near!(pos_1.x, 0.7071067811865475);
-        assert_near!(pos_1.y, 0.7071067811865475);
-        assert_near!(pos_end.x, 1.0);
-        assert_near!(pos_end.y, 1.0);
+        assert_near!(pos_start, Coord::new(0.0, 0.0, 0.0));
+        assert_near!(pos_quarter, Coord::new(0.1767766952, 0.1767766952, 0.0));
+        assert_near!(pos_three_quarter, Coord::new(0.530330085, 0.530330085, 0.0));
+        assert_near!(pos_1, Coord::new(0.707106781, 0.707106781, 0.0));
+        assert_near!(pos_end, Coord::new(1.0, 1.0, 0.0));
     }
 
     #[test]
@@ -144,15 +135,10 @@ mod tests {
         // Sqrt(2)
         assert_eq!(line.get_length(), len);
 
-        assert_near!(pos_start.x, 2.0);
-        assert_near!(pos_start.y, 2.0);
-        assert_near!(pos_quarter.x, 2.176776695296637);
-        assert_near!(pos_quarter.y, 2.176776695296637);
-        assert_near!(pos_three_quarter.x, 2.5303300858899105);
-        assert_near!(pos_three_quarter.y, 2.5303300858899105);
-        assert_near!(pos_1.x, 2.7071067811865475);
-        assert_near!(pos_1.y, 2.7071067811865475);
-        assert_near!(pos_end.x, 3.0);
-        assert_near!(pos_end.y, 3.0);
+        assert_near!(pos_start, Coord::new(2.0, 2.0, 0.0));
+        assert_near!(pos_quarter, Coord::new(2.1767766952, 2.1767766952, 0.0));
+        assert_near!(pos_three_quarter, Coord::new(2.530330085, 2.530330085, 0.0));
+        assert_near!(pos_1, Coord::new(2.707106781, 2.707106781, 0.0));
+        assert_near!(pos_end, Coord::new(3.0, 3.0, 0.0));
     }
 }

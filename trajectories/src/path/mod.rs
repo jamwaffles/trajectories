@@ -167,7 +167,7 @@ mod tests {
             Coord::new(0.0, 0.0, 1.0),
         ];
 
-        // Switching generated from waypoints from Exmaple.cpp. Empty Vecs are linear segments
+        // Switching generated from waypoints from Example.cpp. Empty Vecs are linear segments
         let expected_switching_points = vec![
             vec![],
             vec![0.0, 0.00343513],
@@ -243,8 +243,7 @@ mod tests {
         );
 
         assert_near!(path.get_length(), 3.2586540784544042);
-        assert_near!(pos.x, 0.0);
-        assert_near!(pos.y, 0.5);
+        assert_near!(pos, Coord::new(0.0, 0.5, 0.0));
     }
 
     #[test]
@@ -262,8 +261,7 @@ mod tests {
         debug_path_point("../target/get_pos_in_last_segment", &path, &waypoints, &pos);
 
         assert_near!(path.get_length(), 3.2586540784544042);
-        assert_near!(pos.x, 1.5);
-        assert_near!(pos.y, 1.5);
+        assert_near!(pos, Coord::new(1.5, 1.5, 0.0));
     }
 
     #[test]
@@ -286,8 +284,7 @@ mod tests {
         );
 
         assert_near!(path.get_length(), 3.4688780239495878);
-        assert_near!(pos.x, 2.310263340389897);
-        assert_near!(pos.y, 0.5632455532033677);
+        assert_near!(pos, Coord::new(2.310263340389897, 0.5632455532033677, 0.0));
     }
 
     #[test]
@@ -305,7 +302,6 @@ mod tests {
         debug_path_point("../target/get_pos_in_last_segment", &path, &waypoints, &pos);
 
         assert_near!(path.get_length(), 3.2586540784544042);
-        assert_near!(pos.x, 2.0);
-        assert_near!(pos.y, 2.0);
+        assert_near!(pos, Coord::new(2.0, 2.0, 0.0));
     }
 }
