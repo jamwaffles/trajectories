@@ -41,7 +41,7 @@ impl PathItem for PathSegment {
     }
 
     /// Get the switching points for this path segment
-    fn get_switching_points(&self) -> Option<Vec<f64>> {
+    fn get_switching_points(&self) -> Vec<f64> {
         match self {
             PathSegment::Linear(s) => s.get_switching_points(),
             PathSegment::Circular(s) => s.get_switching_points(),

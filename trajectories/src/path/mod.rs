@@ -22,7 +22,7 @@ pub trait PathItem {
     fn get_curvature(&self, distance_along_line: f64) -> Coord;
 
     /// Get switching points for this path segment
-    fn get_switching_points(&self) -> Option<Vec<f64>>;
+    fn get_switching_points(&self) -> Vec<f64>;
 }
 
 /// A path with circular blends between segments
@@ -144,7 +144,7 @@ impl PathItem for Path {
     }
 
     /// Get all switching points along this path
-    fn get_switching_points(&self) -> Option<Vec<f64>> {
+    fn get_switching_points(&self) -> Vec<f64> {
         unimplemented!()
     }
 }
@@ -193,15 +193,13 @@ mod tests {
         {
             match segment {
                 PathSegment::Circular(s) => {
-                    let switching_points = s
-                        .get_switching_points()
-                        .expect("Circular segment found with no switching points");
+                    let switching_points = s.get_switching_points();
 
                     for (point, expected) in switching_points.iter().zip(expected_points.iter()) {
                         assert_near!(point, expected);
                     }
                 }
-                PathSegment::Linear(s) => assert_eq!(s.get_switching_points(), None),
+                PathSegment::Linear(s) => assert_eq!(s.get_switching_points(), Vec::new()),
             }
         }
     }

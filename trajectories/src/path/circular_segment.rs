@@ -162,7 +162,7 @@ impl PathItem for CircularPathSegment {
     /// Get switching points for circular segment
     ///
     /// A segment can have a switching point for each dimension at various points along its path
-    fn get_switching_points(&self) -> Option<Vec<f64>> {
+    fn get_switching_points(&self) -> Vec<f64> {
         // Loop through each _component_ of unit vectors X and Y
         let mut switching_points = self
             .x
@@ -187,7 +187,7 @@ impl PathItem for CircularPathSegment {
         switching_points
             .sort_unstable_by(|a, b| a.partial_cmp(b).expect("Could not sort switching points"));
 
-        Some(switching_points)
+        switching_points
     }
 }
 
@@ -204,7 +204,7 @@ mod tests {
 
         let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
 
-        let _thing = blend_circle.get_switching_points().unwrap();
+        let _thing = blend_circle.get_switching_points();
 
         debug_blend(
             "../target/it_gets_switching_points",

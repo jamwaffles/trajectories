@@ -67,9 +67,10 @@ impl PathItem for LinearPathSegment {
 
     /// Get switching points for linear segment
     ///
-    /// There are no switching points for a linear segment, so this method returns `None`
-    fn get_switching_points(&self) -> Option<Vec<f64>> {
-        None
+    /// There are no switching points for a linear segment, so this method will always return an
+    /// empty list.
+    fn get_switching_points(&self) -> Vec<f64> {
+        Vec::new()
     }
 }
 
@@ -81,7 +82,7 @@ mod tests {
     fn no_switching_points() {
         let line = LinearPathSegment::from_waypoints(Coord::repeat(0.0), Coord::new(1.0, 0.0, 0.0));
 
-        assert_eq!(line.get_switching_points(), None);
+        assert_eq!(line.get_switching_points(), Vec::new());
     }
 
     #[test]
