@@ -162,22 +162,26 @@ impl PathItem for CircularPathSegment {
     ///
     /// A segment can have a switching point for each dimension at various points along its path
     fn get_switching_points(&self) -> Option<Vec<f64>> {
-        let mut switching_points: Vec<f64> = Vec::new();
+        // Loop through each _component_ of unit vectors X and Y
+        let mut switching_points = self
+            .x
+            .iter()
+            .zip(self.y.iter())
+            .filter_map(|(x, y)| {
+                let mut switching_angle = y.atan2(*x);
 
-        // TODO: Can I just use Nalgebra magic instead of a dumb loop?
-        for i in 0..self.x.len() {
-            let mut switching_angle = self.y[i].atan2(self.x[i]);
+                if switching_angle < 0.0 {
+                    switching_angle += f64::consts::PI;
+                }
 
-            if switching_angle < 0.0 {
-                switching_angle += f64::consts::PI;
-            }
+                let switching_point = switching_angle * self.radius;
 
-            let switching_point = switching_angle * self.radius;
-
-            if switching_point < self.arc_length {
-                switching_points.push(switching_point)
-            }
-        }
+                if switching_point < self.arc_length {
+                    Some(switching_point)
+                } else {
+                    None
+                }
+            }).collect::<Vec<f64>>();
 
         switching_points.sort_by(|a, b| a.partial_cmp(b).expect("Could not sort switching points"));
 
