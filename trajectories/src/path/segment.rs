@@ -39,6 +39,14 @@ impl PathItem for PathSegment {
             PathSegment::Circular(s) => s.get_curvature(distance_along_line),
         }
     }
+
+    /// Get the switching points for this path segment
+    fn get_switching_points(&self) -> Option<Vec<f64>> {
+        match self {
+            PathSegment::Linear(s) => s.get_switching_points(),
+            PathSegment::Circular(s) => s.get_switching_points(),
+        }
+    }
 }
 
 impl PathSegment {

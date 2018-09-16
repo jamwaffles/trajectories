@@ -64,11 +64,25 @@ impl PathItem for LinearPathSegment {
     fn get_length(&self) -> f64 {
         self.length
     }
+
+    /// Get switching points for linear segment
+    ///
+    /// There are no switching points for a linear segment, so this method returns `None`
+    fn get_switching_points(&self) -> Option<Vec<f64>> {
+        None
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn no_switching_points() {
+        let line = LinearPathSegment::from_waypoints(Coord::repeat(0.0), Coord::new(1.0, 0.0, 0.0));
+
+        assert_eq!(line.get_switching_points(), None);
+    }
 
     #[test]
     fn line_length_1_position() {

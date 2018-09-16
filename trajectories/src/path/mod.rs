@@ -20,6 +20,9 @@ pub trait PathItem {
 
     /// Get second derivative (curvature) at a point
     fn get_curvature(&self, distance_along_line: f64) -> Coord;
+
+    /// Get switching points for this path segment
+    fn get_switching_points(&self) -> Option<Vec<f64>>;
 }
 
 /// A path with circular blends between segments
@@ -139,12 +142,69 @@ impl PathItem for Path {
                 self.get_length()
             ))
     }
+
+    /// Get all switching points along this path
+    fn get_switching_points(&self) -> Option<Vec<f64>> {
+        unimplemented!()
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use test_helpers::*;
+
+    #[test]
+    fn correct_switching_points() {
+        // Data from Example.cpp in C++ example code
+        let waypoints = vec![
+            Coord::new(0.0, 0.0, 0.0),
+            Coord::new(0.0, 0.2, 1.0),
+            Coord::new(0.0, 3.0, 0.5),
+            Coord::new(1.1, 2.0, 0.0),
+            Coord::new(1.0, 0.0, 0.0),
+            Coord::new(0.0, 1.0, 0.0),
+            Coord::new(0.0, 0.0, 1.0),
+        ];
+
+        // Switching generated from waypoints from Exmaple.cpp. Empty Vecs are linear segments
+        let expected_switching_points = vec![
+            vec![],
+            vec![0.0, 0.00343513],
+            vec![],
+            vec![0.00127369],
+            vec![],
+            vec![0.00741455],
+            vec![],
+            vec![0.0, 0.00103794],
+            vec![],
+            vec![0.0010472, 0.0020944],
+            vec![],
+        ];
+
+        // Match Example.cpp accuracy
+        let accuracy = 0.001;
+
+        let path = Path::from_waypoints(&waypoints, accuracy);
+
+        debug_path("../target/correct_switching_points", &path, &waypoints);
+
+        for (segment, expected_points) in path.segments.iter().zip(expected_switching_points.iter())
+        {
+            match segment {
+                PathSegment::Circular(s) => {
+                    let switching_points = s
+                        .get_switching_points()
+                        .expect("Circular segment found with no switching points");
+
+                    for (point, expected) in switching_points.iter().zip(expected_points.iter()) {
+                        assert_near!(point, expected);
+                    }
+                }
+                PathSegment::Linear(s) => assert_eq!(s.get_switching_points(), None),
+            }
+        }
+    }
 
     #[test]
     fn it_creates_path_with_blends() {

@@ -1,4 +1,5 @@
 use super::PathItem;
+use std::f64;
 use Coord;
 use MIN_ACCURACY;
 
@@ -37,6 +38,7 @@ impl CircularPathSegment {
         // If either segment is of negligible length, we don't need to blend it, however a blend
         // is still required to make the path differentiable.
         if (current - previous).norm() < MIN_ACCURACY || (next - current).norm() < MIN_ACCURACY {
+            // TODO: Implement Default so this section and others like it are shorter
             return CircularPathSegment {
                 center: current.clone(),
                 radius: 1.0,
@@ -155,12 +157,59 @@ impl PathItem for CircularPathSegment {
 
         -(1.0 / self.radius) * (self.x * angle.sin() + self.y * angle.cos())
     }
+
+    /// Get switching points for circular segment
+    ///
+    /// A segment can have a switching point for each dimension at various points along its path
+    fn get_switching_points(&self) -> Option<Vec<f64>> {
+        let mut switching_points: Vec<f64> = Vec::new();
+
+        // TODO: Can I just use Nalgebra magic instead of a dumb loop?
+        for i in 0..self.x.len() {
+            let mut switching_angle = self.y[i].atan2(self.x[i]);
+
+            if switching_angle < 0.0 {
+                switching_angle += f64::consts::PI;
+            }
+
+            let switching_point = switching_angle * self.radius;
+
+            if switching_point < self.arc_length {
+                switching_points.push(switching_point)
+            }
+        }
+
+        switching_points.sort_by(|a, b| a.partial_cmp(b).expect("Could not sort switching points"));
+
+        Some(switching_points)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use test_helpers::*;
+
+    #[test]
+    fn it_gets_switching_points() {
+        let before = Coord::new(0.0, 0.0, 0.0);
+        let current = Coord::new(1.0, 5.0, 0.0);
+        let after = Coord::new(5.0, 5.0, 0.0);
+
+        let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
+
+        let _thing = blend_circle.get_switching_points().unwrap();
+
+        debug_blend(
+            "../target/it_gets_switching_points",
+            &before,
+            &current,
+            &after,
+            &blend_circle,
+        );
+
+        assert!(true);
+    }
 
     #[test]
     fn it_gets_the_position() {
