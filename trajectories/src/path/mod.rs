@@ -205,7 +205,7 @@ mod tests {
 
         let path = Path::from_waypoints(&waypoints, accuracy);
 
-        debug_path("../target/correct_switching_points", &path, &waypoints);
+        debug_path("correct_switching_points", &path, &waypoints);
 
         for (segment, expected_points) in path.segments.iter().zip(expected_switching_points.iter())
         {
@@ -236,7 +236,7 @@ mod tests {
 
         let path = Path::from_waypoints(&waypoints, 0.1);
 
-        debug_path("../target/path_with_blends", &path, &waypoints);
+        debug_path("path_with_blends", &path, &waypoints);
 
         assert!(true);
     }
@@ -253,12 +253,7 @@ mod tests {
         let path = Path::from_waypoints(&waypoints, 0.1);
         let pos = path.get_position(0.5);
 
-        debug_path_point(
-            "../target/get_pos_in_first_segment",
-            &path,
-            &waypoints,
-            &pos,
-        );
+        debug_path_point("get_pos_in_first_segment", &path, &waypoints, &pos);
 
         assert_near!(path.get_length(), 3.2586540784544042);
         assert_near!(pos, Coord::new(0.0, 0.5, 0.0));
@@ -276,7 +271,7 @@ mod tests {
         let path = Path::from_waypoints(&waypoints, 0.1);
         let pos = path.get_position(path.get_length() - 0.70710678118);
 
-        debug_path_point("../target/get_pos_in_last_segment", &path, &waypoints, &pos);
+        debug_path_point("get_pos_in_last_segment", &path, &waypoints, &pos);
 
         assert_near!(path.get_length(), 3.2586540784544042);
         assert_near!(pos, Coord::new(1.5, 1.5, 0.0));
@@ -294,12 +289,7 @@ mod tests {
         let path = Path::from_waypoints(&waypoints, 0.1);
         let pos = path.get_position(path.get_length() - 0.2);
 
-        debug_path_point(
-            "../target/get_pos_in_last_segment_other",
-            &path,
-            &waypoints,
-            &pos,
-        );
+        debug_path_point("get_pos_in_last_segment_other", &path, &waypoints, &pos);
 
         assert_near!(path.get_length(), 3.4688780239495878);
         assert_near!(pos, Coord::new(2.310263340389897, 0.5632455532033677, 0.0));
@@ -317,7 +307,7 @@ mod tests {
         let path = Path::from_waypoints(&waypoints, 0.1);
         let pos = path.get_position(path.get_length());
 
-        debug_path_point("../target/get_pos_in_last_segment", &path, &waypoints, &pos);
+        debug_path_point("get_pos_in_last_segment", &path, &waypoints, &pos);
 
         assert_near!(path.get_length(), 3.2586540784544042);
         assert_near!(pos, Coord::new(2.0, 2.0, 0.0));

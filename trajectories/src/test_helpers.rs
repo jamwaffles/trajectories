@@ -8,21 +8,12 @@ use std::fmt;
 use std::fs::File;
 use svg;
 use svg::node::element::path::Data;
-use svg::node::element::{Circle, Path as SvgPath, Rectangle, Text};
+use svg::node::element::{Circle, Group, Path as SvgPath, Rectangle, Text};
 use svg::node::Text as TextContent;
 use svg::Document;
 use Coord;
 
-fn blend_circle(blend: &CircularPathSegment, width: u32) -> Circle {
-    Circle::new()
-        .set("cx", blend.center.x)
-        .set("cy", blend.center.y)
-        .set("stroke-width", width)
-        .set("stroke", "blue")
-        .set("fill", "none")
-        .set("vector-effect", "non-scaling-stroke")
-        .set("r", blend.radius)
-}
+const PADDING: f64 = 1.0;
 
 fn single_line(from: &Coord, to: &Coord, stroke: &str, stroke_width: u32) -> SvgPath {
     SvgPath::new()
@@ -67,14 +58,68 @@ fn border(top_left: &Coord, bottom_right: &Coord) -> Rectangle {
 }
 
 fn create_document(top_left: &Coord, bottom_right: &Coord) -> Document {
+    let aspect = (bottom_right.x - top_left.x) / (bottom_right.y - top_left.y);
+    let width = 1024;
+
     Document::new()
         .set("shape-rendering", "geometricPrecision")
-        .set("width", 1024)
-        .set("height", 768)
+        .set("width", width)
+        .set("height", (width as f64 * aspect) as u32)
         .set(
             "viewBox",
             (top_left.x, top_left.y, bottom_right.x, bottom_right.y),
         ).add(border(&top_left, &bottom_right))
+}
+
+fn save_document(suite_name: &str, doc: &Document) {
+    svg::save(format!("../target/{}.svg", suite_name), doc).unwrap();
+}
+
+fn draw_blend_circle(blend: &CircularPathSegment) -> Group {
+    let line_scale = 0.25;
+
+    // Blend circle
+    let circle = Circle::new()
+        .set("cx", blend.center.x)
+        .set("cy", blend.center.y)
+        .set("stroke-width", 1)
+        .set("stroke", "blue")
+        .set("fill", "none")
+        .set("vector-effect", "non-scaling-stroke")
+        .set("r", blend.radius);
+
+    // Xi (green)
+    let xi = single_line(
+        &blend.center,
+        &(blend.center + blend.x * line_scale),
+        "green",
+        1,
+    );
+
+    // Yi (purple)
+    let yi = single_line(
+        &blend.center,
+        &(blend.center + blend.y * line_scale),
+        "purple",
+        1,
+    );
+
+    Group::new().add(circle).add(xi).add(yi)
+}
+
+fn calc_bbox(coords: &[Coord]) -> (Coord, Coord) {
+    (
+        coords
+            .iter()
+            .min_by_key(|item| ((item.x + item.y + item.z) * 100.0) as u32)
+            .unwrap()
+            - Coord::repeat(PADDING),
+        coords
+            .iter()
+            .max_by_key(|item| ((item.x + item.y + item.z) * 100.0) as u32)
+            .unwrap()
+            + Coord::repeat(PADDING * 2.0),
+    )
 }
 
 /// Produce an image of the blend between two path segments
@@ -85,51 +130,26 @@ pub fn debug_blend(
     after: &Coord,
     blend: &CircularPathSegment,
 ) {
-    let padding = 1.0;
+    let path_before = single_line(&before, &current, "red", 1);
+    let path_after = single_line(&current, &after, "red", 1);
+    let blend = draw_blend_circle(blend);
 
-    let data = Data::new()
-        .move_to((0, 0))
-        .line_to((before.x, before.y))
-        .line_to((current.x, current.y))
-        .line_to((after.x, after.y));
-
-    let top_left = before - Coord::repeat(padding);
-    let bottom_right = after + Coord::repeat(padding * 2.0);
-
-    // The two path segments
-    let path = SvgPath::new()
-        .set("fill", "none")
-        .set("stroke", "red")
-        .set("stroke-width", 1)
-        .set("vector-effect", "non-scaling-stroke")
-        .set("d", data);
-
-    // Blend circle
-    let circle = blend_circle(&blend, 1);
-
-    // Xi (green)
-    let xi = single_line(&blend.center, &(blend.center + blend.x), "green", 1);
-
-    // Yi (purple)
-    let yi = single_line(&blend.center, &(blend.center + blend.y), "purple", 1);
+    let (top_left, bottom_right) = calc_bbox(&[*before, *current, *after]);
 
     let document = create_document(&top_left, &bottom_right)
-        .add(circle)
-        .add(xi)
-        .add(yi)
-        .add(path);
+        .add(blend)
+        .add(path_before)
+        .add(path_after);
 
-    svg::save(format!("{}.svg", p), &document).unwrap();
+    svg::save(format!("../target/{}.svg", p), &document).unwrap();
 }
 
 /// Draw points along a blend curve
 pub fn debug_blend_position(p: &str, blend: &CircularPathSegment) {
-    let padding = 1.0;
+    let top_left = blend.center - Coord::repeat(blend.radius + PADDING);
+    let bottom_right = blend.center + Coord::repeat(blend.radius + PADDING * 2.0);
 
-    let top_left = blend.center - Coord::repeat(blend.radius + padding);
-    let bottom_right = blend.center + Coord::repeat(blend.radius + padding * 2.0);
-
-    let circle = blend_circle(&blend, 1);
+    let circle = draw_blend_circle(&blend);
 
     let start = blend.get_position(0.0);
 
@@ -155,15 +175,14 @@ pub fn debug_blend_position(p: &str, blend: &CircularPathSegment) {
         .add(circle)
         .add(path);
 
-    svg::save(format!("{}.svg", p), &document).unwrap();
+    save_document(p, &document);
 }
 
 /// Debug an entire path
 pub fn debug_path(file_path: &'static str, path: &TrajPath, waypoints: &Vec<Coord>) {
-    let padding = 1.0;
+    let (top_left, bottom_right) = calc_bbox(waypoints.as_slice());
 
-    let top_left = Coord::repeat(0.0) - Coord::repeat(padding);
-    let bottom_right = Coord::repeat(10.0) + Coord::repeat(padding * 2.0);
+    println!("DBUG {:?} ---- {:?}", top_left, bottom_right);
 
     let mut document = create_document(&top_left, &bottom_right);
 
@@ -195,7 +214,7 @@ pub fn debug_path(file_path: &'static str, path: &TrajPath, waypoints: &Vec<Coor
 
             PathSegment::Circular(ref circ) => {
                 document = document
-                    .add(blend_circle(&circ, 1))
+                    .add(draw_blend_circle(&circ))
                     // Print start offset for arc
                     .add({
                         let start = circ.get_position(0.0);
@@ -211,20 +230,17 @@ pub fn debug_path(file_path: &'static str, path: &TrajPath, waypoints: &Vec<Coor
         }
     }
 
-    svg::save(format!("{}.svg", file_path), &document).unwrap();
+    save_document(file_path, &document);
 }
 
 /// Draw a complete path with a given point marked on it
 pub fn debug_path_point(
     file_path: &'static str,
     path: &TrajPath,
-    _waypoints: &Vec<Coord>,
+    waypoints: &Vec<Coord>,
     point: &Coord,
 ) {
-    let padding = 1.0;
-
-    let top_left = Coord::repeat(0.0) - Coord::repeat(padding);
-    let bottom_right = Coord::repeat(10.0) + Coord::repeat(padding * 2.0);
+    let (top_left, bottom_right) = calc_bbox(&waypoints);
 
     let mut document = create_document(&top_left, &bottom_right);
 
@@ -247,7 +263,7 @@ pub fn debug_path_point(
 
             PathSegment::Circular(ref circ) => {
                 document = document
-                    .add(blend_circle(&circ, 1))
+                    .add(draw_blend_circle(&circ))
                     // Print start offset for arc
                     .add({
                         let start = circ.get_position(0.0);
@@ -266,7 +282,7 @@ pub fn debug_path_point(
     // Point to debug
     document = document.add(cross_centered_at(&point, "orange", 1));
 
-    svg::save(format!("{}.svg", file_path), &document).unwrap();
+    save_document(file_path, &document);
 }
 
 /// 3 element vector for testing C++ bindings
