@@ -126,8 +126,14 @@ public:
 		length = angle * radius;
 
 		center = intersection + (endDirection - startDirection).normalized() * radius / cos(0.5 * angle);
+
 		x = (intersection - distance * startDirection - center).normalized();
 		y = startDirection;
+
+		// IOFormat CommaInitFmt(StreamPrecision, DontAlignCols, ", ", ", ", "", "", " << ", ";");
+
+		// std::cout << " X " << x << std::endl;
+		// std::cout << " Y " << y << std::endl;
 	}
 
 	Eigen::Vector3d getConfig(double s) const {
@@ -159,6 +165,13 @@ public:
 			}
 		}
 		switchingPoints.sort();
+
+		// std::cout << "---" << std::endl;
+		// for(std::list<double>::iterator p = switchingPoints.begin(); p != switchingPoints.end(); p++) {
+		// 	std::cout << "POINT " << *p << std::endl;
+		// }
+		// std::cout << "---" << std::endl;
+
 		return switchingPoints;
 	}
 
@@ -213,11 +226,15 @@ Path::Path(const list<Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > &pat
 		(*segment)->position = length;
 		list<double> localSwitchingPoints = (*segment)->getSwitchingPoints();
 		for(list<double>::const_iterator point = localSwitchingPoints.begin(); point != localSwitchingPoints.end(); point++) {
+			// Add switching point along segment, offset by current length, where discontinuous = false
 			switchingPoints.push_back(make_pair(length + *point, false));
 		}
 		length += (*segment)->getLength();
+		// Remove switching points that are at or beyond the end of the path I think?
 		while(!switchingPoints.empty() && switchingPoints.back().first >= length)
 			switchingPoints.pop_back();
+
+		// Add switching point at end of segment that has discontinuous = true
 		switchingPoints.push_back(make_pair(length, true));
 	}
 	switchingPoints.pop_back();
