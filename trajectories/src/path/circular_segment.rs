@@ -29,6 +29,7 @@ pub struct CircularPathSegment {
 }
 
 impl CircularPathSegment {
+    /// Create a blend segment for two line segments comprised of three points
     pub fn from_waypoints(
         previous: &Coord,
         current: &Coord,
@@ -183,7 +184,8 @@ impl PathItem for CircularPathSegment {
                 }
             }).collect::<Vec<f64>>();
 
-        switching_points.sort_by(|a, b| a.partial_cmp(b).expect("Could not sort switching points"));
+        switching_points
+            .sort_unstable_by(|a, b| a.partial_cmp(b).expect("Could not sort switching points"));
 
         Some(switching_points)
     }

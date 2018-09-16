@@ -17,3 +17,7 @@ path = "../trajectories-sys"
 [[bench]]
 name = "path"
 harness = false
+
+[[bench]]
+name = "switching_points"
+harness = false

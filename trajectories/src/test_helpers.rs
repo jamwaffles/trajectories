@@ -1,7 +1,8 @@
 //! Test helpers
 
 use csv;
-use path::{CircularPathSegment, PathItem};
+pub use path::CircularPathSegment;
+use path::PathItem;
 use path::{Path as TrajPath, PathSegment};
 use std::fmt;
 use std::fs::File;
