@@ -22,6 +22,25 @@ pub trait PathItem {
     fn get_curvature(&self, distance_along_line: f64) -> Coord;
 }
 
+/// A switching point
+#[derive(Debug, Clone)]
+pub struct SwitchingPoint(
+    /// Position along the path at which this switching point occurs
+    f64,
+    /// Whether this switching point is discontinuous or not
+    Continuity,
+);
+
+/// Continuity flag
+#[derive(Debug, Clone, PartialEq)]
+pub enum Continuity {
+    /// The path at a point is discontinuous
+    Discontinuous,
+
+    /// The path at a point is continuous
+    Continuous,
+}
+
 /// A path with circular blends between segments
 #[derive(Debug)]
 pub struct Path {
@@ -32,7 +51,7 @@ pub struct Path {
     length: f64,
 
     /// Switching points. Bool denotes whether point is discontinuous (`true`) or not (`false`)
-    switching_points: Vec<(f64, bool)>,
+    switching_points: Vec<SwitchingPoint>,
 }
 
 impl Path {
@@ -71,10 +90,11 @@ impl Path {
 
                         start_offset += prev_segment.get_length();
 
-                        // Switching point where linear segment touches blend
+                        // Switching point where linear segment touches blend (discontinuous)
                         // TODO: Get actual list of switching points when support for non-linear
                         // path segments (that aren't blends) is added.
-                        switching_points.push((start_offset, true));
+                        switching_points
+                            .push(SwitchingPoint(start_offset, Continuity::Discontinuous));
 
                         let blend_segment = blend_segment.with_start_offset(start_offset);
                         let blend_switching_points = blend_segment.get_switching_points();
@@ -89,7 +109,7 @@ impl Path {
                                     let p_offset = p + blend_segment.start_offset;
 
                                     if p_offset < blend_end_offset {
-                                        Some((p_offset, false))
+                                        Some(SwitchingPoint(p_offset, Continuity::Continuous))
                                     } else {
                                         None
                                     }
@@ -105,7 +125,8 @@ impl Path {
                         // Switching point where linear segment touches blend
                         // TODO: Get actual list of switching points when support for non-linear
                         // path segments (that aren't blends) is added.
-                        switching_points.push((start_offset, true));
+                        switching_points
+                            .push(SwitchingPoint(start_offset, Continuity::Discontinuous));
 
                         // Add both linear segments with blend in between to overall path
                         segments.append(&mut vec![
@@ -139,7 +160,7 @@ impl Path {
     }
 
     /// Get all switching points along this path
-    pub fn get_switching_points(&self) -> &Vec<(f64, bool)> {
+    pub fn get_switching_points(&self) -> &Vec<SwitchingPoint> {
         &self.switching_points
     }
 }
@@ -222,23 +243,23 @@ mod tests {
 
         // Switching generated from waypoints from Example.cpp
         let expected_switching_points = vec![
-            (1.0173539279271488, true),
-            (1.0173539279271488, false),
-            (1.02079, false),
-            (1.0212310438858092, true),
-            (3.8614234182834446, true),
-            (3.8626971078471364, false),
-            (3.8633, true),
-            (5.425842981796586, true),
-            (5.43325752688998, false),
-            (5.43372148747555, true),
-            (7.430435574066095, true),
-            (7.430435574066095, false),
-            (7.4314735160725895, false),
-            (7.43201, true),
-            (8.842953203579489, true),
-            (8.844, false),
-            (8.845047598681882, true),
+            (1.0173539279271488, Continuity::Discontinuous),
+            (1.0173539279271488, Continuity::Continuous),
+            (1.02079, Continuity::Continuous),
+            (1.0212310438858092, Continuity::Discontinuous),
+            (3.8614234182834446, Continuity::Discontinuous),
+            (3.8626971078471364, Continuity::Continuous),
+            (3.8633, Continuity::Discontinuous),
+            (5.425842981796586, Continuity::Discontinuous),
+            (5.43325752688998, Continuity::Continuous),
+            (5.43372148747555, Continuity::Discontinuous),
+            (7.430435574066095, Continuity::Discontinuous),
+            (7.430435574066095, Continuity::Continuous),
+            (7.4314735160725895, Continuity::Continuous),
+            (7.43201, Continuity::Discontinuous),
+            (8.842953203579489, Continuity::Discontinuous),
+            (8.844, Continuity::Continuous),
+            (8.845047598681882, Continuity::Discontinuous),
         ];
 
         // Match Example.cpp accuracy
