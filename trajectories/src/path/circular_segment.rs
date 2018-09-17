@@ -156,7 +156,7 @@ impl CircularPathSegment {
                 let switching_point = switching_angle * self.radius;
 
                 if switching_point < self.arc_length {
-                    Some(switching_point + self.start_offset)
+                    Some(switching_point)
                 } else {
                     None
                 }

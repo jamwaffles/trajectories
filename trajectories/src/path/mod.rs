@@ -71,13 +71,43 @@ impl Path {
 
                         start_offset += prev_segment.get_length();
 
-                        let blend_segment = blend_segment.with_start_offset(start_offset);
+                        // Switching point where linear segment touches blend
+                        // TODO: Get actual list of switching points when support for non-linear
+                        // path segments (that aren't blends) is added.
+                        switching_points.push((start_offset, true));
 
-                        start_offset += blend_segment.get_length();
+                        let blend_segment = blend_segment.with_start_offset(start_offset);
+                        let blend_switching_points = blend_segment.get_switching_points();
+                        let blend_end_offset =
+                            blend_segment.start_offset + blend_segment.get_length();
+
+                        // Get switching points over the duration of the blend segment
+                        switching_points.append(
+                            &mut blend_switching_points
+                                .iter()
+                                .filter_map(|p| {
+                                    let p_offset = p + blend_segment.start_offset;
+
+                                    if p_offset < blend_end_offset {
+                                        Some((p_offset, false))
+                                    } else {
+                                        None
+                                    }
+                                }).collect(),
+                        );
+
+                        // Add blend segment length to path length total
+                        start_offset = blend_end_offset;
 
                         let next_segment = LinearPathSegment::from_waypoints(blend_end, next)
                             .with_start_offset(start_offset);
 
+                        // Switching point where linear segment touches blend
+                        // TODO: Get actual list of switching points when support for non-linear
+                        // path segments (that aren't blends) is added.
+                        switching_points.push((start_offset, true));
+
+                        // Add both linear segments with blend in between to overall path
                         segments.append(&mut vec![
                             PathSegment::Linear(prev_segment),
                             PathSegment::Circular(blend_segment),
@@ -91,8 +121,6 @@ impl Path {
                 });
 
         let length = start_offset + segments.last().unwrap().get_length();
-
-        println!("SW POITNS {:#?}", switching_points);
 
         Self {
             switching_points,
@@ -198,19 +226,19 @@ mod tests {
             (1.0173539279271488, false),
             (1.02079, false),
             (1.0212310438858092, true),
-            (3.86142, true),
-            (3.8627, false),
+            (3.8614234182834446, true),
+            (3.8626971078471364, false),
             (3.8633, true),
-            (5.42584, true),
-            (5.43326, false),
-            (5.43372, true),
-            (7.43044, true),
-            (7.43044, false),
-            (7.43147, false),
+            (5.425842981796586, true),
+            (5.43325752688998, false),
+            (5.43372148747555, true),
+            (7.430435574066095, true),
+            (7.430435574066095, false),
+            (7.4314735160725895, false),
             (7.43201, true),
-            (8.84295, true),
+            (8.842953203579489, true),
             (8.844, false),
-            (8.84505, true),
+            (8.845047598681882, true),
         ];
 
         // Match Example.cpp accuracy
@@ -274,7 +302,7 @@ mod tests {
                     let switching_points = s.get_switching_points();
 
                     for (point, expected) in switching_points.iter().zip(expected_points.iter()) {
-                        assert_near!(*point, *expected + s.start_offset);
+                        assert_near!(*point, *expected);
                     }
                 }
                 PathSegment::Linear(s) => assert_eq!(s.get_switching_points(), Vec::new()),
