@@ -162,7 +162,6 @@ impl CircularPathSegment {
                 }
             }).collect::<Vec<f64>>();
 
-        // FIXME: I don't think I need to bother sorting segments
         switching_points
             .sort_unstable_by(|a, b| a.partial_cmp(b).expect("Could not sort switching points"));
 
