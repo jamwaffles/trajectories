@@ -20,9 +20,6 @@ pub trait PathItem {
 
     /// Get second derivative (curvature) at a point
     fn get_curvature(&self, distance_along_line: f64) -> Coord;
-
-    /// Get switching points for this path segment
-    fn get_switching_points(&self) -> Vec<f64>;
 }
 
 /// A path with circular blends between segments
@@ -33,6 +30,9 @@ pub struct Path {
 
     /// Total path length
     length: f64,
+
+    /// Switching points. Bool denotes whether point is discontinuous (`true`) or not (`false`)
+    switching_points: Vec<(f64, bool)>,
 }
 
 impl Path {
@@ -41,6 +41,7 @@ impl Path {
     /// The path must be differentiable, so small blends are added between linear segments
     pub fn from_waypoints(waypoints: &Vec<Coord>, max_deviation: f64) -> Self {
         let mut start_offset = 0.0;
+        let mut switching_points = Vec::new();
 
         let segments =
             waypoints
@@ -68,20 +69,20 @@ impl Path {
                                     .with_start_offset(start_offset),
                             );
 
-                        segments.push(PathSegment::Linear(prev_segment));
-
                         start_offset += prev_segment.get_length();
 
-                        segments.push(PathSegment::Circular(
-                            blend_segment.with_start_offset(start_offset),
-                        ));
+                        let blend_segment = blend_segment.with_start_offset(start_offset);
 
                         start_offset += blend_segment.get_length();
 
                         let next_segment = LinearPathSegment::from_waypoints(blend_end, next)
                             .with_start_offset(start_offset);
 
-                        segments.push(PathSegment::Linear(next_segment));
+                        segments.append(&mut vec![
+                            PathSegment::Linear(prev_segment),
+                            PathSegment::Circular(blend_segment),
+                            PathSegment::Linear(next_segment),
+                        ]);
 
                         segments
                     } else {
@@ -91,7 +92,13 @@ impl Path {
 
         let length = start_offset + segments.last().unwrap().get_length();
 
-        Self { segments, length }
+        println!("SW POITNS {:#?}", switching_points);
+
+        Self {
+            switching_points,
+            segments,
+            length,
+        }
     }
 
     /// Get a path segment for a position along the entire path
@@ -101,6 +108,11 @@ impl Path {
             .position(|segment| segment.get_start_offset() > position_along_path)
             .and_then(|pos| self.segments.get(pos - 1))
             .or(self.segments.last())
+    }
+
+    /// Get all switching points along this path
+    pub fn get_switching_points(&self) -> &Vec<(f64, bool)> {
+        &self.switching_points
     }
 }
 
@@ -142,11 +154,6 @@ impl PathItem for Path {
                 self.get_length()
             ))
     }
-
-    /// Get all switching points along this path
-    fn get_switching_points(&self) -> Vec<f64> {
-        unimplemented!()
-    }
 }
 
 #[cfg(test)]
@@ -173,7 +180,60 @@ mod tests {
     }
 
     #[test]
-    fn correct_switching_points() {
+    fn correct_path_switching_points() {
+        // Data from Example.cpp in C++ example code
+        let waypoints = vec![
+            Coord::new(0.0, 0.0, 0.0),
+            Coord::new(0.0, 0.2, 1.0),
+            Coord::new(0.0, 3.0, 0.5),
+            Coord::new(1.1, 2.0, 0.0),
+            Coord::new(1.0, 0.0, 0.0),
+            Coord::new(0.0, 1.0, 0.0),
+            Coord::new(0.0, 0.0, 1.0),
+        ];
+
+        // Switching generated from waypoints from Example.cpp
+        let expected_switching_points = vec![
+            (1.0173539279271488, true),
+            (1.0173539279271488, false),
+            (1.02079, false),
+            (1.0212310438858092, true),
+            (3.86142, true),
+            (3.8627, false),
+            (3.8633, true),
+            (5.42584, true),
+            (5.43326, false),
+            (5.43372, true),
+            (7.43044, true),
+            (7.43044, false),
+            (7.43147, false),
+            (7.43201, true),
+            (8.84295, true),
+            (8.844, false),
+            (8.84505, true),
+        ];
+
+        // Match Example.cpp accuracy
+        let accuracy = 0.001;
+
+        let path = Path::from_waypoints(&waypoints, accuracy);
+
+        debug_path("correct_path_switching_points", &path, &waypoints);
+
+        for (i, (point, expected)) in path
+            .get_switching_points()
+            .iter()
+            .zip(expected_switching_points.iter())
+            .enumerate()
+        {
+            println!("Test point {}:", i);
+            assert_near!(point.0, expected.0);
+            assert_eq!(point.1, expected.1);
+        }
+    }
+
+    #[test]
+    fn correct_segment_switching_points() {
         // Data from Example.cpp in C++ example code
         let waypoints = vec![
             Coord::new(0.0, 0.0, 0.0),
@@ -205,7 +265,7 @@ mod tests {
 
         let path = Path::from_waypoints(&waypoints, accuracy);
 
-        debug_path("correct_switching_points", &path, &waypoints);
+        debug_path("correct_segment_switching_points", &path, &waypoints);
 
         for (segment, expected_points) in path.segments.iter().zip(expected_switching_points.iter())
         {
