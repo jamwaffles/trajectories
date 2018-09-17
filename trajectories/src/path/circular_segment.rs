@@ -134,6 +134,40 @@ impl CircularPathSegment {
             ..self.clone()
         }
     }
+
+    /// Get switching points for circular segment
+    ///
+    /// A segment can have a switching point for each dimension at various points along its path.
+    /// Takes into account the path's start offset
+    // TODO: Trait
+    pub fn get_switching_points(&self) -> Vec<f64> {
+        // Loop through each _component_ of unit vectors X and Y
+        let mut switching_points = self
+            .x
+            .iter()
+            .zip(self.y.iter())
+            .filter_map(|(x, y)| {
+                let mut switching_angle = y.atan2(*x);
+
+                if switching_angle < 0.0 {
+                    switching_angle += f64::consts::PI;
+                }
+
+                let switching_point = switching_angle * self.radius;
+
+                if switching_point < self.arc_length {
+                    Some(switching_point + self.start_offset)
+                } else {
+                    None
+                }
+            }).collect::<Vec<f64>>();
+
+        // FIXME: I don't think I need to bother sorting segments
+        switching_points
+            .sort_unstable_by(|a, b| a.partial_cmp(b).expect("Could not sort switching points"));
+
+        switching_points
+    }
 }
 
 impl PathItem for CircularPathSegment {
@@ -162,37 +196,6 @@ impl PathItem for CircularPathSegment {
         let angle = distance_along_arc / self.radius;
 
         -(1.0 / self.radius) * (self.x * angle.sin() + self.y * angle.cos())
-    }
-
-    /// Get switching points for circular segment
-    ///
-    /// A segment can have a switching point for each dimension at various points along its path
-    fn get_switching_points(&self) -> Vec<f64> {
-        // Loop through each _component_ of unit vectors X and Y
-        let mut switching_points = self
-            .x
-            .iter()
-            .zip(self.y.iter())
-            .filter_map(|(x, y)| {
-                let mut switching_angle = y.atan2(*x);
-
-                if switching_angle < 0.0 {
-                    switching_angle += f64::consts::PI;
-                }
-
-                let switching_point = switching_angle * self.radius;
-
-                if switching_point < self.arc_length {
-                    Some(switching_point)
-                } else {
-                    None
-                }
-            }).collect::<Vec<f64>>();
-
-        switching_points
-            .sort_unstable_by(|a, b| a.partial_cmp(b).expect("Could not sort switching points"));
-
-        switching_points
     }
 }
 

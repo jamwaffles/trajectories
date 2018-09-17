@@ -214,7 +214,7 @@ mod tests {
                     let switching_points = s.get_switching_points();
 
                     for (point, expected) in switching_points.iter().zip(expected_points.iter()) {
-                        assert_near!(point, expected);
+                        assert_near!(*point, *expected + s.start_offset);
                     }
                 }
                 PathSegment::Linear(s) => assert_eq!(s.get_switching_points(), Vec::new()),

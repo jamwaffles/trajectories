@@ -39,6 +39,15 @@ impl LinearPathSegment {
             ..self.clone()
         }
     }
+
+    /// Get switching points for linear segment
+    ///
+    /// There are no switching points for a linear segment, so this method will always return an
+    /// empty list.
+    // TODO: Trait
+    pub fn get_switching_points(&self) -> Vec<f64> {
+        Vec::new()
+    }
 }
 
 impl PathItem for LinearPathSegment {
@@ -63,14 +72,6 @@ impl PathItem for LinearPathSegment {
     /// Get the length of this line
     fn get_length(&self) -> f64 {
         self.length
-    }
-
-    /// Get switching points for linear segment
-    ///
-    /// There are no switching points for a linear segment, so this method will always return an
-    /// empty list.
-    fn get_switching_points(&self) -> Vec<f64> {
-        Vec::new()
     }
 }
 
