@@ -225,6 +225,15 @@ Path::Path(const list<Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > &pat
 	for(list<PathSegment*>::iterator segment = pathSegments.begin(); segment != pathSegments.end(); segment++) {
 		(*segment)->position = length;
 		list<double> localSwitchingPoints = (*segment)->getSwitchingPoints();
+
+		// std::cout << "LEN " << length << std::endl;
+
+		// for(std::list<double>::iterator i = localSwitchingPoints.begin(); i != localSwitchingPoints.end(); i++) {
+		// 	std::cout << "Switching point " << *i << std::endl;
+		// }
+
+		// std::cout << "---" << std::endl;
+
 		for(list<double>::const_iterator point = localSwitchingPoints.begin(); point != localSwitchingPoints.end(); point++) {
 			// Add switching point along segment, offset by current length, where discontinuous = false
 			switchingPoints.push_back(make_pair(length + *point, false));
