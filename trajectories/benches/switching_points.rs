@@ -23,5 +23,30 @@ fn get_circular_segment_switching_points(c: &mut Criterion) {
     });
 }
 
-criterion_group!(path, get_circular_segment_switching_points);
+fn get_next_switching_point(c: &mut Criterion) {
+    c.bench_function("get next switching point", |b| {
+        let waypoints: Vec<Coord> = vec![
+            Coord::new(0.0, 0.0, 0.0),
+            Coord::new(1.0, 2.0, 0.0),
+            Coord::new(1.5, 1.5, 0.0),
+            Coord::new(3.0, 5.0, 0.0),
+            Coord::new(4.0, 6.0, 0.0),
+            Coord::new(5.0, 5.0, 0.0),
+            Coord::new(4.0, 4.0, 0.0),
+        ];
+
+        let path = Path::from_waypoints(&waypoints, DEVIATION);
+
+        b.iter(|| {
+            let next_waypoint = path.get_next_switching_point(4.0);
+            let next_waypoint = path.get_next_switching_point(13.0);
+        })
+    });
+}
+
+criterion_group!(
+    path,
+    get_circular_segment_switching_points,
+    get_next_switching_point
+);
 criterion_main!(path);

@@ -23,7 +23,7 @@ pub trait PathItem {
 }
 
 /// A switching point
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct SwitchingPoint(
     /// Position along the path at which this switching point occurs
     f64,
@@ -163,6 +163,17 @@ impl Path {
     pub fn get_switching_points(&self) -> &Vec<SwitchingPoint> {
         &self.switching_points
     }
+
+    /// Get position of next switching point after a position along the path
+    ///
+    /// Returns the end of the path as position if no switching point could be found
+    pub fn get_next_switching_point(&self, position_along_path: f64) -> SwitchingPoint {
+        self.switching_points
+            .iter()
+            .cloned()
+            .find(|sp| sp.0 > position_along_path)
+            .unwrap_or(SwitchingPoint(self.length, Continuity::Discontinuous))
+    }
 }
 
 impl PathItem for Path {
@@ -209,6 +220,39 @@ impl PathItem for Path {
 mod tests {
     use super::*;
     use test_helpers::*;
+
+    #[test]
+    fn get_next_switching_point() {
+        // Data from Example.cpp in C++ example code
+        let waypoints = vec![
+            Coord::new(0.0, 0.0, 0.0),
+            Coord::new(0.0, 0.2, 1.0),
+            Coord::new(0.0, 3.0, 0.5),
+            Coord::new(1.1, 2.0, 0.0),
+            Coord::new(1.0, 0.0, 0.0),
+            Coord::new(0.0, 1.0, 0.0),
+            Coord::new(0.0, 0.0, 1.0),
+        ];
+
+        // Match Example.cpp accuracy
+        let accuracy = 0.001;
+
+        let path = Path::from_waypoints(&waypoints, accuracy);
+
+        assert_eq!(
+            path.get_next_switching_point(0.0),
+            SwitchingPoint(1.0173539279271488, Continuity::Discontinuous)
+        );
+        assert_eq!(
+            path.get_next_switching_point(5.425844),
+            SwitchingPoint(5.43325752688998, Continuity::Continuous)
+        );
+        assert_eq!(
+            path.get_next_switching_point(path.get_length() - 0.01),
+            SwitchingPoint(path.get_length(), Continuity::Discontinuous),
+            "Expected last switching point to be end of path"
+        );
+    }
 
     #[test]
     fn length_limit_blend_size() {
