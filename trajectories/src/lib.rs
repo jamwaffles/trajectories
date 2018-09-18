@@ -29,9 +29,11 @@ mod macros;
 mod path;
 pub mod prelude;
 pub mod test_helpers;
+mod trajectory;
 
 use nalgebra::Vector3;
 pub use path::Path;
+pub use trajectory::Trajectory;
 
 /// Type alias for all vector operations
 ///
