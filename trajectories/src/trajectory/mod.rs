@@ -82,6 +82,21 @@ impl Trajectory {
 
         res * factor
     }
+
+    /// Find the maximum allowable scalar velocity at a point on the path
+    ///
+    /// This method calculates the velocity limit as the smallest component of the tangent
+    /// (derivative of position, velocity) at the given point.
+    fn get_max_velocity_at_position(&self, position_along_path: f64) -> f64 {
+        let tangent = self.path.get_tangent(position_along_path);
+
+        tangent.iter().zip(self.velocity_limit.iter()).fold(
+            std::f64::MAX,
+            |acc, (tangent_component, component_max)| {
+                acc.min(component_max / tangent_component.abs())
+            },
+        )
+    }
 }
 
 #[cfg(test)]
