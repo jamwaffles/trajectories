@@ -83,11 +83,11 @@ impl Trajectory {
         res * factor
     }
 
-    /// Find the maximum allowable scalar velocity at a point on the path
+    /// Find the maximum allowable scalar velocity given a position along the path
     ///
     /// This method calculates the velocity limit as the smallest component of the tangent
-    /// (derivative of position, velocity) at the given point.
-    fn get_max_velocity_at_position(&self, position_along_path: f64) -> f64 {
+    /// (derivative of position, i.e velocity) at the given point.
+    fn get_max_velocity_from_velocity(&self, position_along_path: f64) -> f64 {
         let tangent = self.path.get_tangent(position_along_path);
 
         tangent.iter().zip(self.velocity_limit.iter()).fold(
@@ -96,6 +96,39 @@ impl Trajectory {
                 acc.min(component_max / tangent_component.abs())
             },
         )
+    }
+
+    /// Find maximum allowable velocity as limited by the acceleration at a point on the path
+    fn get_max_velocity_from_acceleration(&self, position_along_path: f64) -> f64 {
+        let velocity = self.path.get_tangent(position_along_path);
+        let acceleration = self.path.get_curvature(position_along_path);
+
+        let n = velocity.len();
+
+        let mut max_path_velocity = std::f64::INFINITY;
+
+        for i in 0..n {
+            if velocity[i] != 0.0 {
+                for j in (i + 1)..n {
+                    // TODO: Come up with a less mathsy name
+                    let a_ij = acceleration[i] / velocity[i] - acceleration[j] / velocity[j];
+
+                    if a_ij != 0.0 {
+                        max_path_velocity = max_path_velocity.min(
+                            (self.acceleration_limit[i] / velocity[i].abs()
+                                + self.acceleration_limit[j] / velocity[j])
+                                .sqrt()
+                                / a_ij.abs(),
+                        );
+                    }
+                }
+            } else {
+                max_path_velocity = max_path_velocity
+                    .min((self.acceleration_limit[i] / acceleration[i].abs()).sqrt());
+            }
+        }
+
+        max_path_velocity
     }
 }
 
