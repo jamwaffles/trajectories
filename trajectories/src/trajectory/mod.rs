@@ -73,8 +73,8 @@ impl Trajectory {
     fn get_min_max_path_acceleration(&self, pos_vel: &PositionAndVelocity, min_max: MinMax) -> f64 {
         let &PositionAndVelocity(position, velocity) = pos_vel;
 
-        let derivative = self.path.get_tangent(velocity);
-        let second_derivative = self.path.get_curvature(velocity);
+        let derivative = self.path.get_tangent(position);
+        let second_derivative = self.path.get_curvature(position);
         let factor = min_max.as_multiplier();
 
         let res = self
