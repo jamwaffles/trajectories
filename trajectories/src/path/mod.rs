@@ -24,12 +24,22 @@ pub trait PathItem {
 
 /// A switching point
 #[derive(Debug, Clone, PartialEq)]
-pub struct SwitchingPoint(
+pub struct SwitchingPoint {
     /// Position along the path at which this switching point occurs
-    f64,
+    pub position: f64,
     /// Whether this switching point is discontinuous or not
-    Continuity,
-);
+    pub continuity: Continuity,
+}
+
+impl SwitchingPoint {
+    /// Create a new switching point from position and continuity flag
+    pub fn new(position: f64, continuity: Continuity) -> Self {
+        Self {
+            position,
+            continuity,
+        }
+    }
+}
 
 /// Continuity flag
 #[derive(Debug, Clone, PartialEq)]
@@ -94,7 +104,7 @@ impl Path {
                         // TODO: Get actual list of switching points when support for non-linear
                         // path segments (that aren't blends) is added.
                         switching_points
-                            .push(SwitchingPoint(start_offset, Continuity::Discontinuous));
+                            .push(SwitchingPoint::new(start_offset, Continuity::Discontinuous));
 
                         let blend_segment = blend_segment.with_start_offset(start_offset);
                         let blend_switching_points = blend_segment.get_switching_points();
@@ -109,7 +119,7 @@ impl Path {
                                     let p_offset = p + blend_segment.start_offset;
 
                                     if p_offset < blend_end_offset {
-                                        Some(SwitchingPoint(p_offset, Continuity::Continuous))
+                                        Some(SwitchingPoint::new(p_offset, Continuity::Continuous))
                                     } else {
                                         None
                                     }
@@ -126,7 +136,7 @@ impl Path {
                         // TODO: Get actual list of switching points when support for non-linear
                         // path segments (that aren't blends) is added.
                         switching_points
-                            .push(SwitchingPoint(start_offset, Continuity::Discontinuous));
+                            .push(SwitchingPoint::new(start_offset, Continuity::Discontinuous));
 
                         // Add both linear segments with blend in between to overall path
                         segments.append(&mut vec![
@@ -171,8 +181,8 @@ impl Path {
         self.switching_points
             .iter()
             .cloned()
-            .find(|sp| sp.0 > position_along_path)
-            .unwrap_or(SwitchingPoint(self.length, Continuity::Discontinuous))
+            .find(|sp| sp.position > position_along_path)
+            .unwrap_or(SwitchingPoint::new(self.length, Continuity::Discontinuous))
     }
 }
 
@@ -241,15 +251,15 @@ mod tests {
 
         assert_eq!(
             path.get_next_switching_point(0.0),
-            SwitchingPoint(1.0173539279271488, Continuity::Discontinuous)
+            SwitchingPoint::new(1.0173539279271488, Continuity::Discontinuous)
         );
         assert_eq!(
             path.get_next_switching_point(5.425844),
-            SwitchingPoint(5.43325752688998, Continuity::Continuous)
+            SwitchingPoint::new(5.43325752688998, Continuity::Continuous)
         );
         assert_eq!(
             path.get_next_switching_point(path.get_length() - 0.01),
-            SwitchingPoint(path.get_length(), Continuity::Discontinuous),
+            SwitchingPoint::new(path.get_length(), Continuity::Discontinuous),
             "Expected last switching point to be end of path"
         );
     }
@@ -287,23 +297,23 @@ mod tests {
 
         // Switching generated from waypoints from Example.cpp
         let expected_switching_points = vec![
-            (1.0173539279271488, Continuity::Discontinuous),
-            (1.0173539279271488, Continuity::Continuous),
-            (1.02079, Continuity::Continuous),
-            (1.0212310438858092, Continuity::Discontinuous),
-            (3.8614234182834446, Continuity::Discontinuous),
-            (3.8626971078471364, Continuity::Continuous),
-            (3.8633, Continuity::Discontinuous),
-            (5.425842981796586, Continuity::Discontinuous),
-            (5.43325752688998, Continuity::Continuous),
-            (5.43372148747555, Continuity::Discontinuous),
-            (7.430435574066095, Continuity::Discontinuous),
-            (7.430435574066095, Continuity::Continuous),
-            (7.4314735160725895, Continuity::Continuous),
-            (7.43201, Continuity::Discontinuous),
-            (8.842953203579489, Continuity::Discontinuous),
-            (8.844, Continuity::Continuous),
-            (8.845047598681882, Continuity::Discontinuous),
+            SwitchingPoint::new(1.0173539279271488, Continuity::Discontinuous),
+            SwitchingPoint::new(1.0173539279271488, Continuity::Continuous),
+            SwitchingPoint::new(1.0207890617732325, Continuity::Continuous),
+            SwitchingPoint::new(1.0212310438858092, Continuity::Discontinuous),
+            SwitchingPoint::new(3.8614234182834446, Continuity::Discontinuous),
+            SwitchingPoint::new(3.8626971078471364, Continuity::Continuous),
+            SwitchingPoint::new(3.8633009591232206, Continuity::Discontinuous),
+            SwitchingPoint::new(5.425842981796586, Continuity::Discontinuous),
+            SwitchingPoint::new(5.43325752688998, Continuity::Continuous),
+            SwitchingPoint::new(5.43372148747555, Continuity::Discontinuous),
+            SwitchingPoint::new(7.430435574066095, Continuity::Discontinuous),
+            SwitchingPoint::new(7.430435574066095, Continuity::Continuous),
+            SwitchingPoint::new(7.4314735160725895, Continuity::Continuous),
+            SwitchingPoint::new(7.432009534887585, Continuity::Discontinuous),
+            SwitchingPoint::new(8.842953203579489, Continuity::Discontinuous),
+            SwitchingPoint::new(8.844000401130685, Continuity::Continuous),
+            SwitchingPoint::new(8.845047598681882, Continuity::Discontinuous),
         ];
 
         // Match Example.cpp accuracy
@@ -320,8 +330,8 @@ mod tests {
             .enumerate()
         {
             println!("Test point {}:", i);
-            assert_near!(point.0, expected.0);
-            assert_eq!(point.1, expected.1);
+            assert_near!(point.position, expected.position);
+            assert_eq!(point.continuity, expected.continuity);
         }
     }
 
