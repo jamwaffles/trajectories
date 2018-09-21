@@ -1,7 +1,7 @@
 use super::PathItem;
 use std::f64;
 use Coord;
-use MIN_ACCURACY;
+use TRAJ_EPSILON;
 
 /// Circular path segment
 ///
@@ -51,7 +51,7 @@ impl CircularPathSegment {
     ) -> Self {
         // If either segment is of negligible length, we don't need to blend it, however a blend
         // is still required to make the path differentiable.
-        if (current - previous).norm() < MIN_ACCURACY || (next - current).norm() < MIN_ACCURACY {
+        if (current - previous).norm() < TRAJ_EPSILON || (next - current).norm() < TRAJ_EPSILON {
             // TODO: Implement Default so this section and others like it are shorter
             return CircularPathSegment {
                 center: current.clone(),
@@ -70,7 +70,7 @@ impl CircularPathSegment {
 
         // If segments are essentially parallel, they don't need blending, however a blend
         // is still required to make the path differentiable.
-        if (previous_normalised - next_normalised).norm() < MIN_ACCURACY {
+        if (previous_normalised - next_normalised).norm() < TRAJ_EPSILON {
             return CircularPathSegment {
                 center: current.clone(),
                 ..Self::default()
@@ -315,7 +315,10 @@ mod tests {
         let bc = blend_circle;
 
         assert_near!(bc.arc_length, 0.9532433417365019);
-        assert_near!(bc.center, Coord::new(1.2137071, 4.4972660, 0.0));
+        assert_near!(
+            bc.center,
+            Coord::new(1.2137071184544088, 4.497266050787415, 0.0)
+        );
         assert_near!(bc.radius, 1.2137071184544088);
         assert_near!(bc.x, Coord::new(-1.0, 0.0, 0.0));
         assert_near!(bc.y, Coord::new(0.0, 1.0, 0.0));
@@ -415,8 +418,8 @@ mod tests {
     /// |
     fn it_computes_tiny_blends() {
         let before = Coord::new(0.0, 0.0, 0.0);
-        let current = Coord::new(0.0, MIN_ACCURACY / 2.0, 0.0);
-        let after = Coord::new(0.0, MIN_ACCURACY, 0.0);
+        let current = Coord::new(0.0, TRAJ_EPSILON / 2.0, 0.0);
+        let after = Coord::new(0.0, TRAJ_EPSILON, 0.0);
 
         let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
 

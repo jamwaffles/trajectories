@@ -40,8 +40,10 @@ pub use trajectory::Trajectory;
 /// This defines how many dimensions are supported. Change this type to add/remove dimensions
 pub type Coord = Vector3<f64>;
 
-/// Custom defined epsilon for "near enough" float comparisons and accuracy checks
-pub const MIN_ACCURACY: f64 = 0.000001;
+/// Custom defined epsilon for "near enough" float comparisons and accuracy checks. This is set to
+/// `(std::f64::EPSILON).sqrt()` on a Linux x64 machine with Rust 1.29 as per the
+/// [answers on this StackExchange question](https://scicomp.stackexchange.com/questions/14355/choosing-epsilons)
+pub const TRAJ_EPSILON: f64 = 0.000000014901161193847656;
 
 /// Maximum deviation from true path
 pub const MAX_DEVIATION: f64 = 0.001;
