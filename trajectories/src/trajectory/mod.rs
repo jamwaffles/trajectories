@@ -47,6 +47,13 @@ impl Default for AccelerationSwitchingPoint {
     }
 }
 
+#[derive(Debug)]
+struct VelocitySwitchingPoint {
+    before_acceleration: f64,
+    after_acceleration: f64,
+    position: PositionAndVelocity,
+}
+
 /// Motion trajectory
 #[derive(Debug)]
 pub struct Trajectory {
@@ -118,6 +125,27 @@ impl Trajectory {
         )
     }
 
+    /// Get the derivative of the max acceleration-bounded velocity at a point along the path
+    fn get_max_velocity_from_velocity_derivative(&self, position_along_path: f64) -> f64 {
+        let tangent = self.path.get_tangent(position_along_path);
+        let mut max_velocity = std::f64::MAX;
+        let mut constraint_axis = 0;
+
+        // TODO: Use iterators
+        for i in 0..self.velocity_limit.len() {
+            let component_velocity = self.velocity_limit[i] / tangent[i].abs();
+
+            if component_velocity < max_velocity {
+                max_velocity = component_velocity;
+                constraint_axis = i;
+            }
+        }
+
+        -(self.velocity_limit[constraint_axis]
+            * self.path.get_curvature(position_along_path)[constraint_axis]
+            / (tangent[constraint_axis].powi(2)))
+    }
+
     /// Find maximum allowable velocity as limited by the acceleration at a point on the path
     fn get_max_velocity_from_acceleration(&self, position_along_path: f64) -> f64 {
         let velocity = self.path.get_tangent(position_along_path);
@@ -160,7 +188,7 @@ impl Trajectory {
             / (2.0 * TRAJ_EPSILON)
     }
 
-    /// Get the next acceleration switching point after the current position
+    /// Get the next acceleration-bounded switching point after the current position
     fn get_next_acceleration_switching_point(
         &self,
         position_along_path: f64,
@@ -236,14 +264,96 @@ impl Trajectory {
         }
     }
 
-    /// Get the next velocity switching point after the current position
-    fn get_next_velocity_switching_point(&self, position_along_path: f64) {
-        unimplemented!()
+    // TODO: Benchmark and optimise this method
+    /// Search along the path for the next velocity switching point after the current position
+    ///
+    /// This method performs a broad search first, stepping along the path from the current position
+    /// in coarse increments. It then binary searches through the interval between two coarse steps
+    /// to find the specific switching point to within a more accurate epsilon.
+    fn get_next_velocity_switching_point(
+        &self,
+        position_along_path: f64,
+    ) -> Option<VelocitySwitchingPoint> {
+        // Broad phase search step
+        let step_size = 0.001;
+        let mut position = position_along_path;
+        let mut start = false;
+
+        position -= step_size;
+
+        // Broad phase
+        // TODO: Iterators
+        loop {
+            position += step_size;
+
+            if self.get_min_max_phase_slope(
+                &PositionAndVelocity(position, self.get_max_velocity_from_velocity(position)),
+                MinMax::Min,
+            ) >= self.get_max_velocity_from_velocity_derivative(position)
+                || position >= self.path.get_length()
+                || self.get_min_max_phase_slope(
+                    &PositionAndVelocity(position, self.get_max_velocity_from_velocity(position)),
+                    MinMax::Min,
+                ) <= self.get_max_velocity_from_velocity_derivative(position)
+            {
+                break;
+            }
+        }
+
+        // There are no switching points after the current position
+        if position >= self.path.get_length() {
+            return None;
+        }
+
+        // Create an interval to search within to find the actual switching point
+        let mut prev_position = position - step_size;
+        let mut after_position = position;
+
+        // Binary search through interval to find switching point within an epsilon
+        // TODO: Iterators
+        while after_position - prev_position > TRAJ_EPSILON {
+            position = (prev_position + after_position) / 2.0;
+
+            if self.get_min_max_phase_slope(
+                &PositionAndVelocity(position, self.get_max_velocity_from_velocity(position)),
+                MinMax::Min,
+            ) > self.get_max_velocity_from_velocity_derivative(position)
+            {
+                prev_position = position
+            } else {
+                after_position = position
+            }
+        }
+
+        let before_acceleration = self.get_min_max_path_acceleration(
+            &PositionAndVelocity(
+                prev_position,
+                self.get_max_velocity_from_velocity(prev_position),
+            ),
+            MinMax::Min,
+        );
+        let after_acceleration = self.get_min_max_path_acceleration(
+            &PositionAndVelocity(
+                after_position,
+                self.get_max_velocity_from_velocity(after_position),
+            ),
+            MinMax::Max,
+        );
+        let next_switching_point = PositionAndVelocity(
+            after_position,
+            self.get_max_velocity_from_velocity(after_position),
+        );
+
+        Some(VelocitySwitchingPoint {
+            before_acceleration,
+            after_acceleration,
+            position: next_switching_point,
+        })
     }
 
     /// Get the minimum or maximum phase slope for a position along the path
     ///
-    /// TODO: Figure out what phase slope means in this context
+    /// TODO: Figure out what phase slope means in this context and give it a better name
     fn get_min_max_phase_slope(&self, pos_vel: &PositionAndVelocity, min_max: MinMax) -> f64 {
         self.get_min_max_path_acceleration(&pos_vel, min_max) / pos_vel.0
     }
