@@ -191,12 +191,17 @@ bool Trajectory::getNextAccelerationSwitchingPoint(double pathPos, TrajectorySte
 	return false;
 }
 
+// Search along path for next switching point. This method first finds a reasonably inaccurate interval in which the switching point occurs, defined by
+// the `stepSize` variable. Then, another loop binary searches the interval to find the switching point to within an interval of `accuracy`.
 bool Trajectory::getNextVelocitySwitchingPoint(double pathPos, TrajectoryStep &nextSwitchingPoint, double &beforeAcceleration, double &afterAcceleration) {
 	const double stepSize = 0.001;
 	const double accuracy = 0.000001;
 
+	// Whether the end (yes, the end) of the interval has been found
 	bool start = false;
 	pathPos -= stepSize;
+
+	// Find the path position just _after_ the next switching point
 	do {
 		pathPos += stepSize;
 
@@ -207,18 +212,27 @@ bool Trajectory::getNextVelocitySwitchingPoint(double pathPos, TrajectoryStep &n
 	} while((!start || getMinMaxPhaseSlope(pathPos, getVelocityMaxPathVelocity(pathPos), false) > getVelocityMaxPathVelocityDeriv(pathPos))
 		&& pathPos < path.getLength());
 
+	// No next switching point could be found (return `None`)
 	if(pathPos >= path.getLength()) {
 		return true; // end of trajectory reached
 	}
 
+	// Create a interval around the switching point to speed up finding its more precise location
 	double beforePathPos = pathPos - stepSize;
 	double afterPathPos = pathPos;
+
+	// Sort-of binary search through interval to find switching point with a given accuracy
+	// Presumably reducing accuracy will speed up algo at cost of precision
 	while(afterPathPos - beforePathPos > accuracy) {
+		// Set path pos to midpoint of search space
 		pathPos = (beforePathPos + afterPathPos) / 2.0;
+
 		if(getMinMaxPhaseSlope(pathPos, getVelocityMaxPathVelocity(pathPos), false) > getVelocityMaxPathVelocityDeriv(pathPos)) {
+			// Reduce beginning of search space to current position
 			beforePathPos = pathPos;
 		}
 		else {
+			// Reduce end of search space to current position
 			afterPathPos = pathPos;
 		}
 	}
