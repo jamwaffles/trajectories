@@ -188,6 +188,18 @@ impl Trajectory {
             / (2.0 * TRAJ_EPSILON)
     }
 
+    /// Get the minimum or maximum phase slope for a position along the path
+    ///
+    /// TODO: Figure out what phase slope means in this context and give it a better name
+    fn get_min_max_phase_slope(&self, pos_vel: &PositionAndVelocity, min_max: MinMax) -> f64 {
+        self.get_min_max_path_acceleration(&pos_vel, min_max) / pos_vel.0
+    }
+
+    /// Get next switching point along the path, bounded by velocity or acceleration
+    fn get_next_switching_point() -> () {
+        unimplemented!()
+    }
+
     /// Get the next acceleration-bounded switching point after the current position
     fn get_next_acceleration_switching_point(
         &self,
@@ -264,7 +276,7 @@ impl Trajectory {
         }
     }
 
-    // TODO: Benchmark and optimise this method
+    // TODO: Benchmark and optimise this method. There are two loops which may be reducable to one
     /// Search along the path for the next velocity switching point after the current position
     ///
     /// This method performs a broad search first, stepping along the path from the current position
@@ -339,23 +351,15 @@ impl Trajectory {
             ),
             MinMax::Max,
         );
-        let next_switching_point = PositionAndVelocity(
-            after_position,
-            self.get_max_velocity_from_velocity(after_position),
-        );
 
         Some(VelocitySwitchingPoint {
             before_acceleration,
             after_acceleration,
-            position: next_switching_point,
+            position: PositionAndVelocity(
+                after_position,
+                self.get_max_velocity_from_velocity(after_position),
+            ),
         })
-    }
-
-    /// Get the minimum or maximum phase slope for a position along the path
-    ///
-    /// TODO: Figure out what phase slope means in this context and give it a better name
-    fn get_min_max_phase_slope(&self, pos_vel: &PositionAndVelocity, min_max: MinMax) -> f64 {
-        self.get_min_max_path_acceleration(&pos_vel, min_max) / pos_vel.0
     }
 }
 
