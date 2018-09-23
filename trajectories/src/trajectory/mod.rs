@@ -30,7 +30,6 @@ impl MinMax {
 
 #[derive(Debug)]
 struct AccelerationSwitchingPoint {
-    has_reached_end: bool,
     velocity: f64,
     before_acceleration: f64,
     after_acceleration: f64,
@@ -204,16 +203,14 @@ impl Trajectory {
     fn get_next_acceleration_switching_point(
         &self,
         position_along_path: f64,
-    ) -> AccelerationSwitchingPoint {
+    ) -> Option<AccelerationSwitchingPoint> {
         let mut ret = AccelerationSwitchingPoint::default();
 
         loop {
             let switching_point = self.path.get_next_switching_point(position_along_path);
 
             if switching_point.position > self.path.get_length() - TRAJ_EPSILON {
-                ret.has_reached_end = true;
-
-                break ret;
+                break None;
             }
 
             match switching_point.continuity {
@@ -247,7 +244,7 @@ impl Trajectory {
                                 .get_max_velocity_from_acceleration_derivative(
                                     switching_point.position + 2.0 * TRAJ_EPSILON,
                                 )) {
-                        break ret;
+                        break Some(ret);
                     }
                 }
                 Continuity::Continuous => {
@@ -264,12 +261,11 @@ impl Trajectory {
                             switching_point.position + TRAJ_EPSILON,
                         ) > 0.0
                     {
-                        break AccelerationSwitchingPoint {
-                            has_reached_end: false,
+                        break Some(AccelerationSwitchingPoint {
                             velocity,
                             before_acceleration,
                             after_acceleration,
-                        };
+                        });
                     }
                 }
             }
