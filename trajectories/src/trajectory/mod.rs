@@ -67,6 +67,11 @@ impl Trajectory {
         path
     }
 
+    /// Get next switching point along the path, bounded by velocity or acceleration
+    fn get_next_switching_point(&self, position_along_path: f64) -> TrajectorySwitchingPoint {
+        unimplemented!()
+    }
+
     /// Find minimum or maximum acceleration at a point along path
     fn get_min_max_path_acceleration(&self, pos_vel: &PositionAndVelocity, min_max: MinMax) -> f64 {
         let &PositionAndVelocity(position, velocity) = pos_vel;
@@ -184,11 +189,6 @@ impl Trajectory {
     /// TODO: Figure out what phase slope means in this context and give it a better name
     fn get_min_max_phase_slope(&self, pos_vel: &PositionAndVelocity, min_max: MinMax) -> f64 {
         self.get_min_max_path_acceleration(&pos_vel, min_max) / pos_vel.0
-    }
-
-    /// Get next switching point along the path, bounded by velocity or acceleration
-    fn get_next_switching_point() -> () {
-        unimplemented!()
     }
 
     /// Get the next acceleration-bounded switching point after the current position
