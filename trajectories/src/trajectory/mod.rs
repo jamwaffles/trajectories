@@ -4,7 +4,7 @@ use Coord;
 use TRAJ_EPSILON;
 
 /// A (position, velocity) pair
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct PositionAndVelocity(
     /// Position
     f64,
@@ -28,7 +28,7 @@ impl MinMax {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct TrajectorySwitchingPoint {
     position: PositionAndVelocity,
     before_acceleration: f64,
@@ -68,8 +68,63 @@ impl Trajectory {
     }
 
     /// Get next switching point along the path, bounded by velocity or acceleration
-    fn get_next_switching_point(&self, position_along_path: f64) -> TrajectorySwitchingPoint {
-        unimplemented!()
+    fn get_next_switching_point(
+        &self,
+        position_along_path: f64,
+    ) -> Option<TrajectorySwitchingPoint> {
+        let mut acceleration_switching_point: Option<TrajectorySwitchingPoint> = None;
+
+        // Find the next acceleration switching point
+        while let Some(point) = self.get_next_acceleration_switching_point(
+            acceleration_switching_point
+                .clone()
+                .map(|p| p.position.0)
+                .unwrap_or(position_along_path),
+        ) {
+            if point.position.1 > self.get_max_velocity_from_velocity(point.position.0) {
+                break;
+            }
+
+            acceleration_switching_point = Some(point);
+        }
+
+        let mut velocity_switching_point: Option<TrajectorySwitchingPoint> = None;
+
+        // Find the next velocity switching point
+        while let Some(point) = self.get_next_velocity_switching_point(
+            velocity_switching_point
+                .clone()
+                .map(|p| p.position.0)
+                .unwrap_or(position_along_path),
+        ) {
+            if point.position.0 > acceleration_switching_point
+                .clone()
+                .expect("Accel switching point")
+                .position
+                .0
+                || (point.position.1
+                    <= self.get_max_velocity_from_acceleration(point.position.0 - TRAJ_EPSILON)
+                    && point.position.1
+                        <= self.get_max_velocity_from_acceleration(point.position.0 + TRAJ_EPSILON))
+            {
+                break;
+            }
+
+            velocity_switching_point = Some(point);
+        }
+
+        match (acceleration_switching_point, velocity_switching_point) {
+            (Some(acc_point), Some(vel_point)) => {
+                if acc_point.position.0 <= vel_point.position.0 {
+                    Some(acc_point)
+                } else {
+                    Some(vel_point)
+                }
+            }
+            (Some(acc_point), None) => Some(acc_point),
+            (None, Some(vel_point)) => Some(vel_point),
+            (None, None) => None,
+        }
     }
 
     /// Find minimum or maximum acceleration at a point along path
