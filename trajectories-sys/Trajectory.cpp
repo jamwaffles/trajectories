@@ -246,6 +246,7 @@ bool Trajectory::getNextVelocitySwitchingPoint(double pathPos, TrajectoryStep &n
 // returns true if end of path is reached
 bool Trajectory::integrateForward(list<TrajectoryStep> &trajectory, double acceleration) {
 
+	// Start at the end of the existing trajectory
 	double pathPos = trajectory.back().pathPos;
 	double pathVel = trajectory.back().pathVel;
 
@@ -254,48 +255,63 @@ bool Trajectory::integrateForward(list<TrajectoryStep> &trajectory, double accel
 
 	while(true)
 	{
+		// Search through list of switching points to find the next point after the current position that is not(?) discontinuous
 		while(nextDiscontinuity != switchingPoints.end() && (nextDiscontinuity->first <= pathPos || !nextDiscontinuity->second)) {
 			nextDiscontinuity++;
 		}
 
+		// Store previous position
 		double oldPathPos = pathPos;
 		double oldPathVel = pathVel;
 
+		// Step forward
 		pathVel += timeStep * acceleration;
 		pathPos += timeStep * 0.5 * (oldPathVel + pathVel);
 
+		// If there is a next switching point and the current position is after it, err do something
 		if(nextDiscontinuity != switchingPoints.end() && pathPos > nextDiscontinuity->first) {
 			pathVel = oldPathVel + (nextDiscontinuity->first - oldPathPos) * (pathVel - oldPathVel) / (pathPos - oldPathPos);
 			pathPos = nextDiscontinuity->first;
 		}
 
+		// Reached end of path, break
 		if(pathPos > path.getLength()) {
 			trajectory.push_back(TrajectoryStep(pathPos, pathVel));
 			return true;
 		}
 		else if(pathVel < 0.0) {
+			// Velocity can't be zero; set error flag and bail
 			valid = false;
 			cout << "error" << endl;
 			return true;
 		}
 
+		// Clamp path velocity to max velocity (and check something else with the phase slope. Not sure what)
 		if(pathVel > getVelocityMaxPathVelocity(pathPos)
 			&& getMinMaxPhaseSlope(oldPathPos, getVelocityMaxPathVelocity(oldPathPos), false) <= getVelocityMaxPathVelocityDeriv(oldPathPos))
 		{
 			pathVel = getVelocityMaxPathVelocity(pathPos);
 		}
 
+		// Add trajectory step
 		trajectory.push_back(TrajectoryStep(pathPos, pathVel));
+		// Update acceleration
 		acceleration = getMinMaxPathAcceleration(pathPos, pathVel, true);
 
+		// If the velocity has overshot limits, walk back and do a more accurate search to stop overshoot
 		if(pathVel > getAccelerationMaxPathVelocity(pathPos) || pathVel > getVelocityMaxPathVelocity(pathPos)) {
 			// find more accurate intersection with max-velocity curve using bisection
 			TrajectoryStep overshoot = trajectory.back();
+			// Remove overshooting trajectory step
 			trajectory.pop_back();
+
+			// Create an interval between good place on path and overshoot
 			double before = trajectory.back().pathPos;
 			double beforePathVel = trajectory.back().pathVel;
 			double after = overshoot.pathPos;
 			double afterPathVel = overshoot.pathVel;
+
+			// Binary search interval, find place where velocity is at or below limit
 			while(after - before > eps) {
 				const double midpoint = 0.5 * (before + after);
 				double midpointPathVel = 0.5 * (beforePathVel + afterPathVel);
@@ -306,17 +322,22 @@ bool Trajectory::integrateForward(list<TrajectoryStep> &trajectory, double accel
 					midpointPathVel = getVelocityMaxPathVelocity(midpoint);
 				}
 
+				// Velocity is too high, reduce search space to lower half
 				if(midpointPathVel > getAccelerationMaxPathVelocity(midpoint) || midpointPathVel > getVelocityMaxPathVelocity(midpoint)) {
 					after = midpoint;
 					afterPathVel = midpointPathVel;
 				}
+				// Velocity is in second half
 				else {
 					before = midpoint;
 					beforePathVel = midpointPathVel;
 				}
 			}
+
+			// Re-add last point, but with new, clamped velocity
 			trajectory.push_back(TrajectoryStep(before, beforePathVel));
 
+			// Loop end conditions; TODO: Explain
 			if(getAccelerationMaxPathVelocity(after) < getVelocityMaxPathVelocity(after)) {
 				if(after > nextDiscontinuity->first) {
 					return false;
