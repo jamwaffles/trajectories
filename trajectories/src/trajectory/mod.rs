@@ -4,6 +4,7 @@ use Coord;
 use TRAJ_EPSILON;
 
 /// A (position, velocity) pair
+// TODO: Make this a struct with named fields
 #[derive(Debug, Clone)]
 struct PositionAndVelocity(
     /// Position
@@ -51,6 +52,7 @@ pub struct Trajectory {
     path: Path,
     velocity_limit: Coord,
     acceleration_limit: Coord,
+    timestep: f64,
 }
 
 impl Trajectory {
@@ -60,11 +62,140 @@ impl Trajectory {
             path,
             velocity_limit,
             acceleration_limit,
+            timestep: 0.001,
         };
 
         let _ = path.get_min_max_path_acceleration(&PositionAndVelocity(0.0, 0.0), MinMax::Max);
 
         path
+    }
+
+    fn integrate_forward(
+        &self,
+        trajectory: &Vec<PositionAndVelocity>,
+        start_acceleration: f64,
+    ) -> Option<Vec<PositionAndVelocity>> {
+        let mut new_points = Vec::new();
+        let mut step = trajectory.last().expect("Empty trajectory").clone();
+        let switching_points = self.path.get_switching_points();
+        // let sp_iter = switching_points.iter();
+        let mut acceleration = start_acceleration;
+
+        loop {
+            let next_discontinuity = switching_points
+                .iter()
+                .find(|sp| sp.position > step.0 && sp.continuity == Continuity::Discontinuous);
+
+            // Step forward, keeping the previous step around for comparison
+            let prev_step = step.clone();
+            let new_velocity = step.0 + self.timestep * acceleration;
+            step = PositionAndVelocity(
+                new_velocity,
+                step.1 + self.timestep * 0.5 * (prev_step.0 + new_velocity),
+            );
+
+            if let Some(next_discontinuity) = next_discontinuity {
+                if step.0 > next_discontinuity.position {
+                    step = PositionAndVelocity(
+                        next_discontinuity.position,
+                        prev_step.1
+                            + (next_discontinuity.position - prev_step.0) * (step.1 - prev_step.1)
+                                / (step.0 - prev_step.0),
+                    )
+                }
+            }
+
+            // Reached end of path, break
+            if step.0 > self.path.get_length() {
+                break;
+            } else if step.1 < 0.0 {
+                // Velocity can't be less than zero, error out
+                // TODO: Return a Result instead of panicking
+                panic!("Velocity can't be less than zero");
+            }
+
+            // Clamp path velocity
+            if step.1 > self.get_max_velocity_from_velocity(step.0)
+                && self.get_min_max_phase_slope(
+                    &PositionAndVelocity(
+                        prev_step.0,
+                        self.get_max_velocity_from_velocity(prev_step.0),
+                    ),
+                    MinMax::Min,
+                ) <= self.get_max_velocity_from_velocity_derivative(prev_step.0)
+            {
+                step.1 = self.get_max_velocity_from_velocity(step.0);
+            }
+
+            new_points.push(step.clone());
+
+            acceleration = self.get_min_max_path_acceleration(&step, MinMax::Max);
+
+            // Deal with overshoot
+            if step.1 > self.get_max_velocity_from_acceleration(step.0)
+                || step.1 > self.get_max_velocity_from_velocity(step.0)
+            {
+                let mut overshoot = new_points
+                    .pop()
+                    .expect("Empty trajectory for overshoot computation");
+                let mut before = new_points.last().expect("Empty trajectory").clone();
+
+                while overshoot.0 - before.0 > TRAJ_EPSILON {
+                    let midpoint = 0.5 * (before.0 + overshoot.0);
+                    let mut midpoint_velocity = 0.5 * (before.1 + overshoot.1);
+
+                    if midpoint_velocity > self.get_max_velocity_from_velocity(midpoint)
+                        && self.get_min_max_phase_slope(
+                            &PositionAndVelocity(
+                                before.0,
+                                self.get_max_velocity_from_velocity(before.1),
+                            ),
+                            MinMax::Min,
+                        ) <= self.get_max_velocity_from_velocity_derivative(before.0)
+                    {
+                        midpoint_velocity = self.get_max_velocity_from_velocity(midpoint);
+                    }
+
+                    // Reduce search space every iteration
+                    if midpoint_velocity > self.get_max_velocity_from_acceleration(midpoint)
+                        || midpoint_velocity > self.get_max_velocity_from_velocity(midpoint)
+                    {
+                        overshoot = PositionAndVelocity(midpoint, midpoint_velocity);
+                    } else {
+                        before = PositionAndVelocity(midpoint, midpoint_velocity);
+                    }
+                }
+
+                // Re-add non-overshot step
+                new_points.push(before);
+
+                let last_point = new_points.last().expect("Empty list of points");
+
+                if self.get_max_velocity_from_acceleration(overshoot.0)
+                    < self.get_max_velocity_from_velocity(overshoot.0)
+                {
+                    if next_discontinuity.is_some()
+                        && overshoot.0 > next_discontinuity.unwrap().position
+                    {
+                        break;
+                    } else if self.get_min_max_phase_slope(last_point, MinMax::Max)
+                        > self.get_max_velocity_from_acceleration_derivative(last_point.0)
+                    {
+
+                    }
+                } else if self.get_min_max_phase_slope(last_point, MinMax::Min)
+                    > self.get_max_velocity_from_velocity_derivative(last_point.0)
+                {
+                    break;
+                }
+            }
+        }
+
+        if new_points.len() > 0 {
+            Some(new_points)
+        } else {
+            None
+        }
     }
 
     /// Get next switching point along the path, bounded by velocity or acceleration
