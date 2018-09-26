@@ -64,6 +64,8 @@ Trajectory::Trajectory(const Path &path, const Vector3d &maxVelocity, const Vect
 	while(valid && !integrateForward(trajectory, afterAcceleration) && valid) {
 		double beforeAcceleration;
 		TrajectoryStep switchingPoint;
+
+		// Break if we've reached the end of the path
 		if(getNextSwitchingPoint(trajectory.back().pathPos, switchingPoint, beforeAcceleration, afterAcceleration)) {
 			break;
 		}
@@ -355,6 +357,8 @@ bool Trajectory::integrateForward(list<TrajectoryStep> &trajectory, double accel
 	}
 }
 
+// Integrate backwards along the path, starting from the next switching point and ending at any found intersection.
+// If no intersection is found, the algorithm has failed
 void Trajectory::integrateBackward(list<TrajectoryStep> &startTrajectory, double pathPos, double pathVel, double acceleration) {
 	list<TrajectoryStep>::iterator start2 = startTrajectory.end();
 	start2--;
@@ -364,15 +368,24 @@ void Trajectory::integrateBackward(list<TrajectoryStep> &startTrajectory, double
 	double slope = 0.0;
 	assert(start1->pathPos <= pathPos);
 
+	// Move backwards through path in windows of 2. Exit if beginning of path is reached
 	while(start1 != startTrajectory.begin() || pathPos >= 0.0)
 	{
+		// Walk backwards through current segment by self.timestep
 		if(start1->pathPos <= pathPos) {
+			// Add new trajectory step of current position
 			trajectory.push_front(TrajectoryStep(pathPos, pathVel));
+
+			// Step backwards along the path by self.timestep, update pos/vel/acc at new position's
 			pathVel -= timeStep * acceleration;
+			// Update position with average of previous and current velocity
 			pathPos -= timeStep * 0.5 * (pathVel + trajectory.front().pathVel);
+			// Get _minimum_ (max = false) acceleration at new point
 			acceleration = getMinMaxPathAcceleration(pathPos, pathVel, false);
+			// Update slope at new position
 			slope = (trajectory.front().pathVel - pathVel) / (trajectory.front().pathPos - pathPos);
 
+			// If velocity is below zero, bail
 			if(pathVel < 0.0) {
 				valid = false;
 				cout << "Error while integrating backward: Negative path velocity" << endl;
@@ -380,23 +393,31 @@ void Trajectory::integrateBackward(list<TrajectoryStep> &startTrajectory, double
 				return;
 			}
 		}
+		// If position now lies before current segment, move to the previous segment to step through that
 		else {
 			start1--;
 			start2--;
 		}
 
-		// check for intersection between current start trajectory and backward trajectory segments
+		// For every step through the segment, check for intersection between current start trajectory and backward trajectory segments
+		// Find slope of current segment
 		const double startSlope = (start2->pathVel - start1->pathVel) / (start2->pathPos - start1->pathPos);
+		// Find point along path where backwards integration intersects forward integration
 		const double intersectionPathPos = (start1->pathVel - pathVel + slope * pathPos - startSlope * start1->pathPos) / (slope - startSlope);
+		// If the current backwards-iterating segment intersects the original path, we're done
 		if(max(start1->pathPos, pathPos) - eps <= intersectionPathPos && intersectionPathPos <= eps + min(start2->pathPos, trajectory.front().pathPos)) {
 			const double intersectionPathVel = start1->pathVel + startSlope * (intersectionPathPos - start1->pathPos);
+			// Remove the part of the path after the intersection
 			startTrajectory.erase(start2, startTrajectory.end());
+			// Add the intersection point
 			startTrajectory.push_back(TrajectoryStep(intersectionPathPos, intersectionPathVel));
+			// Append this newly generated path to the current trajectory
 			startTrajectory.splice(startTrajectory.end(), trajectory);
 			return;
 		}
 	}
 
+	// Original path was not intersected. In this case the algorithm failed so should bail
 	valid = false;
 	cout << "Error while integrating backward: Did not hit start trajectory" << endl;
 	endTrajectory = trajectory;
