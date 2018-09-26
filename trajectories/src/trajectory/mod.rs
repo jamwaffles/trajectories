@@ -142,9 +142,9 @@ impl Trajectory {
 
         loop {
             println!("Integrate forward infinite loop");
-            let next_discontinuity = switching_points.iter().find(|sp| {
-                sp.position > step.position && sp.continuity == Continuity::Discontinuous
-            });
+            let next_discontinuity = switching_points
+                .iter()
+                .find(|sp| sp.position > step.position && sp.continuity == Continuity::Continuous);
 
             // Step forward, keeping the previous step around for comparison
             let prev_step = step.clone();
