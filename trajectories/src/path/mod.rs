@@ -232,6 +232,114 @@ mod tests {
     use test_helpers::*;
 
     #[test]
+    fn get_derivatives() {
+        // Data from Example.cpp in C++ example code
+        let waypoints = vec![
+            Coord::new(0.0, 0.0, 0.0),
+            Coord::new(0.0, 0.2, 1.0),
+            Coord::new(0.0, 3.0, 0.5),
+            Coord::new(1.1, 2.0, 0.0),
+            Coord::new(1.0, 0.0, 0.0),
+            Coord::new(0.0, 1.0, 0.0),
+            Coord::new(0.0, 0.0, 1.0),
+        ];
+
+        // Match Example.cpp accuracy
+        let accuracy = 0.001;
+
+        // Tuple of (position, expected derivative, expected second derivative) taken from Example.cpp
+        let expected = vec![
+            (
+                0.0,
+                Coord::new(0.0, 0.1961161351381840, 0.9805806756909202),
+                Coord::new(0.0, 0.0, 0.0),
+            ),
+            (
+                0.5099017027977882,
+                Coord::new(0.0, 0.1961161351381840, 0.9805806756909202),
+                Coord::new(0.0, 0.0, 0.0),
+            ),
+            (
+                1.0201861237223337,
+                Coord::new(0.0, 0.9710853103707811, 0.2387327375583182),
+                Coord::new(-0.0, 95.4477291274329076, -388.2495907845863030),
+            ),
+            (
+                1.5569160753598927,
+                Coord::new(-0.0, 0.9844275755084820, -0.1757906384836575),
+                Coord::new(0.0, 0.0, 0.0),
+            ),
+            (
+                2.5727348363119251,
+                Coord::new(-0.0, 0.9844275755084820, -0.1757906384836575),
+                Coord::new(0.0, 0.0, 0.0),
+            ),
+            (
+                3.5614767161100072,
+                Coord::new(-0.0, 0.9844275755084820, -0.1757906384836575),
+                Coord::new(0.0, 0.0, 0.0),
+            ),
+            (
+                3.8984742788054678,
+                Coord::new(0.7013343843696721, -0.6375767130633382, -0.3187883565316692),
+                Coord::new(0.0, 0.0, 0.0),
+            ),
+            (
+                4.8831177467169011,
+                Coord::new(0.7013343843696721, -0.6375767130633382, -0.3187883565316692),
+                Coord::new(0.0, 0.0, 0.0),
+            ),
+            (
+                5.4523088538682449,
+                Coord::new(-0.0499376169438922, -0.9987523388778448, -0.0),
+                Coord::new(0.0, 0.0, 0.0),
+            ),
+            (
+                6.1453761368528133,
+                Coord::new(-0.0499376169438922, -0.9987523388778448, -0.0),
+                Coord::new(0.0, 0.0, 0.0),
+            ),
+            (
+                7.1232278747423878,
+                Coord::new(-0.0499376169438922, -0.9987523388778448, -0.0),
+                Coord::new(0.0, 0.0, 0.0),
+            ),
+            (
+                7.4612006384156970,
+                Coord::new(-0.7071067811865476, 0.7071067811865475, 0.0),
+                Coord::new(0.0, 0.0, 0.0),
+            ),
+            (
+                8.3975630709442228,
+                Coord::new(-0.7071067811865476, 0.7071067811865475, 0.0),
+                Coord::new(0.0, 0.0, 0.0),
+            ),
+            (
+                8.8718474912408851,
+                Coord::new(-0.0, -0.7071067811865476, 0.7071067811865476),
+                Coord::new(0.0, 0.0, 0.0),
+            ),
+            (
+                9.8017700948612454,
+                Coord::new(-0.0, -0.7071067811865476, 0.7071067811865476),
+                Coord::new(0.0, 0.0, 0.0),
+            ),
+        ];
+
+        let path = Path::from_waypoints(&waypoints, accuracy);
+
+        expected
+            .into_iter()
+            .for_each(|(pos, expected_deriv, expected_second_deriv)| {
+                let deriv = path.get_tangent(pos);
+                let second_deriv = path.get_curvature(pos);
+
+                assert_near!(deriv, expected_deriv);
+                assert_near!(second_deriv, expected_second_deriv);
+            });
+    }
+
+    #[test]
     fn get_next_switching_point() {
         // Data from Example.cpp in C++ example code
         let waypoints = vec![

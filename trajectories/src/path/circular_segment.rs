@@ -194,7 +194,7 @@ impl PathItem for CircularPathSegment {
     fn get_curvature(&self, distance_along_arc: f64) -> Coord {
         let angle = distance_along_arc / self.radius;
 
-        -(1.0 / self.radius) * (self.x * angle.sin() + self.y * angle.cos())
+        -1.0 / self.radius * (self.x * angle.cos() + self.y * angle.sin())
     }
 }
 
