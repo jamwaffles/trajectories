@@ -358,7 +358,11 @@ impl Trajectory {
         &self,
         position_along_path: f64,
     ) -> Option<TrajectorySwitchingPoint> {
-        let mut acceleration_switching_point: Option<TrajectorySwitchingPoint> = None;
+        let mut acceleration_switching_point: Option<TrajectorySwitchingPoint> =
+            Some(TrajectorySwitchingPoint {
+                pos: PositionAndVelocity::new(position_along_path, 0.0),
+                ..TrajectorySwitchingPoint::default()
+            });
 
         // Find the next acceleration switching point
         while let Some(point) = self.get_next_acceleration_switching_point(
