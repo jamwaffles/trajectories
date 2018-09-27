@@ -293,7 +293,8 @@ impl Trajectory {
                     println!("Integrate backwards while");
                     let new_point = PositionAndVelocity::new(position, velocity);
 
-                    new_trajectory.push(new_point.clone());
+                    // TODO: Benchmark push then reverse instead of shift front
+                    new_trajectory.insert(0, new_point.clone());
 
                     velocity -= self.timestep * before_acceleration;
                     position -= self.timestep * 0.5 * (velocity + new_point.velocity);
@@ -501,14 +502,14 @@ impl Trajectory {
 
                     if a_ij != 0.0 {
                         max_path_velocity = max_path_velocity.min(
-                            (self.acceleration_limit[i] / velocity[i].abs()
-                                + self.acceleration_limit[j] / velocity[j])
-                                .sqrt()
-                                / a_ij.abs(),
+                            ((self.acceleration_limit[i] / velocity[i].abs()
+                                + self.acceleration_limit[j] / velocity[j].abs())
+                                / a_ij.abs())
+                            .sqrt(),
                         );
                     }
                 }
-            } else {
+            } else if acceleration[i] != 0.0 {
                 max_path_velocity = max_path_velocity
                     .min((self.acceleration_limit[i] / acceleration[i].abs()).sqrt());
             }
