@@ -3,7 +3,7 @@
 use csv;
 pub use path::CircularPathSegment;
 use path::PathItem;
-use path::{Path as TrajPath, PathSegment};
+use path::{Continuity, Path as TrajPath, PathSegment};
 use std::fmt;
 use std::fs::File;
 use svg;
@@ -27,7 +27,7 @@ fn single_line(from: &Coord, to: &Coord, stroke: &str, stroke_width: u32) -> Svg
         )
 }
 
-fn cross_centered_at(center: &Coord, stroke: &str, stroke_width: u32) -> SvgPath {
+fn cross_centered_at(center: &Coord, stroke: &str, stroke_width: f32) -> SvgPath {
     let size = 0.1;
 
     SvgPath::new()
@@ -68,7 +68,8 @@ fn create_document(top_left: &Coord, bottom_right: &Coord) -> Document {
         .set(
             "viewBox",
             (top_left.x, top_left.y, bottom_right.x, bottom_right.y),
-        ).add(border(&top_left, &bottom_right))
+        )
+        .add(border(&top_left, &bottom_right))
 }
 
 fn save_document(suite_name: &str, doc: &Document) {
@@ -182,8 +183,6 @@ pub fn debug_blend_position(p: &str, blend: &CircularPathSegment) {
 pub fn debug_path(file_path: &'static str, path: &TrajPath, waypoints: &Vec<Coord>) {
     let (top_left, bottom_right) = calc_bbox(waypoints.as_slice());
 
-    println!("DBUG {:?} ---- {:?}", top_left, bottom_right);
-
     let mut document = create_document(&top_left, &bottom_right);
 
     // Original waypoints in background to compare
@@ -208,7 +207,10 @@ pub fn debug_path(file_path: &'static str, path: &TrajPath, waypoints: &Vec<Coor
                             .set("y", line.start.y)
                             .set("fill", "red")
                             .set("style", "font-size: 0.18px; font-family: monospace")
-                            .add(TextContent::new(format!("Line offs. {:.*}", 3, line.start_offset))),
+                            .add(TextContent::new(format!(
+                                "Line offs. {:.*}",
+                                3, line.start_offset
+                            ))),
                     )
             }
 
@@ -224,10 +226,50 @@ pub fn debug_path(file_path: &'static str, path: &TrajPath, waypoints: &Vec<Coor
                             .set("y", start.y)
                             .set("fill", "blue")
                             .set("style", "font-size: 0.18px; font-family: monospace")
-                            .add(TextContent::new(format!("Circ offs. {:.*}", 3, circ.start_offset)))
+                            .add(TextContent::new(format!(
+                                "Circ offs. {:.*}",
+                                3, circ.start_offset
+                            )))
                     })
             }
         }
+    }
+
+    save_document(file_path, &document);
+}
+
+/// Draw switching points on a path
+pub fn debug_path_switching_points(
+    file_path: &'static str,
+    path: &TrajPath,
+    waypoints: &Vec<Coord>,
+) {
+    let (top_left, bottom_right) = calc_bbox(waypoints.as_slice());
+
+    let mut document = create_document(&top_left, &bottom_right);
+
+    // Generated segments with blends
+    for segment in path.segments.iter() {
+        match segment {
+            PathSegment::Linear(ref line) => {
+                document = document.add(single_line(&line.start, &line.end, "red", 1))
+            }
+
+            // PathSegment::Circular(ref circ) => document = document.add(draw_blend_circle(&circ)),
+            PathSegment::Circular(_) => (),
+        }
+    }
+
+    // Switching points
+    for point in path.get_switching_points() {
+        let pos = path.get_position(point.position);
+
+        let col = match point.continuity {
+            Continuity::Continuous => "green",
+            Continuity::Discontinuous => "orange",
+        };
+
+        document = document.add(cross_centered_at(&pos, col, 0.5));
     }
 
     save_document(file_path, &document);
@@ -257,7 +299,10 @@ pub fn debug_path_point(
                             .set("y", line.start.y)
                             .set("fill", "red")
                             .set("style", "font-size: 0.18px; font-family: monospace")
-                            .add(TextContent::new(format!("Line offs. {:.*}", 3, line.start_offset))),
+                            .add(TextContent::new(format!(
+                                "Line offs. {:.*}",
+                                3, line.start_offset
+                            ))),
                     )
             }
 
@@ -273,14 +318,17 @@ pub fn debug_path_point(
                             .set("y", start.y)
                             .set("fill", "blue")
                             .set("style", "font-size: 0.18px; font-family: monospace")
-                            .add(TextContent::new(format!("Circ offs. {:.*}", 3, circ.start_offset)))
+                            .add(TextContent::new(format!(
+                                "Circ offs. {:.*}",
+                                3, circ.start_offset
+                            )))
                     })
             }
         }
     }
 
     // Point to debug
-    document = document.add(cross_centered_at(&point, "orange", 1));
+    document = document.add(cross_centered_at(&point, "orange", 1.0));
 
     save_document(file_path, &document);
 }
