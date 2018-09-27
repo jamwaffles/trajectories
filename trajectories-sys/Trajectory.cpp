@@ -344,12 +344,16 @@ bool Trajectory::integrateForward(list<TrajectoryStep> &trajectory, double accel
 				if(after > nextDiscontinuity->first) {
 					return false;
 				}
-				else if(getMinMaxPhaseSlope(trajectory.back().pathPos, trajectory.back().pathVel, true) > getAccelerationMaxPathVelocityDeriv(trajectory.back().pathPos)) {
+				else if(getMinMaxPhaseSlope(trajectory.back().pathPos, trajectory.back().pathVel, true)
+					> getAccelerationMaxPathVelocityDeriv(trajectory.back().pathPos))
+				{
 					return false;
 				}
 			}
 			else {
-				if(getMinMaxPhaseSlope(trajectory.back().pathPos, trajectory.back().pathVel, false) > getVelocityMaxPathVelocityDeriv(trajectory.back().pathPos)) {
+				if(getMinMaxPhaseSlope(trajectory.back().pathPos, trajectory.back().pathVel, false)
+					> getVelocityMaxPathVelocityDeriv(trajectory.back().pathPos))
+				{
 					return false;
 				}
 			}
