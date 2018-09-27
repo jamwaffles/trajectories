@@ -257,7 +257,7 @@ bool Trajectory::integrateForward(list<TrajectoryStep> &trajectory, double accel
 
 	while(true)
 	{
-		// Search through list of switching points to find the next point after the current position that is not(?) discontinuous
+		// Search through list of switching points to find the next point after the current position that is discontinuous
 		while(nextDiscontinuity != switchingPoints.end() && (nextDiscontinuity->first <= pathPos || !nextDiscontinuity->second)) {
 			nextDiscontinuity++;
 		}

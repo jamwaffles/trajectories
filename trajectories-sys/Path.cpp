@@ -239,7 +239,7 @@ Path::Path(const list<Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > &pat
 			switchingPoints.push_back(make_pair(length + *point, false));
 		}
 		length += (*segment)->getLength();
-		// Remove switching points that are at or beyond the end of the path I think?
+		// Remove switching points that are at or beyond the end of the most recent segment
 		while(!switchingPoints.empty() && switchingPoints.back().first >= length)
 			switchingPoints.pop_back();
 
