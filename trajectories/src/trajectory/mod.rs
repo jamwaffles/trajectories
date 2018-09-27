@@ -575,16 +575,29 @@ impl Trajectory {
                     let after_acceleration =
                         self.get_min_max_path_acceleration(&after_point, MinMax::Max);
 
+                    let before_phase_slope = self.get_min_max_phase_slope(
+                        &PositionAndVelocity::new(current_point.position - TRAJ_EPSILON, velocity),
+                        MinMax::Min,
+                    );
+                    let after_phase_slope = self.get_min_max_phase_slope(
+                        &PositionAndVelocity::new(current_point.position + TRAJ_EPSILON, velocity),
+                        MinMax::Max,
+                    );
+
+                    let before_max_velocity_deriv = self
+                        .get_max_velocity_from_acceleration_derivative(
+                            current_point.position - 2.0 * TRAJ_EPSILON,
+                        );
+                    let after_max_velocity_deriv = self
+                        .get_max_velocity_from_acceleration_derivative(
+                            current_point.position + 2.0 * TRAJ_EPSILON,
+                        );
+
                     if (before_velocity > after_velocity
-                        || self.get_min_max_phase_slope(&before_point, MinMax::Min) > self
-                            .get_max_velocity_from_acceleration_derivative(
-                                current_point.position - 2.0 * TRAJ_EPSILON,
-                            ))
+                        || before_phase_slope > before_max_velocity_deriv)
                         && (before_velocity < after_velocity
-                            || self.get_min_max_phase_slope(&after_point, MinMax::Max) > self
-                                .get_max_velocity_from_acceleration_derivative(
-                                    current_point.position + 2.0 * TRAJ_EPSILON,
-                                )) {
+                            || after_phase_slope < after_max_velocity_deriv)
+                    {
                         break Some(TrajectorySwitchingPoint {
                             pos: PositionAndVelocity::new(current_point.position, velocity),
                             before_acceleration,
@@ -595,13 +608,14 @@ impl Trajectory {
                 Continuity::Continuous => {
                     let velocity = self.get_max_velocity_from_acceleration(current_point.position);
 
-                    if self.get_max_velocity_from_acceleration_derivative(
+                    let low_deriv = self.get_max_velocity_from_acceleration_derivative(
                         current_point.position - TRAJ_EPSILON,
-                    ) < 0.0
-                        && self.get_max_velocity_from_acceleration_derivative(
-                            current_point.position + TRAJ_EPSILON,
-                        ) > 0.0
-                    {
+                    );
+                    let high_deriv = self.get_max_velocity_from_acceleration_derivative(
+                        current_point.position + TRAJ_EPSILON,
+                    );
+
+                    if low_deriv < 0.0 && high_deriv > 0.0 {
                         break Some(TrajectorySwitchingPoint {
                             pos: PositionAndVelocity::new(current_point.position, velocity),
                             before_acceleration: 0.0,
