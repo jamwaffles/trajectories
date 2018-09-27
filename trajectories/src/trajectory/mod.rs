@@ -212,7 +212,7 @@ impl Trajectory {
                         && self.get_min_max_phase_slope(
                             &PositionAndVelocity::new(
                                 before.position,
-                                self.get_max_velocity_from_velocity(before.velocity),
+                                self.get_max_velocity_from_velocity(before.position),
                             ),
                             MinMax::Min,
                         ) <= self.get_max_velocity_from_velocity_derivative(before.position)
