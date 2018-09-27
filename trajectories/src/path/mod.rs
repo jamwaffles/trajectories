@@ -183,7 +183,7 @@ impl Path {
         self.switching_points
             .iter()
             .cloned()
-            .skip_while(|sp| sp.position > position_along_path)
+            .skip_while(|sp| sp.position < position_along_path)
             .next()
             .unwrap_or(SwitchingPoint::new(self.length, Continuity::Discontinuous))
     }
