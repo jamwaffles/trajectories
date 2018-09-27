@@ -69,6 +69,7 @@ Trajectory::Trajectory(const Path &path, const Vector3d &maxVelocity, const Vect
 		if(getNextSwitchingPoint(trajectory.back().pathPos, switchingPoint, beforeAcceleration, afterAcceleration)) {
 			break;
 		}
+		std::cout << "SW POINT " << switchingPoint.pathPos << ", " << switchingPoint.pathVel << std::endl;
 		integrateBackward(trajectory, switchingPoint.pathPos, switchingPoint.pathVel, beforeAcceleration);
 	}
 

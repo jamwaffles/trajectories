@@ -38,6 +38,12 @@ impl Default for PositionAndVelocity {
     }
 }
 
+/// Reached end or not
+enum PathPosition {
+    NotEnd,
+    End,
+}
+
 /// Whether to get the minimum or maximum
 #[derive(Debug)]
 enum MinMax {
@@ -91,34 +97,38 @@ impl Trajectory {
             timestep: 0.001,
         };
 
+        path
+    }
+
+    /// Compute complete trajectory
+    pub fn setup(&self) {
         let mut trajectory = vec![PositionAndVelocity::new(0.0, 0.0)];
         // let mut before_acceleration = 0.0;
         // let mut after_acceleration =
         // path.get_min_max_path_acceleration(&PositionAndVelocity::new(0.0, 0.0), MinMax::Max);
         let mut switching_point = TrajectorySwitchingPoint {
             before_acceleration: 0.0,
-            after_acceleration: path
+            after_acceleration: self
                 .get_min_max_path_acceleration(&PositionAndVelocity::new(0.0, 0.0), MinMax::Max),
             pos: PositionAndVelocity::default(),
         };
 
-        while let Some(fwd) =
-            path.integrate_forward(&trajectory, switching_point.after_acceleration)
+        while let (fwd, PathPosition::NotEnd) =
+            self.integrate_forward(&trajectory, switching_point.after_acceleration)
         {
-            println!("While let some fwd");
             trajectory.extend(fwd);
 
             if let Some(new_switching_point) =
-                path.get_next_switching_point(trajectory.last().unwrap().position)
+                self.get_next_switching_point(trajectory.last().unwrap().position)
             {
                 switching_point = new_switching_point;
             } else {
                 // Break if we've reached the end of the path
                 break;
             }
-
+            // println!("{:?}", switching_point);
             if let Some((traj_append, new_switching_point)) =
-                path.integrate_backward(&trajectory, &switching_point)
+                self.integrate_backward(&trajectory, &switching_point)
             {
                 switching_point = new_switching_point;
 
@@ -126,14 +136,16 @@ impl Trajectory {
             }
         }
 
-        path
+        // TODO: Backwards-integrate last section
+
+        // TODO: Calculate timing
     }
 
     fn integrate_forward(
         &self,
         trajectory: &Vec<PositionAndVelocity>,
         start_acceleration: f64,
-    ) -> Option<Vec<PositionAndVelocity>> {
+    ) -> (Vec<PositionAndVelocity>, PathPosition) {
         let mut new_points = Vec::new();
         let mut step = trajectory.last().expect("Empty trajectory").clone();
         let switching_points = self.path.get_switching_points();
@@ -141,14 +153,17 @@ impl Trajectory {
         let mut acceleration = start_acceleration;
 
         loop {
-            println!("Integrate forward infinite loop");
-            let next_discontinuity = switching_points
-                .iter()
-                .find(|sp| sp.position > step.position && sp.continuity == Continuity::Continuous);
+            let next_discontinuity = switching_points.iter().find(|sp| {
+                sp.position > step.position && sp.continuity == Continuity::Discontinuous
+            });
 
             // Step forward, keeping the previous step around for comparison
             let prev_step = step.clone();
             let new_velocity = step.position + self.timestep * acceleration;
+            // println!(
+            //     "NEW VEL {}; pos {}, timestep {}, accel {}",
+            //     new_velocity, step.position, self.timestep, acceleration
+            // );
             step = PositionAndVelocity::new(
                 step.position + self.timestep * 0.5 * (prev_step.velocity + new_velocity),
                 new_velocity,
@@ -170,7 +185,7 @@ impl Trajectory {
             if step.position > self.path.get_length() {
                 new_points.push(step);
 
-                break;
+                break (new_points, PathPosition::End);
             } else if step.velocity < 0.0 {
                 // Velocity can't be less than zero, error out
                 // TODO: Return a Result instead of panicking
@@ -192,13 +207,13 @@ impl Trajectory {
 
             new_points.push(step.clone());
 
-            // TODO: Return this value
             acceleration = self.get_min_max_path_acceleration(&step, MinMax::Max);
 
             // Deal with overshoot
             if step.velocity > self.get_max_velocity_from_acceleration(step.position)
                 || step.velocity > self.get_max_velocity_from_velocity(step.position)
             {
+                println!("Overshoot to {} at {}", step.velocity, step.position);
                 let mut overshoot = new_points
                     .pop()
                     .expect("Empty trajectory for overshoot computation");
@@ -233,7 +248,7 @@ impl Trajectory {
                 // Re-add non-overshot step
                 new_points.push(before);
 
-                let last_point = new_points.last().expect("Empty list of points");
+                let last_point = new_points.last().expect("Empty list of points").clone();
 
                 if self.get_max_velocity_from_acceleration(overshoot.position)
                     < self.get_max_velocity_from_velocity(overshoot.position)
@@ -241,24 +256,18 @@ impl Trajectory {
                     if next_discontinuity.is_some()
                         && overshoot.position > next_discontinuity.unwrap().position
                     {
-                        break;
-                    } else if self.get_min_max_phase_slope(last_point, MinMax::Max) > self
+                        break (new_points, PathPosition::NotEnd);
+                    } else if self.get_min_max_phase_slope(&last_point, MinMax::Max) > self
                         .get_max_velocity_from_acceleration_derivative(last_point.position)
                     {
-
+                        break (new_points, PathPosition::NotEnd);
                     }
-                } else if self.get_min_max_phase_slope(last_point, MinMax::Min)
+                } else if self.get_min_max_phase_slope(&last_point, MinMax::Min)
                     > self.get_max_velocity_from_velocity_derivative(last_point.position)
                 {
-                    break;
+                    break (new_points, PathPosition::NotEnd);
                 }
             }
-        }
-
-        if new_points.len() > 0 {
-            Some(new_points)
-        } else {
-            None
         }
     }
 
@@ -283,24 +292,34 @@ impl Trajectory {
 
         // TODO: Use iterators
         loop {
-            println!("Integrate backwards loopyloop");
             if position < 0.0 {
                 break None;
             }
 
             if let Some(&[ref start1, ref start2]) = it.next() {
-                while position >= start1.position {
-                    println!("Integrate backwards while");
+                while start1.position <= position {
+                    println!("start1 pos {} pathPos {}", start1.position, position);
                     let new_point = PositionAndVelocity::new(position, velocity);
 
                     // TODO: Benchmark push then reverse instead of shift front
                     new_trajectory.insert(0, new_point.clone());
 
+                    // println!(
+                    //     "BEF vel {} pos {} timestep {} acceleration {}",
+                    //     velocity, position, self.timestep, before_acceleration
+                    // );
                     velocity -= self.timestep * before_acceleration;
                     position -= self.timestep * 0.5 * (velocity + new_point.velocity);
-                    before_acceleration =
-                        self.get_min_max_path_acceleration(&new_point, MinMax::Min);
+                    before_acceleration = self.get_min_max_path_acceleration(
+                        &PositionAndVelocity::new(position, velocity),
+                        MinMax::Min,
+                    );
                     slope = (new_point.velocity - velocity) / (new_point.position - position);
+
+                    // println!(
+                    //     "AFT vel {} pos {} before_accel {} slope {}",
+                    //     velocity, position, before_acceleration, slope
+                    // );
 
                     if velocity < 0.0 {
                         panic!("Velocity cannot be less than zero");
@@ -332,7 +351,8 @@ impl Trajectory {
                             .chain(std::iter::once(PositionAndVelocity::new(
                                 intersection_position,
                                 intersection_velocity,
-                            ))).collect::<Vec<PositionAndVelocity>>();
+                            )))
+                            .collect::<Vec<PositionAndVelocity>>();
 
                         // Append newly generated trajectory
                         ret.extend(new_trajectory);
@@ -371,7 +391,7 @@ impl Trajectory {
                 .map(|p| p.pos.position)
                 .unwrap_or(position_along_path),
         ) {
-            if point.pos.velocity > self.get_max_velocity_from_velocity(point.pos.position) {
+            if point.pos.velocity <= self.get_max_velocity_from_velocity(point.pos.position) {
                 break;
             }
 
@@ -449,6 +469,11 @@ impl Trajectory {
                     }
                 },
             );
+
+        // println!(
+        //     "MINMAX position {}, velocity {} derivative {} second_derivative {} factor {}, result {}",
+        //     position, velocity, derivative, second_derivative, factor, res
+        // );
 
         res * factor
     }
@@ -549,8 +574,8 @@ impl Trajectory {
 
         // TODO: Use iterators here, infinite loops suck
         loop {
-            println!("Next accel sw point loop");
             current_point = self.path.get_next_switching_point(current_point.position);
+            // println!("Next accel sw point loop, next point: {:?}", current_point);
 
             if current_point.position > self.path.get_length() - TRAJ_EPSILON {
                 break None;
@@ -725,16 +750,18 @@ mod tests {
     fn create_trajectory() {
         let waypoints: Vec<Coord> = vec![
             Coord::new(0.0, 0.0, 0.0),
-            Coord::new(1.0, 2.0, 0.0),
-            Coord::new(1.5, 1.5, 0.0),
+            Coord::new(1.0, 2.0, 1.0),
+            Coord::new(1.5, 1.5, 0.5),
             Coord::new(3.0, 5.0, 0.0),
             Coord::new(4.0, 6.0, 0.0),
             Coord::new(5.0, 5.0, 0.0),
-            Coord::new(4.0, 4.0, 0.0),
+            Coord::new(4.0, 4.0, 1.0),
         ];
 
         let path = Path::from_waypoints(&waypoints, 0.1);
 
         let traj = Trajectory::new(path, Coord::repeat(1.0), Coord::repeat(1.0));
+
+        traj.setup();
     }
 }

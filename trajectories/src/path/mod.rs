@@ -93,8 +93,7 @@ impl Path {
                                         .with_start_offset(s.start_offset)
                                 }
                                 _ => panic!("Invalid path: expected last segment to be linear"),
-                            })
-                            .unwrap_or(
+                            }).unwrap_or(
                                 LinearPathSegment::from_waypoints(prev, blend_start)
                                     .with_start_offset(start_offset),
                             );
@@ -124,8 +123,7 @@ impl Path {
                                     } else {
                                         None
                                     }
-                                })
-                                .collect(),
+                                }).collect(),
                         );
 
                         // Add blend segment length to path length total
