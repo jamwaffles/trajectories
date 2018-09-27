@@ -501,16 +501,17 @@ impl Trajectory {
         for i in 0..n {
             if velocity[i] != 0.0 {
                 for j in (i + 1)..n {
-                    // TODO: Come up with a less mathsy name
-                    let a_ij = acceleration[i] / velocity[i] - acceleration[j] / velocity[j];
+                    if velocity[j] != 0.0 {
+                        // TODO: Come up with a less mathsy name
+                        let a_ij = acceleration[i] / velocity[i] - acceleration[j] / velocity[j];
 
-                    if a_ij != 0.0 {
-                        max_path_velocity = max_path_velocity.min(
-                            ((self.acceleration_limit[i] / velocity[i].abs()
-                                + self.acceleration_limit[j] / velocity[j].abs())
-                                / a_ij.abs())
-                            .sqrt(),
-                        );
+                        if a_ij != 0.0 {
+                            max_path_velocity = max_path_velocity.min(
+                                ((self.acceleration_limit[i] / velocity[i].abs()
+                                    + self.acceleration_limit[j] / velocity[j].abs())
+                                    / a_ij.abs()).sqrt(),
+                            );
+                        }
                     }
                 }
             } else if acceleration[i] != 0.0 {
