@@ -93,7 +93,8 @@ impl Path {
                                         .with_start_offset(s.start_offset)
                                 }
                                 _ => panic!("Invalid path: expected last segment to be linear"),
-                            }).unwrap_or(
+                            })
+                            .unwrap_or(
                                 LinearPathSegment::from_waypoints(prev, blend_start)
                                     .with_start_offset(start_offset),
                             );
@@ -123,7 +124,8 @@ impl Path {
                                     } else {
                                         None
                                     }
-                                }).collect(),
+                                })
+                                .collect(),
                         );
 
                         // Add blend segment length to path length total
@@ -442,6 +444,26 @@ mod tests {
             assert_near!(point.position, expected.position);
             assert_eq!(point.continuity, expected.continuity);
         }
+    }
+
+    #[test]
+    fn debug_switching_points() {
+        // Data from Example.cpp in C++ example code
+        let waypoints = vec![
+            Coord::new(0.0, 0.0, 0.0),
+            Coord::new(0.0, 0.2, 0.0),
+            Coord::new(0.0, 3.0, 0.0),
+            Coord::new(1.1, 2.0, 0.0),
+            Coord::new(1.0, 0.0, 0.0),
+            Coord::new(0.0, 1.0, 0.0),
+            Coord::new(0.0, 0.0, 0.0),
+        ];
+
+        let accuracy = 0.05;
+
+        let path = Path::from_waypoints(&waypoints, accuracy);
+
+        debug_path_switching_points("debug_switching_points", &path, &waypoints);
     }
 
     #[test]
