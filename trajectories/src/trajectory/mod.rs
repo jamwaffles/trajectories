@@ -747,15 +747,15 @@ mod tests {
     fn create_trajectory() {
         let waypoints: Vec<Coord> = vec![
             Coord::new(0.0, 0.0, 0.0),
-            Coord::new(1.0, 2.0, 1.0),
-            Coord::new(1.5, 1.5, 0.5),
-            Coord::new(3.0, 5.0, 0.0),
-            Coord::new(4.0, 6.0, 0.0),
-            Coord::new(5.0, 5.0, 0.0),
-            Coord::new(4.0, 4.0, 1.0),
+            Coord::new(0.0, 0.2, 1.0),
+            Coord::new(0.0, 3.0, 0.5),
+            Coord::new(1.1, 2.0, 0.0),
+            Coord::new(1.0, 0.0, 0.0),
+            Coord::new(0.0, 1.0, 0.0),
+            Coord::new(0.0, 0.0, 1.0),
         ];
 
-        let path = Path::from_waypoints(&waypoints, 0.1);
+        let path = Path::from_waypoints(&waypoints, 0.001);
 
         let traj = Trajectory::new(path, Coord::repeat(1.0), Coord::repeat(1.0));
 
