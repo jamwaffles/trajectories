@@ -205,8 +205,6 @@ impl Trajectory {
                 step.velocity = self.get_max_velocity_from_velocity(step.position);
             }
 
-            new_points.push(step.clone());
-
             acceleration = self.get_min_max_path_acceleration(&step, MinMax::Max);
 
             // Deal with overshoot
@@ -214,9 +212,7 @@ impl Trajectory {
                 || step.velocity > self.get_max_velocity_from_velocity(step.position)
             {
                 println!("Overshoot to {} at {}", step.velocity, step.position);
-                let mut overshoot = new_points
-                    .pop()
-                    .expect("Empty trajectory for overshoot computation");
+                let mut overshoot = step.clone();
                 let mut before = new_points.last().expect("Empty trajectory").clone();
 
                 while overshoot.position - before.position > TRAJ_EPSILON {
@@ -245,7 +241,7 @@ impl Trajectory {
                     }
                 }
 
-                // Re-add non-overshot step
+                // Add non-overshot step
                 new_points.push(before);
 
                 let last_point = new_points.last().expect("Empty list of points").clone();
@@ -267,6 +263,9 @@ impl Trajectory {
                 {
                     break (new_points, PathPosition::NotEnd);
                 }
+            } else {
+                // Step did not overshoot, add it to the path
+                new_points.push(step.clone());
             }
         }
     }
@@ -534,7 +533,8 @@ impl Trajectory {
                             max_path_velocity = max_path_velocity.min(
                                 ((self.acceleration_limit[i] / velocity[i].abs()
                                     + self.acceleration_limit[j] / velocity[j].abs())
-                                    / a_ij.abs()).sqrt(),
+                                    / a_ij.abs())
+                                .sqrt(),
                             );
                         }
                     }
