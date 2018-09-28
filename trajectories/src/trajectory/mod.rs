@@ -159,7 +159,7 @@ impl Trajectory {
 
             // Step forward, keeping the previous step around for comparison
             let prev_step = step.clone();
-            let new_velocity = step.position + self.timestep * acceleration;
+            let new_velocity = step.velocity + self.timestep * acceleration;
             // println!(
             //     "NEW VEL {}; pos {}, timestep {}, accel {}",
             //     new_velocity, step.position, self.timestep, acceleration
