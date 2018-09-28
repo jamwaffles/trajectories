@@ -664,28 +664,25 @@ impl Trajectory {
     ) -> Option<TrajectorySwitchingPoint> {
         // Broad phase search step
         let step_size = 0.001;
-        let mut position = position_along_path;
-        let mut start = false;
-
-        position -= step_size;
+        let mut position = position_along_path - step_size;
 
         // Broad phase
         // TODO: Iterators
         loop {
             position += step_size;
 
-            if self.get_min_max_phase_slope(
+            if (self.get_min_max_phase_slope(
                 &PositionAndVelocity::new(position, self.get_max_velocity_from_velocity(position)),
                 MinMax::Min,
             ) >= self.get_max_velocity_from_velocity_derivative(position)
-                || position >= self.path.get_length()
-                || self.get_min_max_phase_slope(
+                && self.get_min_max_phase_slope(
                     &PositionAndVelocity::new(
                         position,
                         self.get_max_velocity_from_velocity(position),
                     ),
                     MinMax::Min,
-                ) <= self.get_max_velocity_from_velocity_derivative(position)
+                ) <= self.get_max_velocity_from_velocity_derivative(position))
+                || position >= self.path.get_length()
             {
                 break;
             }
