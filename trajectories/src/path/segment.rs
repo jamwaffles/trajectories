@@ -1,7 +1,7 @@
 use path::{CircularPathSegment, LinearPathSegment, PathItem};
 use Coord;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum PathSegment {
     Linear(LinearPathSegment),
     Circular(CircularPathSegment),

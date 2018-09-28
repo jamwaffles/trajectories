@@ -8,7 +8,7 @@ pub use self::segment::PathSegment;
 use Coord;
 
 /// Helpful methods to get information about a path
-pub trait PathItem {
+pub trait PathItem: PartialEq {
     /// Get length of path
     fn get_length(&self) -> f64;
 
@@ -52,7 +52,7 @@ pub enum Continuity {
 }
 
 /// A path with circular blends between segments
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Path {
     /// Linear path segments and circular blends
     pub segments: Vec<PathSegment>,
@@ -93,7 +93,8 @@ impl Path {
                                         .with_start_offset(s.start_offset)
                                 }
                                 _ => panic!("Invalid path: expected last segment to be linear"),
-                            }).unwrap_or(
+                            })
+                            .unwrap_or(
                                 LinearPathSegment::from_waypoints(prev, blend_start)
                                     .with_start_offset(start_offset),
                             );
@@ -123,7 +124,8 @@ impl Path {
                                     } else {
                                         None
                                     }
-                                }).collect(),
+                                })
+                                .collect(),
                         );
 
                         // Add blend segment length to path length total
@@ -164,8 +166,8 @@ impl Path {
     pub fn get_segment_at_position(&self, position_along_path: f64) -> Option<&PathSegment> {
         self.segments
             .iter()
-            .position(|segment| segment.get_start_offset() > position_along_path)
-            .and_then(|pos| self.segments.get(pos - 1))
+            .rev()
+            .find(|segment| segment.get_start_offset() <= position_along_path)
             .or(self.segments.last())
     }
 
@@ -231,6 +233,65 @@ impl PathItem for Path {
 mod tests {
     use super::*;
     use test_helpers::*;
+
+    #[test]
+    fn get_segment_at_position() {
+        let waypoints = vec![
+            Coord::new(1.0, 0.0, 0.0),
+            Coord::new(2.0, 0.0, 0.0),
+            Coord::new(5.0, 0.0, 0.0),
+        ];
+
+        let path = Path::from_waypoints(&waypoints, 0.01);
+
+        assert_eq!(
+            path.get_segment_at_position(0.0),
+            Some(&PathSegment::Linear(LinearPathSegment::from_waypoints(
+                Coord::new(1.0, 0.0, 0.0),
+                Coord::new(2.0, 0.0, 0.0)
+            )))
+        );
+
+        assert_eq!(
+            path.get_segment_at_position(3.0),
+            Some(&PathSegment::Linear(
+                LinearPathSegment::from_waypoints(
+                    Coord::new(2.0, 0.0, 0.0),
+                    Coord::new(5.0, 0.0, 0.0)
+                )
+                .with_start_offset(1.0)
+            ))
+        );
+
+        assert_eq!(
+            path.get_segment_at_position(1.0),
+            Some(&PathSegment::Linear(LinearPathSegment {
+                start: Coord::new(2.0, 0.0, 0.0),
+                end: Coord::new(5.0, 0.0, 0.0),
+                start_offset: 1.0,
+                length: 3.0,
+            }))
+        );
+        assert_eq!(
+            path.get_segment_at_position(1.01),
+            Some(&PathSegment::Linear(LinearPathSegment {
+                start: Coord::new(2.0, 0.0, 0.0),
+                end: Coord::new(5.0, 0.0, 0.0),
+                start_offset: 1.0,
+                length: 3.0,
+            }))
+        );
+
+        assert_eq!(
+            path.get_segment_at_position(5.0),
+            Some(&PathSegment::Linear(LinearPathSegment {
+                start: Coord::new(2.0, 0.0, 0.0),
+                end: Coord::new(5.0, 0.0, 0.0),
+                start_offset: 1.0,
+                length: 3.0,
+            }))
+        );
+    }
 
     #[test]
     fn get_derivatives() {
