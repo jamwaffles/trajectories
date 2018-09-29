@@ -941,6 +941,8 @@ mod tests {
         let mut t = 0.0;
         let duration = traj.get_duration();
 
+        assert_eq!(traj.trajectory.clone().unwrap().len(), 14814);
+
         assert_near!(duration, 14.8028);
 
         while t < duration {
