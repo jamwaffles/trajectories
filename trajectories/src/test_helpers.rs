@@ -371,15 +371,28 @@ pub struct TrajectoryStepRow {
 
 impl TrajectoryStepRow {
     /// Make a point from separate parts
-    pub fn from_parts(time: f64, pos: &TestPoint, acc: &TestPoint) -> Self {
+    pub fn from_parts(time: f64, pos: &TestPoint, vel: &TestPoint) -> Self {
         Self {
             time,
             position_x: pos.x,
             position_y: pos.y,
             position_z: pos.z,
-            velocity_x: acc.x,
-            velocity_y: acc.y,
-            velocity_z: acc.z,
+            velocity_x: vel.x,
+            velocity_y: vel.y,
+            velocity_z: vel.z,
+        }
+    }
+
+    /// Create a row from a time and position and velocity vectors
+    pub fn from_coords(time: f64, pos: &Coord, vel: &Coord) -> Self {
+        Self {
+            time,
+            position_x: pos[0],
+            position_y: pos[1],
+            position_z: pos[2],
+            velocity_x: vel[0],
+            velocity_y: vel[1],
+            velocity_z: vel[2],
         }
     }
 }

@@ -861,6 +861,7 @@ impl Trajectory {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use test_helpers::*;
 
     #[test]
     fn create_trajectory() {
@@ -873,9 +874,31 @@ mod tests {
             Coord::new(0.0, 1.0, 0.0),
             Coord::new(0.0, 0.0, 1.0),
         ];
+        let mut rows = Vec::new();
 
         let path = Path::from_waypoints(&waypoints, 0.001);
 
         let traj = Trajectory::new(path, Coord::repeat(1.0), Coord::repeat(1.0));
+
+        let mut t = 0.0;
+        let duration = traj.get_duration();
+
+        assert_near!(duration, 14.8028);
+
+        while t < duration {
+            let p = traj.get_position(t);
+            let v = traj.get_velocity(t);
+
+            rows.push(TrajectoryStepRow::from_coords(t, &p, &v));
+
+            t += 0.1;
+        }
+
+        let p_final = traj.get_position(duration);
+        let v_final = traj.get_velocity(duration);
+
+        rows.push(TrajectoryStepRow::from_coords(duration, &p_final, &v_final));
+
+        write_debug_csv("native.csv".into(), &rows);
     }
 }
