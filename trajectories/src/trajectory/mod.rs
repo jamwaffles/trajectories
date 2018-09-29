@@ -23,8 +23,8 @@ impl PositionAndVelocity {
         }
     }
 
-    pub fn set_time(&mut self, time: f64) {
-        self.time = time;
+    pub fn with_time(self, time: f64) -> Self {
+        Self { time, ..self }
     }
 }
 
@@ -85,23 +85,27 @@ pub struct Trajectory {
     velocity_limit: Coord,
     acceleration_limit: Coord,
     timestep: f64,
+    trajectory: Option<Vec<PositionAndVelocity>>,
 }
 
 impl Trajectory {
     /// Create a new trajectory from a given path and max velocity and acceleration
     pub fn new(path: Path, velocity_limit: Coord, acceleration_limit: Coord) -> Self {
-        let path = Self {
+        let mut traj = Self {
             path,
             velocity_limit,
             acceleration_limit,
             timestep: 0.001,
+            trajectory: None,
         };
 
-        path
+        traj.setup();
+
+        traj
     }
 
     /// Compute complete trajectory
-    pub fn setup(&self) {
+    fn setup(&mut self) {
         let mut trajectory = vec![PositionAndVelocity::new(0.0, 0.0)];
         // let mut before_acceleration = 0.0;
         // let mut after_acceleration =
@@ -147,9 +151,34 @@ impl Trajectory {
             }
         }
 
-        // TODO: Backwards-integrate last section
+        // Backwards integrate last section
+        switching_point.before_acceleration = self.get_min_max_path_acceleration(
+            &PositionAndVelocity::new(self.path.get_length(), 0.0),
+            MinMax::Min,
+        );
+        if let Some((updated_traj, _new_switching_point)) =
+            self.integrate_backward(&trajectory, &switching_point)
+        {
+            trajectory = updated_traj;
+        } else {
+            panic!("Last section integrate backward failed");
+        }
 
-        // TODO: Calculate timing
+        // Set times on segments
+        let timed = std::iter::once(PositionAndVelocity::new(0.0, 0.0))
+            .chain(trajectory.windows(2).map(|parts| {
+                if let &[ref previous, ref current] = parts {
+                    current.clone().with_time(
+                        previous.time
+                            + (current.position - previous.position)
+                                / ((current.velocity + previous.velocity) / 2.0),
+                    )
+                } else {
+                    panic!("Time windows");
+                }
+            })).collect();
+
+        self.trajectory = Some(timed);
     }
 
     fn integrate_forward(
@@ -828,7 +857,5 @@ mod tests {
         let path = Path::from_waypoints(&waypoints, 0.001);
 
         let traj = Trajectory::new(path, Coord::repeat(1.0), Coord::repeat(1.0));
-
-        traj.setup();
     }
 }
