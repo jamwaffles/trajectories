@@ -206,22 +206,11 @@ impl Trajectory {
                 // Break if we've reached the end of the path
                 break;
             }
-            println!(
-                "SW POINT {:?} from position {}, traj len {}",
-                switching_point,
-                trajectory.last().unwrap().position,
-                trajectory.len()
-            );
 
             if let Some((updated_traj, new_switching_point)) =
                 self.integrate_backward(&trajectory, &switching_point)
             {
-                println!("Have at it");
-                // switching_point = new_switching_point;
-
                 trajectory = updated_traj;
-            } else {
-                println!("Nuffin");
             }
         }
 
@@ -253,8 +242,6 @@ impl Trajectory {
                     panic!("Time windows");
                 }
             })).collect::<Vec<PositionAndVelocity>>();
-
-        println!("TIMED LEN {} TRAJ LEN {}", timed.len(), trajectory.len());
 
         self.trajectory = Some(timed);
     }
@@ -941,10 +928,6 @@ mod tests {
         let mut t = 0.0;
         let duration = traj.get_duration();
 
-        assert_eq!(traj.trajectory.clone().unwrap().len(), 14814);
-
-        assert_near!(duration, 14.8028);
-
         while t < duration {
             let p = traj.get_position(t);
             let v = traj.get_velocity(t);
@@ -960,5 +943,8 @@ mod tests {
         rows.push(TrajectoryStepRow::from_coords(duration, &p_final, &v_final));
 
         write_debug_csv("native.csv".into(), &rows);
+
+        assert_eq!(traj.trajectory.clone().unwrap().len(), 14814);
+        assert_near!(duration, 14.8028);
     }
 }
