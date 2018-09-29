@@ -69,7 +69,6 @@ Trajectory::Trajectory(const Path &path, const Vector3d &maxVelocity, const Vect
 		if(getNextSwitchingPoint(trajectory.back().pathPos, switchingPoint, beforeAcceleration, afterAcceleration)) {
 			break;
 		}
-		std::cout << "SW POINT " << switchingPoint.pathPos << ", " << switchingPoint.pathVel << std::endl;
 		integrateBackward(trajectory, switchingPoint.pathPos, switchingPoint.pathVel, beforeAcceleration);
 	}
 
@@ -119,14 +118,18 @@ void Trajectory::outputPhasePlaneTrajectory() const {
 
 // returns true if end of path is reached.
 bool Trajectory::getNextSwitchingPoint(double pathPos, TrajectoryStep &nextSwitchingPoint, double &beforeAcceleration, double &afterAcceleration) {
+	// Acceleration switching point, velocity defaults to zero, filled in later
 	TrajectoryStep accelerationSwitchingPoint(pathPos, 0.0);
 	double accelerationBeforeAcceleration, accelerationAfterAcceleration;
 	bool accelerationReachedEnd;
+
+	// Find next switching point after current position that has a velocity below the velocity limit at that point
 	do {
 		accelerationReachedEnd = getNextAccelerationSwitchingPoint(accelerationSwitchingPoint.pathPos, accelerationSwitchingPoint, accelerationBeforeAcceleration, accelerationAfterAcceleration);
 		// double test = getVelocityMaxPathVelocity(accelerationSwitchingPoint.pathPos);
 	} while(!accelerationReachedEnd && accelerationSwitchingPoint.pathVel > getVelocityMaxPathVelocity(accelerationSwitchingPoint.pathPos));
 
+	// Velocity switching point, defaults to zero velocity
 	TrajectoryStep velocitySwitchingPoint(pathPos, 0.0);
 	double velocityBeforeAcceleration, velocityAfterAcceleration;
 	bool velocityReachedEnd;
@@ -372,7 +375,6 @@ void Trajectory::integrateBackward(list<TrajectoryStep> &startTrajectory, double
 	list<TrajectoryStep> trajectory;
 	double slope = 0.0;
 	assert(start1->pathPos <= pathPos);
-
 	// Move backwards through path in windows of 2. Exit if beginning of path is reached
 	while(start1 != startTrajectory.begin() || pathPos >= 0.0)
 	{
