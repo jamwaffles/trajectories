@@ -110,18 +110,72 @@ impl Trajectory {
         self.trajectory.clone().unwrap().last().unwrap().time
     }
 
-    /// Get the segment of the trajectory that the given time lies on
-    fn get_trajectory_segment(&self, time: f64) -> PositionAndVelocity {
+    /// Get a position in n-dimensional space given a time along the trajectory
+    pub fn get_position(&self, time: f64) -> Coord {
+        let (previous, current) = self.get_trajectory_segment(time);
+
+        let mut segment_len = current.time - previous.time;
+        let acceleration = 2.0
+            * (current.position - previous.position - segment_len * previous.velocity)
+            / segment_len.powi(2);
+
+        segment_len = time - previous.time;
+
+        let position = previous.position
+            + segment_len * previous.velocity * 0.5 * segment_len.powi(2) * acceleration;
+
+        self.path.get_position(position)
+    }
+
+    /// Get velocity for each joint at a time along the path
+    pub fn get_velocity(&self, time: f64) -> Coord {
+        let (previous, current) = self.get_trajectory_segment(time);
+
+        let mut segment_len = current.time - previous.time;
+        let acceleration = 2.0
+            * (current.position - previous.position - segment_len * previous.velocity)
+            / segment_len.powi(2);
+
+        let position = previous.position
+            + segment_len * previous.velocity * 0.5 * segment_len.powi(2) * acceleration;
+        let velocity = previous.velocity + segment_len * acceleration;
+
+        self.path.get_tangent(position) * velocity
+    }
+
+    /// Get the (previous_segment, segment) of the trajectory that the given time lies on
+    fn get_trajectory_segment(&self, time: f64) -> (PositionAndVelocity, PositionAndVelocity) {
         // TODO: Get rid of all these clones, return a reference
-        self.trajectory
+        let pos = self
+            .trajectory
             .clone()
             .unwrap()
             .iter()
             .cloned()
             .rev()
-            .find(|segment| segment.time <= time)
+            .position(|segment| segment.time <= time)
+            // Iter is reversed, so munge index-from-end to index-from-start
+            .map(|pos| self.trajectory.clone().unwrap().len() - pos - 1)
+            .unwrap()
+            .clone();
+
+        let prev = self
+            .trajectory
+            .clone()
+            .unwrap()
+            .get(pos - 1)
+            .unwrap_or(self.trajectory.clone().unwrap().clone().first().unwrap())
+            .clone();
+        let current = self
+            .trajectory
+            .clone()
             .unwrap()
             .clone()
+            .get(pos)
+            .unwrap()
+            .clone();
+
+        (prev, current)
     }
 
     /// Compute complete trajectory
