@@ -238,19 +238,23 @@ impl Trajectory {
             panic!("Last section integrate backward failed");
         }
 
+        let mut t = 0.0;
+
         // Set times on segments
-        let timed = std::iter::once(PositionAndVelocity::new(0.0, 0.0))
+        let timed = std::iter::once(PositionAndVelocity::new(0.0, 0.0).with_time(t))
             .chain(trajectory.windows(2).map(|parts| {
                 if let &[ref previous, ref current] = parts {
-                    current.clone().with_time(
-                        previous.time
-                            + (current.position - previous.position)
-                                / ((current.velocity + previous.velocity) / 2.0),
-                    )
+                    t += (current.position - previous.position)
+                        / ((current.velocity + previous.velocity) / 2.0);
+
+                    // println!("TIME {}", t);
+                    current.clone().with_time(t)
                 } else {
                     panic!("Time windows");
                 }
-            })).collect();
+            })).collect::<Vec<PositionAndVelocity>>();
+
+        println!("TIMED LEN {} TRAJ LEN {}", timed.len(), trajectory.len());
 
         self.trajectory = Some(timed);
     }
