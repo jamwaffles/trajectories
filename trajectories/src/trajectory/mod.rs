@@ -215,13 +215,17 @@ impl Trajectory {
         }
 
         // Backwards integrate last section
-        switching_point.before_acceleration = self.get_min_max_path_acceleration(
-            &PositionAndVelocity::new(self.path.get_length(), 0.0),
-            MinMax::Min,
-        );
-        if let Some((updated_traj, _new_switching_point)) =
-            self.integrate_backward(&trajectory, &switching_point)
-        {
+        if let Some((updated_traj, _new_switching_point)) = self.integrate_backward(
+            &trajectory,
+            &TrajectorySwitchingPoint {
+                pos: PositionAndVelocity::new(self.path.get_length(), 0.0),
+                before_acceleration: self.get_min_max_path_acceleration(
+                    &PositionAndVelocity::new(self.path.get_length(), 0.0),
+                    MinMax::Min,
+                ),
+                after_acceleration: 0.0,
+            },
+        ) {
             trajectory = updated_traj;
         } else {
             panic!("Last section integrate backward failed");
