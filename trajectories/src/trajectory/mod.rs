@@ -104,6 +104,26 @@ impl Trajectory {
         traj
     }
 
+    /// Get duration of complete trajectory
+    pub fn get_duration(&self) -> f64 {
+        // TODO: self.trajectory shouldn't be an option
+        self.trajectory.clone().unwrap().last().unwrap().time
+    }
+
+    /// Get the segment of the trajectory that the given time lies on
+    fn get_trajectory_segment(&self, time: f64) -> PositionAndVelocity {
+        // TODO: Get rid of all these clones, return a reference
+        self.trajectory
+            .clone()
+            .unwrap()
+            .iter()
+            .cloned()
+            .rev()
+            .find(|segment| segment.time <= time)
+            .unwrap()
+            .clone()
+    }
+
     /// Compute complete trajectory
     fn setup(&mut self) {
         let mut trajectory = vec![PositionAndVelocity::new(0.0, 0.0)];
