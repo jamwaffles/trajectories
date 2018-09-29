@@ -157,7 +157,7 @@ impl Trajectory {
             // Iter is reversed, so munge index-from-end to index-from-start
             .map(|pos| self.trajectory.clone().unwrap().len() - pos - 1)
             .unwrap()
-            .clone();
+            .clone().max(1);
 
         let prev = self
             .trajectory
