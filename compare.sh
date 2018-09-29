@@ -2,6 +2,7 @@
 
 # Compare C++ code with Rust bindings
 
+cargo test
 cargo test -- --ignored
 
 echo "C++ native..."

@@ -57,7 +57,7 @@ fn it_works() {
 
     rows.push(TrajectoryStepRow::from_parts(duration, &pos, &vel));
 
-    write_debug_csv("plot_cpp_bindings.csv".into(), &rows);
+    write_debug_csv("../target/plot_cpp_bindings.csv".into(), &rows);
 
     assert_eq!(2 + 2, 4);
 }
