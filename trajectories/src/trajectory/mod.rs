@@ -39,6 +39,7 @@ impl Default for PositionAndVelocity {
 }
 
 /// Reached end or not
+#[derive(Debug, PartialEq)]
 enum PathPosition {
     NotEnd,
     End,
@@ -188,15 +189,18 @@ impl Trajectory {
             before_acceleration: 0.0,
             after_acceleration: self
                 .get_min_max_path_acceleration(&PositionAndVelocity::new(0.0, 0.0), MinMax::Max),
-            pos: PositionAndVelocity::default(),
+            pos: PositionAndVelocity::new(0.0, 0.0),
         };
 
-        // println!("AFTER_ACCEL {:?}", switching_point);
+        loop {
+            let (fwd, pos) =
+                self.integrate_forward(&trajectory, switching_point.after_acceleration);
 
-        while let (fwd, PathPosition::NotEnd) =
-            self.integrate_forward(&trajectory, switching_point.after_acceleration)
-        {
             trajectory.extend(fwd);
+
+            if pos == PathPosition::End {
+                break;
+            }
 
             if let Some(new_switching_point) =
                 self.get_next_switching_point(trajectory.last().unwrap().position)
@@ -289,7 +293,9 @@ impl Trajectory {
             }
 
             if position > self.path.get_length() {
-                break (Vec::new(), PathPosition::End);
+                new_points.push(PositionAndVelocity::new(position, velocity));
+
+                break (new_points, PathPosition::End);
             } else if velocity < 0.0 {
                 panic!("Integrate forward velocity cannot be 0");
             }
