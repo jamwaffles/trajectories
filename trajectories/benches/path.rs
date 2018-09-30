@@ -60,5 +60,72 @@ fn create_path_and_iterate(c: &mut Criterion) {
     );
 }
 
-criterion_group!(path, create_path, create_path_and_iterate);
+fn get_position(c: &mut Criterion) {
+    c.bench_function("get position at point along path", |b| {
+        let waypoints: Vec<Coord> = vec![
+            Coord::new(0.0, 0.0, 0.0),
+            Coord::new(1.0, 2.0, 0.0),
+            Coord::new(1.5, 1.5, 0.0),
+            Coord::new(3.0, 5.0, 0.0),
+            Coord::new(4.0, 6.0, 0.0),
+            Coord::new(5.0, 5.0, 0.0),
+            Coord::new(4.0, 4.0, 0.0),
+        ];
+
+        let p = Path::from_waypoints(&waypoints, DEVIATION);
+
+        b.iter(|| {
+            p.get_tangent(5.6789);
+        })
+    });
+}
+
+fn get_tangent(c: &mut Criterion) {
+    c.bench_function("get tangent at point along path", |b| {
+        let waypoints: Vec<Coord> = vec![
+            Coord::new(0.0, 0.0, 0.0),
+            Coord::new(1.0, 2.0, 0.0),
+            Coord::new(1.5, 1.5, 0.0),
+            Coord::new(3.0, 5.0, 0.0),
+            Coord::new(4.0, 6.0, 0.0),
+            Coord::new(5.0, 5.0, 0.0),
+            Coord::new(4.0, 4.0, 0.0),
+        ];
+
+        let p = Path::from_waypoints(&waypoints, DEVIATION);
+
+        b.iter(|| {
+            p.get_tangent(5.6789);
+        })
+    });
+}
+
+fn get_curvature(c: &mut Criterion) {
+    c.bench_function("get curvature at point along path", |b| {
+        let waypoints: Vec<Coord> = vec![
+            Coord::new(0.0, 0.0, 0.0),
+            Coord::new(1.0, 2.0, 0.0),
+            Coord::new(1.5, 1.5, 0.0),
+            Coord::new(3.0, 5.0, 0.0),
+            Coord::new(4.0, 6.0, 0.0),
+            Coord::new(5.0, 5.0, 0.0),
+            Coord::new(4.0, 4.0, 0.0),
+        ];
+
+        let p = Path::from_waypoints(&waypoints, DEVIATION);
+
+        b.iter(|| {
+            p.get_tangent(5.6789);
+        })
+    });
+}
+
+criterion_group!(
+    path,
+    create_path,
+    create_path_and_iterate,
+    get_position,
+    get_tangent,
+    get_curvature
+);
 criterion_main!(path);
