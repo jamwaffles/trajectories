@@ -212,7 +212,7 @@ impl Trajectory {
                 break;
             }
 
-            if let Some((updated_traj, new_switching_point)) =
+            if let Some((updated_traj, _new_switching_point)) =
                 self.integrate_backward(&trajectory, &switching_point)
             {
                 trajectory = updated_traj;
@@ -441,7 +441,7 @@ impl Trajectory {
 
         // TODO: Use iterators
         while position >= 0.0 && parts.is_some() {
-            if let Some(&[ref start1, ref start2]) = parts {
+            if let Some(&[ref start1, ref _start2]) = parts {
                 if start1.position <= position {
                     let new_point = PositionAndVelocity::new(position, velocity);
 
