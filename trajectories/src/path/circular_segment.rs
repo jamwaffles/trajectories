@@ -160,7 +160,8 @@ impl CircularPathSegment {
                 } else {
                     None
                 }
-            }).collect::<Vec<f64>>();
+            })
+            .collect::<Vec<f64>>();
 
         switching_points
             .sort_unstable_by(|a, b| a.partial_cmp(b).expect("Could not sort switching points"));
@@ -178,21 +179,21 @@ impl PathItem for CircularPathSegment {
     /// Get position ("robot configuration" in paper parlance) along arc from normalised distance
     /// along it (`s`)
     fn get_position(&self, distance_along_arc: f64) -> Coord {
-        let angle = distance_along_arc / self.radius;
+        let angle = (distance_along_arc - self.start_offset) / self.radius;
 
         self.center + self.radius * ((self.x * angle.cos()) + (self.y * angle.sin()))
     }
 
     /// Get derivative (tangent) of point along curve
     fn get_tangent(&self, distance_along_arc: f64) -> Coord {
-        let angle = distance_along_arc / self.radius;
+        let angle = (distance_along_arc - self.start_offset) / self.radius;
 
         -self.x * angle.sin() + self.y * angle.cos()
     }
 
     /// Get second derivative (rate of change of tangent, aka curvature) of point along curve
     fn get_curvature(&self, distance_along_arc: f64) -> Coord {
-        let angle = distance_along_arc / self.radius;
+        let angle = (distance_along_arc - self.start_offset) / self.radius;
 
         -1.0 / self.radius * (self.x * angle.cos() + self.y * angle.sin())
     }

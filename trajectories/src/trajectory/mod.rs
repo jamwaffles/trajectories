@@ -608,8 +608,9 @@ impl Trajectory {
 
     /// Find maximum allowable velocity as limited by the acceleration at a point on the path
     fn get_max_velocity_from_acceleration(&self, position_along_path: f64) -> f64 {
-        let velocity = self.path.get_tangent(position_along_path);
-        let acceleration = self.path.get_curvature(position_along_path);
+        let segment = self.path.get_segment_at_position(position_along_path);
+        let velocity = segment.get_tangent(position_along_path);
+        let acceleration = segment.get_curvature(position_along_path);
 
         let n = velocity.len();
 

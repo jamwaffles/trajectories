@@ -54,7 +54,8 @@ impl PathItem for LinearPathSegment {
     /// Get position ("robot configuration" in paper parlance) along path from normalised distance
     /// along it (`s`)
     fn get_position(&self, distance_along_line: f64) -> Coord {
-        self.start + ((self.end - self.start) * distance_along_line / self.length)
+        self.start
+            + ((self.end - self.start) * (distance_along_line - self.start_offset) / self.length)
     }
 
     /// Get derivative (tangent) of point along path

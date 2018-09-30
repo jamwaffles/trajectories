@@ -163,12 +163,17 @@ impl Path {
     }
 
     /// Get a path segment for a position along the entire path
-    pub fn get_segment_at_position(&self, position_along_path: f64) -> Option<&PathSegment> {
+    pub fn get_segment_at_position(&self, position_along_path: f64) -> &PathSegment {
+        let clamped = position_along_path.min(self.length);
+
         self.segments
             .iter()
             .rev()
-            .find(|segment| segment.get_start_offset() <= position_along_path)
-            .or(self.segments.last())
+            .find(|segment| segment.get_start_offset() <= clamped)
+            .expect(&format!(
+                "Could not get segment for path position {}, total length {}",
+                position_along_path, self.length
+            ))
     }
 
     /// Get all switching points along this path
@@ -198,34 +203,19 @@ impl PathItem for Path {
     /// Get position at a point along path
     fn get_position(&self, distance_along_line: f64) -> Coord {
         self.get_segment_at_position(distance_along_line)
-            .map(|segment| segment.get_position(distance_along_line - segment.get_start_offset()))
-            .expect(&format!(
-                "Could not get position for path offset {}, total length {}",
-                distance_along_line,
-                self.get_length()
-            ))
+            .get_position(distance_along_line)
     }
 
     /// Get first derivative (tangent) at a point
     fn get_tangent(&self, distance_along_line: f64) -> Coord {
         self.get_segment_at_position(distance_along_line)
-            .map(|segment| segment.get_tangent(distance_along_line - segment.get_start_offset()))
-            .expect(&format!(
-                "Could not get derivative for path offset {}, total length {}",
-                distance_along_line,
-                self.get_length()
-            ))
+            .get_tangent(distance_along_line)
     }
 
     /// Get second derivative (curvature) at a point
     fn get_curvature(&self, distance_along_line: f64) -> Coord {
         self.get_segment_at_position(distance_along_line)
-            .map(|segment| segment.get_curvature(distance_along_line - segment.get_start_offset()))
-            .expect(&format!(
-                "Could not get second derivative for path offset {}, total length {}",
-                distance_along_line,
-                self.get_length()
-            ))
+            .get_curvature(distance_along_line)
     }
 }
 
@@ -246,50 +236,50 @@ mod tests {
 
         assert_eq!(
             path.get_segment_at_position(0.0),
-            Some(&PathSegment::Linear(LinearPathSegment::from_waypoints(
+            &PathSegment::Linear(LinearPathSegment::from_waypoints(
                 Coord::new(1.0, 0.0, 0.0),
                 Coord::new(2.0, 0.0, 0.0)
-            )))
+            ))
         );
 
         assert_eq!(
             path.get_segment_at_position(3.0),
-            Some(&PathSegment::Linear(
+            &PathSegment::Linear(
                 LinearPathSegment::from_waypoints(
                     Coord::new(2.0, 0.0, 0.0),
                     Coord::new(5.0, 0.0, 0.0)
                 )
                 .with_start_offset(1.0)
-            ))
+            )
         );
 
         assert_eq!(
             path.get_segment_at_position(1.0),
-            Some(&PathSegment::Linear(LinearPathSegment {
+            &PathSegment::Linear(LinearPathSegment {
                 start: Coord::new(2.0, 0.0, 0.0),
                 end: Coord::new(5.0, 0.0, 0.0),
                 start_offset: 1.0,
                 length: 3.0,
-            }))
+            })
         );
         assert_eq!(
             path.get_segment_at_position(1.01),
-            Some(&PathSegment::Linear(LinearPathSegment {
+            &PathSegment::Linear(LinearPathSegment {
                 start: Coord::new(2.0, 0.0, 0.0),
                 end: Coord::new(5.0, 0.0, 0.0),
                 start_offset: 1.0,
                 length: 3.0,
-            }))
+            })
         );
 
         assert_eq!(
             path.get_segment_at_position(5.0),
-            Some(&PathSegment::Linear(LinearPathSegment {
+            &PathSegment::Linear(LinearPathSegment {
                 start: Coord::new(2.0, 0.0, 0.0),
                 end: Coord::new(5.0, 0.0, 0.0),
                 start_offset: 1.0,
                 length: 3.0,
-            }))
+            })
         );
     }
 
