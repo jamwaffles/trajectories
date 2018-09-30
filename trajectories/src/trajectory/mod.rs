@@ -954,7 +954,8 @@ mod tests {
 
         write_debug_csv("../target/plot_native.csv".into(), &rows);
 
-        // assert_eq!(traj.trajectory.clone().unwrap().len(), 14814);
-        // assert_near!(duration, 14.8028);
+        // Length and duration differ slightly from Example.cpp due to different epsilon
+        assert_eq!(traj.trajectory.clone().unwrap().len(), 14815);
+        assert_near!(duration, 14.802888702536269);
     }
 }
