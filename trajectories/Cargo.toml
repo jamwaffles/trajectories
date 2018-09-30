@@ -2,26 +2,31 @@
 authors = ["James Waples <jamwaffles@gmail.com>"]
 name = "trajectories"
 version = "0.1.0"
+[[bench]]
+harness = false
+name = "path"
+
+[[bench]]
+harness = false
+name = "switching_points"
+
+[[bench]]
+harness = false
+name = "comparison"
+
 [dependencies]
 approx = "0.3.0"
+criterion = "0.2.5"
 csv = "1.0.1"
 nalgebra = "0.16.3"
 serde = "1.0.79"
 serde_derive = "1.0.79"
 svg = "0.5.11"
-criterion = "0.2.5"
+cpuprofiler =  { version = "0.0.3", optional = true }
 
 [dependencies.trajectories-sys]
 path = "../trajectories-sys"
 
-[[bench]]
-name = "path"
-harness = false
-
-[[bench]]
-name = "switching_points"
-harness = false
-
-[[bench]]
-name = "comparison"
-harness = false
+[features]
+default = []
+profile = ["cpuprofiler"]
