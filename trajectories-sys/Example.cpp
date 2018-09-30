@@ -78,7 +78,7 @@ int main() {
 			printf("%6.4f,%7.4f, %7.4f, %7.4f,   %7.4f, %7.4f, %7.4f\n", t, trajectory.getPosition(t)[0], trajectory.getPosition(t)[1], trajectory.getPosition(t)[2],
 				trajectory.getVelocity(t)[0], trajectory.getVelocity(t)[1], trajectory.getVelocity(t)[2]);
 		}
-		printf("%6.4f,%7.4f, %7.4f, %7.4f,   %7.4f, %7.4f, %7.4f\n", duration, trajectory.getPosition(duration)[0], trajectory.getPosition(duration)[1], trajectory.getPosition(duration)[2],
+		printf("%6.15f,%7.4f, %7.4f, %7.4f,   %7.4f, %7.4f, %7.4f\n", duration, trajectory.getPosition(duration)[0], trajectory.getPosition(duration)[1], trajectory.getPosition(duration)[2],
 			trajectory.getVelocity(duration)[0], trajectory.getVelocity(duration)[1], trajectory.getVelocity(duration)[2]);
 	}
 	else {
