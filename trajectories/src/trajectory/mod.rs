@@ -85,7 +85,7 @@ pub struct Trajectory {
     velocity_limit: Coord,
     acceleration_limit: Coord,
     timestep: f64,
-    trajectory: Option<Vec<PositionAndVelocity>>,
+    trajectory: Vec<PositionAndVelocity>,
     epsilon: f64,
 }
 
@@ -97,7 +97,7 @@ impl Trajectory {
             velocity_limit,
             acceleration_limit,
             timestep: 0.001,
-            trajectory: None,
+            trajectory: Vec::new(),
             epsilon,
         };
 
@@ -108,8 +108,7 @@ impl Trajectory {
 
     /// Get duration of complete trajectory
     pub fn get_duration(&self) -> f64 {
-        // TODO: self.trajectory shouldn't be an option
-        self.trajectory.clone().unwrap().last().unwrap().time
+        self.trajectory.last().unwrap().time
     }
 
     /// Get a position in n-dimensional space given a time along the trajectory
@@ -150,32 +149,22 @@ impl Trajectory {
         // TODO: Get rid of all these clones, return a reference
         let pos = self
             .trajectory
-            .clone()
-            .unwrap()
             .iter()
             .cloned()
             .rev()
             .position(|segment| segment.time <= time)
             // Iter is reversed, so munge index-from-end to index-from-start
-            .map(|pos| self.trajectory.clone().unwrap().len() - pos - 1)
+            .map(|pos| self.trajectory.len() - pos - 1)
             .unwrap()
-            .clone().max(1);
+            .clone()
+            .max(1);
 
         let prev = self
             .trajectory
-            .clone()
-            .unwrap()
             .get(pos - 1)
-            .unwrap_or(self.trajectory.clone().unwrap().clone().first().unwrap())
+            .unwrap_or(self.trajectory.first().unwrap())
             .clone();
-        let current = self
-            .trajectory
-            .clone()
-            .unwrap()
-            .clone()
-            .get(pos)
-            .unwrap()
-            .clone();
+        let current = self.trajectory.clone().get(pos).unwrap().clone();
 
         (prev, current)
     }
@@ -250,9 +239,10 @@ impl Trajectory {
                 } else {
                     panic!("Time windows");
                 }
-            })).collect::<Vec<PositionAndVelocity>>();
+            }))
+            .collect::<Vec<PositionAndVelocity>>();
 
-        self.trajectory = Some(timed);
+        self.trajectory = timed;
     }
 
     fn integrate_forward(
@@ -510,16 +500,16 @@ impl Trajectory {
                             + start_slope * (intersection_position - start1.position);
 
                         let mut ret = start_trajectory
-                    .iter()
-                    .cloned()
-                    // Remove items in current trajectory after intersection point
-                    .filter(|step| step.position < start2.position)
-                    // Add intersection point
-                    .chain(std::iter::once(PositionAndVelocity::new(
-                        intersection_position,
-                        intersection_velocity,
-                    )))
-                    .collect::<Vec<PositionAndVelocity>>();
+                            .iter()
+                            .cloned()
+                            // Remove items in current trajectory after intersection point
+                            .filter(|step| step.position < start2.position)
+                            // Add intersection point
+                            .chain(std::iter::once(PositionAndVelocity::new(
+                                intersection_position,
+                                intersection_velocity,
+                            )))
+                            .collect::<Vec<PositionAndVelocity>>();
 
                         // Append newly generated trajectory
                         ret.extend(new_trajectory);
@@ -706,7 +696,8 @@ impl Trajectory {
                             max_path_velocity = max_path_velocity.min(
                                 ((self.acceleration_limit[i] / velocity[i].abs()
                                     + self.acceleration_limit[j] / velocity[j].abs())
-                                    / a_ij.abs()).sqrt(),
+                                    / a_ij.abs())
+                                .sqrt(),
                             );
                         }
                     }
@@ -956,7 +947,7 @@ mod tests {
 
         write_debug_csv("../target/plot_native.csv".into(), &rows);
 
-        assert_eq!(traj.trajectory.clone().unwrap().len(), 14814);
+        assert_eq!(traj.trajectory.len(), 14814);
         assert_near!(duration, 14.802832847319937);
     }
 }
