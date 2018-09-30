@@ -1,7 +1,6 @@
 use path::{Continuity, Path, PathItem, SwitchingPoint};
 use std;
 use Coord;
-use TRAJ_EPSILON;
 
 /// A (position, velocity) pair
 #[derive(Debug, Clone)]
@@ -87,17 +86,19 @@ pub struct Trajectory {
     acceleration_limit: Coord,
     timestep: f64,
     trajectory: Option<Vec<PositionAndVelocity>>,
+    epsilon: f64,
 }
 
 impl Trajectory {
     /// Create a new trajectory from a given path and max velocity and acceleration
-    pub fn new(path: Path, velocity_limit: Coord, acceleration_limit: Coord) -> Self {
+    pub fn new(path: Path, velocity_limit: Coord, acceleration_limit: Coord, epsilon: f64) -> Self {
         let mut traj = Self {
             path,
             velocity_limit,
             acceleration_limit,
             timestep: 0.001,
             trajectory: None,
+            epsilon,
         };
 
         traj.setup();
@@ -344,7 +345,7 @@ impl Trajectory {
                 let mut midpoint;
                 let mut midpoint_velocity;
 
-                while after - before > TRAJ_EPSILON {
+                while after - before > self.epsilon {
                     midpoint = 0.5 * (before + after);
                     midpoint_velocity = 0.5 * (before_velocity + after_velocity);
 
@@ -499,8 +500,8 @@ impl Trajectory {
                     // );
 
                     // Check for intersection between path and current segment
-                    if start1.position.max(position) - TRAJ_EPSILON <= intersection_position
-                        && intersection_position <= TRAJ_EPSILON + start2
+                    if start1.position.max(position) - self.epsilon <= intersection_position
+                        && intersection_position <= self.epsilon + start2
                             .position
                             .min(new_trajectory.first().unwrap().position)
                     {
@@ -587,9 +588,9 @@ impl Trajectory {
                 .pos
                 .position
                 || (point.pos.velocity
-                    <= self.get_max_velocity_from_acceleration(point.pos.position - TRAJ_EPSILON)
+                    <= self.get_max_velocity_from_acceleration(point.pos.position - self.epsilon)
                     && point.pos.velocity <= self
-                        .get_max_velocity_from_acceleration(point.pos.position + TRAJ_EPSILON))
+                        .get_max_velocity_from_acceleration(point.pos.position + self.epsilon))
             {
                 break;
             }
@@ -723,9 +724,9 @@ impl Trajectory {
     ///
     /// The max velocity in this case is bounded by the acceleration limits at the point
     fn get_max_velocity_from_acceleration_derivative(&self, position_along_path: f64) -> f64 {
-        (self.get_max_velocity_from_acceleration(position_along_path + TRAJ_EPSILON)
-            - self.get_max_velocity_from_acceleration(position_along_path - TRAJ_EPSILON))
-            / (2.0 * TRAJ_EPSILON)
+        (self.get_max_velocity_from_acceleration(position_along_path + self.epsilon)
+            - self.get_max_velocity_from_acceleration(position_along_path - self.epsilon))
+            / (2.0 * self.epsilon)
     }
 
     /// Get the minimum or maximum phase slope for a position along the path
@@ -748,23 +749,23 @@ impl Trajectory {
             current_point = self.path.get_next_switching_point(current_point.position);
             // println!("Next accel sw point loop, next point: {:?}", current_point);
 
-            if current_point.position > self.path.get_length() - TRAJ_EPSILON {
+            if current_point.position > self.path.get_length() - self.epsilon {
                 break None;
             }
 
             match current_point.continuity {
                 Continuity::Discontinuous => {
                     let before_velocity = self
-                        .get_max_velocity_from_acceleration(current_point.position - TRAJ_EPSILON);
+                        .get_max_velocity_from_acceleration(current_point.position - self.epsilon);
                     let after_velocity = self
-                        .get_max_velocity_from_acceleration(current_point.position + TRAJ_EPSILON);
+                        .get_max_velocity_from_acceleration(current_point.position + self.epsilon);
 
                     velocity = before_velocity.min(after_velocity);
 
                     let before_point =
-                        PositionAndVelocity::new(current_point.position - TRAJ_EPSILON, velocity);
+                        PositionAndVelocity::new(current_point.position - self.epsilon, velocity);
                     let after_point =
-                        PositionAndVelocity::new(current_point.position + TRAJ_EPSILON, velocity);
+                        PositionAndVelocity::new(current_point.position + self.epsilon, velocity);
 
                     let before_acceleration =
                         self.get_min_max_path_acceleration(&before_point, MinMax::Min);
@@ -772,21 +773,21 @@ impl Trajectory {
                         self.get_min_max_path_acceleration(&after_point, MinMax::Max);
 
                     let before_phase_slope = self.get_min_max_phase_slope(
-                        &PositionAndVelocity::new(current_point.position - TRAJ_EPSILON, velocity),
+                        &PositionAndVelocity::new(current_point.position - self.epsilon, velocity),
                         MinMax::Min,
                     );
                     let after_phase_slope = self.get_min_max_phase_slope(
-                        &PositionAndVelocity::new(current_point.position + TRAJ_EPSILON, velocity),
+                        &PositionAndVelocity::new(current_point.position + self.epsilon, velocity),
                         MinMax::Max,
                     );
 
                     let before_max_velocity_deriv = self
                         .get_max_velocity_from_acceleration_derivative(
-                            current_point.position - 2.0 * TRAJ_EPSILON,
+                            current_point.position - 2.0 * self.epsilon,
                         );
                     let after_max_velocity_deriv = self
                         .get_max_velocity_from_acceleration_derivative(
-                            current_point.position + 2.0 * TRAJ_EPSILON,
+                            current_point.position + 2.0 * self.epsilon,
                         );
 
                     if (before_velocity > after_velocity
@@ -805,10 +806,10 @@ impl Trajectory {
                     let velocity = self.get_max_velocity_from_acceleration(current_point.position);
 
                     let low_deriv = self.get_max_velocity_from_acceleration_derivative(
-                        current_point.position - TRAJ_EPSILON,
+                        current_point.position - self.epsilon,
                     );
                     let high_deriv = self.get_max_velocity_from_acceleration_derivative(
-                        current_point.position + TRAJ_EPSILON,
+                        current_point.position + self.epsilon,
                     );
 
                     if low_deriv < 0.0 && high_deriv > 0.0 {
@@ -873,7 +874,7 @@ impl Trajectory {
 
         // Binary search through interval to find switching point within an epsilon
         // TODO: Iterators
-        while after_position - prev_position > TRAJ_EPSILON {
+        while after_position - prev_position > self.epsilon {
             position = (prev_position + after_position) / 2.0;
 
             if self.get_min_max_phase_slope(
@@ -919,7 +920,7 @@ mod tests {
     use test_helpers::*;
 
     #[test]
-    fn create_trajectory() {
+    fn create_example_cpp_trajectory() {
         let waypoints: Vec<Coord> = vec![
             Coord::new(0.0, 0.0, 0.0),
             Coord::new(0.0, 0.2, 1.0),
@@ -933,7 +934,8 @@ mod tests {
 
         let path = Path::from_waypoints(&waypoints, 0.001);
 
-        let traj = Trajectory::new(path, Coord::repeat(1.0), Coord::repeat(1.0));
+        // Same epsilon as Example.cpp for equal comparison
+        let traj = Trajectory::new(path, Coord::repeat(1.0), Coord::repeat(1.0), 0.000001);
 
         let mut t = 0.0;
         let duration = traj.get_duration();
@@ -954,8 +956,7 @@ mod tests {
 
         write_debug_csv("../target/plot_native.csv".into(), &rows);
 
-        // Length and duration differ slightly from Example.cpp due to different epsilon
-        assert_eq!(traj.trajectory.clone().unwrap().len(), 14815);
-        assert_near!(duration, 14.802888702536269);
+        assert_eq!(traj.trajectory.clone().unwrap().len(), 14814);
+        assert_near!(duration, 14.802832847319937);
     }
 }
