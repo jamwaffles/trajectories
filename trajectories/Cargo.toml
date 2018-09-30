@@ -21,3 +21,7 @@ harness = false
 [[bench]]
 name = "switching_points"
 harness = false
+
+[[bench]]
+name = "comparison"
+harness = false
