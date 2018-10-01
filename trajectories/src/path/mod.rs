@@ -170,10 +170,7 @@ impl Path {
             .iter()
             .rev()
             .find(|segment| segment.get_start_offset() <= clamped)
-            .expect(&format!(
-                "Could not get segment for path position {}, total length {}",
-                position_along_path, self.length
-            ))
+            .unwrap()
     }
 
     /// Get all switching points along this path

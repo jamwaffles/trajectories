@@ -231,7 +231,6 @@ impl Trajectory {
                     t += (current.position - previous.position)
                         / ((current.velocity + previous.velocity) / 2.0);
 
-                    // println!("TIME {}", t);
                     current.clone().with_time(t)
                 } else {
                     panic!("Time windows");
@@ -438,7 +437,6 @@ impl Trajectory {
                             .position
                             .min(new_trajectory.first().unwrap().position)
                     {
-                        // println!("   INTERSECT");
                         let intersection_velocity = start1.velocity
                             + start_slope * (intersection_position - start1.position);
 
