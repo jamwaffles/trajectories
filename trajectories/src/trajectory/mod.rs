@@ -403,7 +403,7 @@ impl Trajectory {
                 if start1.position <= position {
                     let new_point = PositionAndVelocity::new(position, velocity);
 
-                    new_trajectory.insert(0, new_point.clone());
+                    new_trajectory.push(new_point.clone());
 
                     velocity -= self.timestep * before_acceleration;
                     position -= self.timestep * 0.5 * (velocity + new_point.velocity);
@@ -433,9 +433,9 @@ impl Trajectory {
 
                     // Check for intersection between path and current segment
                     if start1.position.max(position) - self.epsilon <= intersection_position
-                        && intersection_position <= self.epsilon + start2
-                            .position
-                            .min(new_trajectory.first().unwrap().position)
+                        && intersection_position
+                            <= self.epsilon
+                                + start2.position.min(new_trajectory.last().unwrap().position)
                     {
                         let intersection_velocity = start1.velocity
                             + start_slope * (intersection_position - start1.position);
@@ -450,10 +450,9 @@ impl Trajectory {
                                 intersection_position,
                                 intersection_velocity,
                             )))
+                            // Append new items
+                            .chain(new_trajectory.into_iter().rev())
                             .collect::<Vec<PositionAndVelocity>>();
-
-                        // Append newly generated trajectory
-                        ret.extend(new_trajectory);
 
                         return Some((
                             ret,
