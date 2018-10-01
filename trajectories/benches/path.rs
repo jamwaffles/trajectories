@@ -120,12 +120,33 @@ fn get_curvature(c: &mut Criterion) {
     });
 }
 
+fn get_segment_at_position(c: &mut Criterion) {
+    c.bench_function("get segment at position", |b| {
+        let waypoints: Vec<Coord> = vec![
+            Coord::new(0.0, 0.0, 0.0),
+            Coord::new(1.0, 2.0, 0.0),
+            Coord::new(1.5, 1.5, 0.0),
+            Coord::new(3.0, 5.0, 0.0),
+            Coord::new(4.0, 6.0, 0.0),
+            Coord::new(5.0, 5.0, 0.0),
+            Coord::new(4.0, 4.0, 0.0),
+        ];
+
+        let p = Path::from_waypoints(&waypoints, DEVIATION);
+
+        b.iter(|| {
+            p.get_segment_at_position(5.6789);
+        })
+    });
+}
+
 criterion_group!(
     path,
     create_path,
     create_path_and_iterate,
     get_position,
     get_tangent,
-    get_curvature
+    get_curvature,
+    get_segment_at_position
 );
 criterion_main!(path);
