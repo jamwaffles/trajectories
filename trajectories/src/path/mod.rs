@@ -33,6 +33,7 @@ pub struct SwitchingPoint {
 
 impl SwitchingPoint {
     /// Create a new switching point from position and continuity flag
+    #[inline(always)]
     pub fn new(position: f64, continuity: Continuity) -> Self {
         Self {
             position,
@@ -192,6 +193,7 @@ impl Path {
 
 impl PathItem for Path {
     /// Get the length of the complete path
+    #[inline(always)]
     fn get_length(&self) -> f64 {
         self.length
     }
