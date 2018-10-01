@@ -668,13 +668,8 @@ impl Trajectory {
         let mut velocity;
         let mut current_point = SwitchingPoint::new(position_along_path, Continuity::Continuous);
 
-        // TODO: Use iterators here, infinite loops suck
-        loop {
+        while current_point.position <= self.path.get_length() - self.epsilon {
             current_point = self.path.get_next_switching_point(current_point.position);
-
-            if current_point.position > self.path.get_length() - self.epsilon {
-                break None;
-            }
 
             match current_point.continuity {
                 Continuity::Discontinuous => {
@@ -718,7 +713,7 @@ impl Trajectory {
                         && (before_velocity < after_velocity
                             || after_phase_slope < after_max_velocity_deriv)
                     {
-                        break Some(TrajectorySwitchingPoint {
+                        return Some(TrajectorySwitchingPoint {
                             pos: PositionAndVelocity::new(current_point.position, velocity),
                             before_acceleration,
                             after_acceleration,
@@ -736,7 +731,7 @@ impl Trajectory {
                     );
 
                     if low_deriv < 0.0 && high_deriv > 0.0 {
-                        break Some(TrajectorySwitchingPoint {
+                        return Some(TrajectorySwitchingPoint {
                             pos: PositionAndVelocity::new(current_point.position, velocity),
                             before_acceleration: 0.0,
                             after_acceleration: 0.0,
@@ -745,6 +740,8 @@ impl Trajectory {
                 }
             }
         }
+
+        None
     }
 
     // TODO: Benchmark and optimise this method. There are two loops which may be reducable to one
@@ -796,7 +793,6 @@ impl Trajectory {
         let mut after_position = position;
 
         // Binary search through interval to find switching point within an epsilon
-        // TODO: Iterators
         while after_position - prev_position > self.epsilon {
             position = (prev_position + after_position) / 2.0;
 
