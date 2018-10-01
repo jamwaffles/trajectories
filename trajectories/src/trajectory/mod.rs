@@ -146,17 +146,17 @@ impl Trajectory {
 
     /// Get the (previous_segment, segment) of the trajectory that the given time lies on
     fn get_trajectory_segment(&self, time: f64) -> (PositionAndVelocity, PositionAndVelocity) {
-        // TODO: Get rid of all these clones, return a reference
+        let traj_len = self.trajectory.len();
+
+        // TODO: Return a reference
         let pos = self
             .trajectory
             .iter()
-            .cloned()
             .rev()
             .position(|segment| segment.time <= time)
             // Iter is reversed, so munge index-from-end to index-from-start
-            .map(|pos| self.trajectory.len() - pos - 1)
+            .map(|pos| traj_len - pos - 1)
             .unwrap()
-            .clone()
             .max(1);
 
         let prev = self
@@ -164,7 +164,7 @@ impl Trajectory {
             .get(pos - 1)
             .unwrap_or(self.trajectory.first().unwrap())
             .clone();
-        let current = self.trajectory.clone().get(pos).unwrap().clone();
+        let current = self.trajectory.get(pos).unwrap().clone();
 
         (prev, current)
     }
