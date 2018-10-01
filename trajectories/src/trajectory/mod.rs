@@ -756,15 +756,13 @@ impl Trajectory {
     ) -> Option<TrajectorySwitchingPoint> {
         // Broad phase search step
         let step_size = 0.001;
-        let mut position = position_along_path - step_size;
+        let mut position = position_along_path;
         let mut start = false;
 
         // Broad phase
-        // TODO: Iterators, or at least refactor this fake do-while loop. The exit condition is
-        // really weirdly implemented.
+        // TODO: Refactor `start = true` weirdness whilst maintaining speed. For some reason, moving
+        // the first condition into the second massively slows down the algo.
         while {
-            position += step_size;
-
             if self.get_min_max_phase_slope(
                 &PositionAndVelocity::new(position, self.get_max_velocity_from_velocity(position)),
                 MinMax::Min,
@@ -782,7 +780,9 @@ impl Trajectory {
                     MinMax::Min,
                 ) >= self.get_max_velocity_from_velocity_derivative(position))
                 && position < self.path.get_length()
-        } {}
+        } {
+            position += step_size;
+        }
 
         if position > self.path.get_length() {
             return None;
@@ -807,6 +807,11 @@ impl Trajectory {
             }
         }
 
+        let after_position = PositionAndVelocity::new(
+            after_position,
+            self.get_max_velocity_from_velocity(after_position),
+        );
+
         let before_acceleration = self.get_min_max_path_acceleration(
             &PositionAndVelocity::new(
                 prev_position,
@@ -814,21 +819,12 @@ impl Trajectory {
             ),
             MinMax::Min,
         );
-        let after_acceleration = self.get_min_max_path_acceleration(
-            &PositionAndVelocity::new(
-                after_position,
-                self.get_max_velocity_from_velocity(after_position),
-            ),
-            MinMax::Max,
-        );
+        let after_acceleration = self.get_min_max_path_acceleration(&after_position, MinMax::Max);
 
         Some(TrajectorySwitchingPoint {
             before_acceleration,
             after_acceleration,
-            pos: PositionAndVelocity::new(
-                after_position,
-                self.get_max_velocity_from_velocity(after_position),
-            ),
+            pos: after_position,
         })
     }
 }
