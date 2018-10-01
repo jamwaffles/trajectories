@@ -2,6 +2,7 @@ set key autotitle columnhead
 set datafile separator ","
 
 set term svg size 1440,1440
+set timestamp
 
 set output 'target/compare_graphs.svg'
 set xrange [0:15]
