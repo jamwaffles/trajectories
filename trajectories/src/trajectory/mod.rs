@@ -288,7 +288,9 @@ impl Trajectory {
                 panic!("Integrate forward velocity cannot be 0");
             }
 
-            if velocity > self.get_max_velocity_from_velocity(position)
+            let max_velocity_at_position = self.get_max_velocity_from_velocity(position);
+
+            if velocity > max_velocity_at_position
                 && self.get_min_max_phase_slope(
                     &PositionAndVelocity::new(
                         old_position,
@@ -297,7 +299,7 @@ impl Trajectory {
                     MinMax::Min,
                 ) <= self.get_max_velocity_from_velocity_derivative(old_position)
             {
-                velocity = self.get_max_velocity_from_velocity(position);
+                velocity = max_velocity_at_position;
             }
 
             let new_point = PositionAndVelocity::new(position, velocity);
@@ -307,7 +309,7 @@ impl Trajectory {
             acceleration = self.get_min_max_path_acceleration(&new_point, MinMax::Max);
 
             if velocity > self.get_max_velocity_from_acceleration(position)
-                || velocity > self.get_max_velocity_from_velocity(position)
+                || velocity > max_velocity_at_position
             {
                 let overshoot = new_points.pop().unwrap();
                 let last_point = new_points
