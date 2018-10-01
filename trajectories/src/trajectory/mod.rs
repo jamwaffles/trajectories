@@ -132,7 +132,7 @@ impl Trajectory {
     pub fn get_velocity(&self, time: f64) -> Coord {
         let (previous, current) = self.get_trajectory_segment(time);
 
-        let mut segment_len = current.time - previous.time;
+        let segment_len = current.time - previous.time;
         let acceleration = 2.0
             * (current.position - previous.position - segment_len * previous.velocity)
             / segment_len.powi(2);
