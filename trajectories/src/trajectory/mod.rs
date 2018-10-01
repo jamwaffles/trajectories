@@ -78,10 +78,9 @@ impl Trajectory {
     }
 
     /// Get the (previous_segment, segment) of the trajectory that the given time lies on
-    fn get_trajectory_segment(&self, time: f64) -> (TrajectoryStep, TrajectoryStep) {
+    fn get_trajectory_segment<'a>(&'a self, time: f64) -> (&'a TrajectoryStep, &'a TrajectoryStep) {
         let traj_len = self.trajectory.len();
 
-        // TODO: Return a reference
         let pos = self
             .trajectory
             .iter()
@@ -95,9 +94,8 @@ impl Trajectory {
         let prev = self
             .trajectory
             .get(pos - 1)
-            .unwrap_or(self.trajectory.first().unwrap())
-            .clone();
-        let current = self.trajectory.get(pos).unwrap().clone();
+            .unwrap_or(self.trajectory.first().unwrap());
+        let current = self.trajectory.get(pos).unwrap();
 
         (prev, current)
     }
