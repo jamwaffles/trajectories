@@ -1,14 +1,6 @@
 #[cfg(feature = "profile")]
 extern crate cpuprofiler;
 
-use std::error::Error;
-use std::ffi::OsStr;
-use std::fs;
-use std::fs::OpenOptions;
-use std::io;
-use std::io::prelude::*;
-use std::path::{Path, PathBuf};
-
 #[cfg(feature = "profile")]
 #[allow(dead_code)]
 /// Begin a profiling capture
@@ -16,6 +8,7 @@ pub fn start_profile() {
     use self::cpuprofiler::PROFILER;
     use std::env;
     use std::fs;
+    use std::path::Path;
 
     let exe = env::current_exe().unwrap();
     let exe_name = Path::new(&exe).file_name().unwrap();
