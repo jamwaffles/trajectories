@@ -31,14 +31,14 @@ pub mod prelude;
 pub mod test_helpers;
 mod trajectory;
 
-use nalgebra::Vector3;
+use nalgebra::{VectorN, U3};
 pub use path::Path;
 pub use trajectory::Trajectory;
 
 /// Type alias for all vector operations
 ///
 /// This defines how many dimensions are supported. Change this type to add/remove dimensions
-pub type Coord = Vector3<f64>;
+pub type Coord = VectorN<f64, U3>;
 
 /// Custom defined epsilon for "near enough" float comparisons and accuracy checks. This is set to
 /// `(std::f64::EPSILON).sqrt()` on a Linux x64 machine with Rust 1.29 as per the
