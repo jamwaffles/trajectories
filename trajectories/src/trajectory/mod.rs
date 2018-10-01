@@ -328,7 +328,9 @@ impl Trajectory {
                     midpoint = 0.5 * (before + after);
                     midpoint_velocity = 0.5 * (before_velocity + after_velocity);
 
-                    if midpoint_velocity > self.get_max_velocity_from_velocity(midpoint)
+                    let max_midpoint_velocity = self.get_max_velocity_from_velocity(midpoint);
+
+                    if midpoint_velocity > max_midpoint_velocity
                         && self.get_min_max_phase_slope(
                             &PositionAndVelocity::new(
                                 before,
@@ -337,11 +339,11 @@ impl Trajectory {
                             MinMax::Min,
                         ) <= self.get_max_velocity_from_velocity_derivative(before)
                     {
-                        midpoint_velocity = self.get_max_velocity_from_velocity(midpoint);
+                        midpoint_velocity = max_midpoint_velocity;
                     }
 
                     if midpoint_velocity > self.get_max_velocity_from_acceleration(midpoint)
-                        || midpoint_velocity > self.get_max_velocity_from_velocity(midpoint)
+                        || midpoint_velocity > max_midpoint_velocity
                     {
                         after = midpoint;
                         after_velocity = midpoint_velocity;
@@ -351,7 +353,8 @@ impl Trajectory {
                     }
                 }
 
-                new_points.push(PositionAndVelocity::new(before, before_velocity));
+                let new_point = PositionAndVelocity::new(before, before_velocity);
+                new_points.push(new_point.clone());
 
                 if self.get_max_velocity_from_acceleration(after)
                     < self.get_max_velocity_from_velocity(after)
@@ -361,16 +364,14 @@ impl Trajectory {
                         break (new_points, PathPosition::NotEnd);
                     }
 
-                    if self.get_min_max_phase_slope(&new_points.last().unwrap(), MinMax::Max) > self
-                        .get_max_velocity_from_acceleration_derivative(
-                            new_points.last().unwrap().position,
-                        ) {
+                    if self.get_min_max_phase_slope(&new_point, MinMax::Max)
+                        > self.get_max_velocity_from_acceleration_derivative(new_point.position)
+                    {
                         break (new_points, PathPosition::NotEnd);
                     }
-                } else if self.get_min_max_phase_slope(&new_points.last().unwrap(), MinMax::Min)
-                    > self.get_max_velocity_from_velocity_derivative(
-                        new_points.last().unwrap().position,
-                    ) {
+                } else if self.get_min_max_phase_slope(&new_point, MinMax::Min)
+                    > self.get_max_velocity_from_velocity_derivative(new_point.position)
+                {
                     break (new_points, PathPosition::NotEnd);
                 }
             }
@@ -403,7 +404,6 @@ impl Trajectory {
                 if start1.position <= position {
                     let new_point = PositionAndVelocity::new(position, velocity);
 
-                    // TODO: Benchmark push then reverse instead of shift front
                     new_trajectory.insert(0, new_point.clone());
 
                     velocity -= self.timestep * before_acceleration;
@@ -421,6 +421,8 @@ impl Trajectory {
                     parts = it.next();
                 }
 
+                // Second if let here due to the `parts = it.next()` above
+                // TODO: Refactor so I don't have to do this
                 if let Some(&[ref start1, ref start2]) = parts {
                     let start_slope =
                         (start2.velocity - start1.velocity) / (start2.position - start1.position);

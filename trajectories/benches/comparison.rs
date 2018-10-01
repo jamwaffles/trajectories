@@ -58,7 +58,7 @@ criterion_group!(
 
     config = Criterion::default()
         .warm_up_time(Duration::from_millis(1000))
-        .sample_size(5)
+        .sample_size(10)
         .measurement_time(Duration::from_millis(4000));
 
     targets =
