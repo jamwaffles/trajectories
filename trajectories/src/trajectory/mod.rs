@@ -8,8 +8,8 @@ use self::path_position::PathPosition;
 use self::switching_point::SwitchingPoint as TrajectorySwitchingPoint;
 use self::trajectory_step::TrajectoryStep;
 use crate::path::{Continuity, Path, PathItem, SwitchingPoint};
-use std;
 use crate::Coord;
+use std;
 
 /// Motion trajectory
 #[derive(Debug)]
@@ -443,16 +443,16 @@ impl Trajectory {
         }
 
         // Return the next earliest switching point (if any)
-        acceleration_switching_point.and_then(|accel_point| {
-            if velocity_switching_point.is_none()
-                || accel_point.pos.position
-                    <= velocity_switching_point.clone().unwrap().pos.position
+        match (acceleration_switching_point, velocity_switching_point) {
+            (Some(ref accel_point), Some(ref vel_point))
+                if accel_point.pos.position <= vel_point.pos.position =>
             {
-                Some(accel_point)
-            } else {
-                velocity_switching_point
+                Some(accel_point.clone())
             }
-        })
+            (Some(accel_point), None) => Some(accel_point),
+            (None, Some(vel_point)) => Some(vel_point),
+            _ => None,
+        }
     }
 
     /// Find minimum or maximum acceleration at a point along path
