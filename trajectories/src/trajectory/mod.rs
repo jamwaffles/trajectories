@@ -1,83 +1,15 @@
+mod min_max;
+mod path_position;
+mod switching_point;
+mod trajectory_step;
+
+use self::min_max::MinMax;
+use self::path_position::PathPosition;
+use self::switching_point::SwitchingPoint as TrajectorySwitchingPoint;
+use self::trajectory_step::TrajectoryStep;
 use path::{Continuity, Path, PathItem, SwitchingPoint};
 use std;
 use Coord;
-
-/// A (position, velocity) pair
-#[derive(Debug, Clone)]
-struct PositionAndVelocity {
-    /// Position
-    position: f64,
-    /// Velocity
-    velocity: f64,
-    /// Time
-    time: f64,
-}
-
-impl PositionAndVelocity {
-    #[inline(always)]
-    pub fn new(position: f64, velocity: f64) -> Self {
-        Self {
-            position,
-            velocity,
-            time: 0.0,
-        }
-    }
-
-    pub fn with_time(self, time: f64) -> Self {
-        Self { time, ..self }
-    }
-}
-
-impl Default for PositionAndVelocity {
-    fn default() -> Self {
-        Self {
-            position: 0.0,
-            velocity: 0.0,
-            time: 0.0,
-        }
-    }
-}
-
-/// Reached end or not
-#[derive(Debug, PartialEq)]
-enum PathPosition {
-    NotEnd,
-    End,
-}
-
-/// Whether to get the minimum or maximum
-#[derive(Debug)]
-enum MinMax {
-    Min,
-    Max,
-}
-
-impl MinMax {
-    pub fn as_multiplier(&self) -> f64 {
-        match self {
-            MinMax::Min => -1.0,
-            MinMax::Max => 1.0,
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-struct TrajectorySwitchingPoint {
-    // TODO: Split this out into position and velocity
-    pos: PositionAndVelocity,
-    before_acceleration: f64,
-    after_acceleration: f64,
-}
-
-impl Default for TrajectorySwitchingPoint {
-    fn default() -> Self {
-        TrajectorySwitchingPoint {
-            pos: PositionAndVelocity::new(0.0, 0.0),
-            before_acceleration: 0.0,
-            after_acceleration: 0.0,
-        }
-    }
-}
 
 /// Motion trajectory
 #[derive(Debug)]
@@ -86,7 +18,7 @@ pub struct Trajectory {
     velocity_limit: Coord,
     acceleration_limit: Coord,
     timestep: f64,
-    trajectory: Vec<PositionAndVelocity>,
+    trajectory: Vec<TrajectoryStep>,
     epsilon: f64,
 }
 
@@ -146,7 +78,7 @@ impl Trajectory {
     }
 
     /// Get the (previous_segment, segment) of the trajectory that the given time lies on
-    fn get_trajectory_segment(&self, time: f64) -> (PositionAndVelocity, PositionAndVelocity) {
+    fn get_trajectory_segment(&self, time: f64) -> (TrajectoryStep, TrajectoryStep) {
         let traj_len = self.trajectory.len();
 
         // TODO: Return a reference
@@ -172,12 +104,12 @@ impl Trajectory {
 
     /// Compute complete trajectory
     fn setup(&mut self) {
-        let mut trajectory = vec![PositionAndVelocity::new(0.0, 0.0)];
+        let mut trajectory = vec![TrajectoryStep::new(0.0, 0.0)];
         let mut switching_point = TrajectorySwitchingPoint {
             before_acceleration: 0.0,
             after_acceleration: self
-                .get_min_max_path_acceleration(&PositionAndVelocity::new(0.0, 0.0), MinMax::Max),
-            pos: PositionAndVelocity::new(0.0, 0.0),
+                .get_min_max_path_acceleration(&TrajectoryStep::new(0.0, 0.0), MinMax::Max),
+            pos: TrajectoryStep::new(0.0, 0.0),
         };
 
         loop {
@@ -208,9 +140,9 @@ impl Trajectory {
         if let Some(updated_traj) = self.integrate_backward(
             &trajectory,
             &TrajectorySwitchingPoint {
-                pos: PositionAndVelocity::new(self.path.get_length(), 0.0),
+                pos: TrajectoryStep::new(self.path.get_length(), 0.0),
                 before_acceleration: self.get_min_max_path_acceleration(
-                    &PositionAndVelocity::new(self.path.get_length(), 0.0),
+                    &TrajectoryStep::new(self.path.get_length(), 0.0),
                     MinMax::Min,
                 ),
                 after_acceleration: 0.0,
@@ -224,7 +156,7 @@ impl Trajectory {
         let mut t = 0.0;
 
         // Set times on segments
-        let timed = std::iter::once(PositionAndVelocity::new(0.0, 0.0).with_time(t))
+        let timed = std::iter::once(TrajectoryStep::new(0.0, 0.0).with_time(t))
             .chain(trajectory.windows(2).map(|parts| {
                 if let &[ref previous, ref current] = parts {
                     t += (current.position - previous.position)
@@ -235,18 +167,18 @@ impl Trajectory {
                     panic!("Time windows");
                 }
             }))
-            .collect::<Vec<PositionAndVelocity>>();
+            .collect::<Vec<TrajectoryStep>>();
 
         self.trajectory = timed;
     }
 
     fn integrate_forward(
         &self,
-        trajectory: &Vec<PositionAndVelocity>,
+        trajectory: &Vec<TrajectoryStep>,
         start_acceleration: f64,
-    ) -> (Vec<PositionAndVelocity>, PathPosition) {
+    ) -> (Vec<TrajectoryStep>, PathPosition) {
         let mut new_points = Vec::new();
-        let PositionAndVelocity {
+        let TrajectoryStep {
             mut position,
             mut velocity,
             ..
@@ -279,7 +211,7 @@ impl Trajectory {
             }
 
             if position > self.path.get_length() {
-                new_points.push(PositionAndVelocity::new(position, velocity));
+                new_points.push(TrajectoryStep::new(position, velocity));
 
                 break (new_points, PathPosition::End);
             } else if velocity < 0.0 {
@@ -290,7 +222,7 @@ impl Trajectory {
 
             if velocity > max_velocity_at_position
                 && self.get_min_max_phase_slope(
-                    &PositionAndVelocity::new(
+                    &TrajectoryStep::new(
                         old_position,
                         self.get_max_velocity_from_velocity(old_position),
                     ),
@@ -300,7 +232,7 @@ impl Trajectory {
                 velocity = max_velocity_at_position;
             }
 
-            let new_point = PositionAndVelocity::new(position, velocity);
+            let new_point = TrajectoryStep::new(position, velocity);
 
             new_points.push(new_point.clone());
 
@@ -330,7 +262,7 @@ impl Trajectory {
 
                     if midpoint_velocity > max_midpoint_velocity
                         && self.get_min_max_phase_slope(
-                            &PositionAndVelocity::new(
+                            &TrajectoryStep::new(
                                 before,
                                 self.get_max_velocity_from_velocity(before),
                             ),
@@ -351,7 +283,7 @@ impl Trajectory {
                     }
                 }
 
-                let new_point = PositionAndVelocity::new(before, before_velocity);
+                let new_point = TrajectoryStep::new(before, before_velocity);
                 new_points.push(new_point.clone());
 
                 if self.get_max_velocity_from_acceleration(after)
@@ -378,12 +310,12 @@ impl Trajectory {
 
     fn integrate_backward(
         &self,
-        start_trajectory: &Vec<PositionAndVelocity>,
+        start_trajectory: &Vec<TrajectoryStep>,
         start_switching_point: &TrajectorySwitchingPoint,
-    ) -> Option<Vec<PositionAndVelocity>> {
+    ) -> Option<Vec<TrajectoryStep>> {
         let TrajectorySwitchingPoint {
             pos:
-                PositionAndVelocity {
+                TrajectoryStep {
                     mut position,
                     mut velocity,
                     ..
@@ -393,7 +325,7 @@ impl Trajectory {
         } = start_switching_point.clone();
         let mut slope = 0.0;
         let mut it = start_trajectory.windows(2).rev();
-        let mut new_trajectory: Vec<PositionAndVelocity> = Vec::new();
+        let mut new_trajectory: Vec<TrajectoryStep> = Vec::new();
         let mut parts = it.next();
 
         while let Some(&[ref start1, ref _start2]) = parts {
@@ -402,14 +334,14 @@ impl Trajectory {
             }
 
             if start1.position <= position {
-                let new_point = PositionAndVelocity::new(position, velocity);
+                let new_point = TrajectoryStep::new(position, velocity);
 
                 new_trajectory.push(new_point.clone());
 
                 velocity -= self.timestep * before_acceleration;
                 position -= self.timestep * 0.5 * (velocity + new_point.velocity);
                 before_acceleration = self.get_min_max_path_acceleration(
-                    &PositionAndVelocity::new(position, velocity),
+                    &TrajectoryStep::new(position, velocity),
                     MinMax::Min,
                 );
                 slope = (new_point.velocity - velocity) / (new_point.position - position);
@@ -442,7 +374,7 @@ impl Trajectory {
                         start1.velocity + start_slope * (intersection_position - start1.position);
 
                     // Add intersection point
-                    new_trajectory.push(PositionAndVelocity::new(
+                    new_trajectory.push(TrajectoryStep::new(
                         intersection_position,
                         intersection_velocity,
                     ));
@@ -454,7 +386,7 @@ impl Trajectory {
                         .filter(|step| step.position < start2.position)
                         // Append new items
                         .chain(new_trajectory.into_iter().rev())
-                        .collect::<Vec<PositionAndVelocity>>();
+                        .collect::<Vec<TrajectoryStep>>();
 
                     return Some(ret);
                 }
@@ -471,7 +403,7 @@ impl Trajectory {
     ) -> Option<TrajectorySwitchingPoint> {
         let mut acceleration_switching_point: Option<TrajectorySwitchingPoint> =
             Some(TrajectorySwitchingPoint {
-                pos: PositionAndVelocity::new(position_along_path, 0.0),
+                pos: TrajectoryStep::new(position_along_path, 0.0),
                 ..TrajectorySwitchingPoint::default()
             });
 
@@ -528,8 +460,8 @@ impl Trajectory {
     }
 
     /// Find minimum or maximum acceleration at a point along path
-    fn get_min_max_path_acceleration(&self, pos_vel: &PositionAndVelocity, min_max: MinMax) -> f64 {
-        let &PositionAndVelocity {
+    fn get_min_max_path_acceleration(&self, pos_vel: &TrajectoryStep, min_max: MinMax) -> f64 {
+        let &TrajectoryStep {
             position, velocity, ..
         } = pos_vel;
 
@@ -649,7 +581,7 @@ impl Trajectory {
     /// Get the minimum or maximum phase slope for a position along the path
     ///
     /// TODO: Figure out what phase slope means in this context and give it a better name
-    fn get_min_max_phase_slope(&self, pos_vel: &PositionAndVelocity, min_max: MinMax) -> f64 {
+    fn get_min_max_phase_slope(&self, pos_vel: &TrajectoryStep, min_max: MinMax) -> f64 {
         self.get_min_max_path_acceleration(&pos_vel, min_max) / pos_vel.position
     }
 
@@ -674,9 +606,9 @@ impl Trajectory {
                     velocity = before_velocity.min(after_velocity);
 
                     let before_point =
-                        PositionAndVelocity::new(current_point.position - self.epsilon, velocity);
+                        TrajectoryStep::new(current_point.position - self.epsilon, velocity);
                     let after_point =
-                        PositionAndVelocity::new(current_point.position + self.epsilon, velocity);
+                        TrajectoryStep::new(current_point.position + self.epsilon, velocity);
 
                     let before_acceleration =
                         self.get_min_max_path_acceleration(&before_point, MinMax::Min);
@@ -684,11 +616,11 @@ impl Trajectory {
                         self.get_min_max_path_acceleration(&after_point, MinMax::Max);
 
                     let before_phase_slope = self.get_min_max_phase_slope(
-                        &PositionAndVelocity::new(current_point.position - self.epsilon, velocity),
+                        &TrajectoryStep::new(current_point.position - self.epsilon, velocity),
                         MinMax::Min,
                     );
                     let after_phase_slope = self.get_min_max_phase_slope(
-                        &PositionAndVelocity::new(current_point.position + self.epsilon, velocity),
+                        &TrajectoryStep::new(current_point.position + self.epsilon, velocity),
                         MinMax::Max,
                     );
 
@@ -707,7 +639,7 @@ impl Trajectory {
                             || after_phase_slope < after_max_velocity_deriv)
                     {
                         return Some(TrajectorySwitchingPoint {
-                            pos: PositionAndVelocity::new(current_point.position, velocity),
+                            pos: TrajectoryStep::new(current_point.position, velocity),
                             before_acceleration,
                             after_acceleration,
                         });
@@ -725,7 +657,7 @@ impl Trajectory {
 
                     if low_deriv < 0.0 && high_deriv > 0.0 {
                         return Some(TrajectorySwitchingPoint {
-                            pos: PositionAndVelocity::new(current_point.position, velocity),
+                            pos: TrajectoryStep::new(current_point.position, velocity),
                             before_acceleration: 0.0,
                             after_acceleration: 0.0,
                         });
@@ -757,7 +689,7 @@ impl Trajectory {
         // the first condition into the second massively slows down the algo.
         while {
             if self.get_min_max_phase_slope(
-                &PositionAndVelocity::new(position, self.get_max_velocity_from_velocity(position)),
+                &TrajectoryStep::new(position, self.get_max_velocity_from_velocity(position)),
                 MinMax::Min,
             ) >= self.get_max_velocity_from_velocity_derivative(position)
             {
@@ -766,10 +698,7 @@ impl Trajectory {
 
             (!start
                 || self.get_min_max_phase_slope(
-                    &PositionAndVelocity::new(
-                        position,
-                        self.get_max_velocity_from_velocity(position),
-                    ),
+                    &TrajectoryStep::new(position, self.get_max_velocity_from_velocity(position)),
                     MinMax::Min,
                 ) >= self.get_max_velocity_from_velocity_derivative(position))
                 && position < self.path.get_length()
@@ -790,7 +719,7 @@ impl Trajectory {
             position = (prev_position + after_position) / 2.0;
 
             if self.get_min_max_phase_slope(
-                &PositionAndVelocity::new(position, self.get_max_velocity_from_velocity(position)),
+                &TrajectoryStep::new(position, self.get_max_velocity_from_velocity(position)),
                 MinMax::Min,
             ) > self.get_max_velocity_from_velocity_derivative(position)
             {
@@ -800,13 +729,13 @@ impl Trajectory {
             }
         }
 
-        let after_position = PositionAndVelocity::new(
+        let after_position = TrajectoryStep::new(
             after_position,
             self.get_max_velocity_from_velocity(after_position),
         );
 
         let before_acceleration = self.get_min_max_path_acceleration(
-            &PositionAndVelocity::new(
+            &TrajectoryStep::new(
                 prev_position,
                 self.get_max_velocity_from_velocity(prev_position),
             ),
