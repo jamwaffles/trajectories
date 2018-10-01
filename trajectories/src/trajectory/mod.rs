@@ -14,6 +14,7 @@ struct PositionAndVelocity {
 }
 
 impl PositionAndVelocity {
+    #[inline(always)]
     pub fn new(position: f64, velocity: f64) -> Self {
         Self {
             position,
