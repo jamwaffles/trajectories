@@ -199,15 +199,13 @@ impl Trajectory {
                 break;
             }
 
-            if let Some((updated_traj, _new_switching_point)) =
-                self.integrate_backward(&trajectory, &switching_point)
-            {
+            if let Some(updated_traj) = self.integrate_backward(&trajectory, &switching_point) {
                 trajectory = updated_traj;
             }
         }
 
         // Backwards integrate last section
-        if let Some((updated_traj, _new_switching_point)) = self.integrate_backward(
+        if let Some(updated_traj) = self.integrate_backward(
             &trajectory,
             &TrajectorySwitchingPoint {
                 pos: PositionAndVelocity::new(self.path.get_length(), 0.0),
@@ -382,7 +380,7 @@ impl Trajectory {
         &self,
         start_trajectory: &Vec<PositionAndVelocity>,
         start_switching_point: &TrajectorySwitchingPoint,
-    ) -> Option<(Vec<PositionAndVelocity>, TrajectorySwitchingPoint)> {
+    ) -> Option<Vec<PositionAndVelocity>> {
         let TrajectorySwitchingPoint {
             pos:
                 PositionAndVelocity {
@@ -398,75 +396,68 @@ impl Trajectory {
         let mut new_trajectory: Vec<PositionAndVelocity> = Vec::new();
         let mut parts = it.next();
 
-        // TODO: Use iterators
-        while position >= 0.0 && parts.is_some() {
-            if let Some(&[ref start1, ref _start2]) = parts {
-                if start1.position <= position {
-                    let new_point = PositionAndVelocity::new(position, velocity);
+        while let Some(&[ref start1, ref _start2]) = parts {
+            if position < 0.0 {
+                break;
+            }
 
-                    new_trajectory.push(new_point.clone());
+            if start1.position <= position {
+                let new_point = PositionAndVelocity::new(position, velocity);
 
-                    velocity -= self.timestep * before_acceleration;
-                    position -= self.timestep * 0.5 * (velocity + new_point.velocity);
-                    before_acceleration = self.get_min_max_path_acceleration(
-                        &PositionAndVelocity::new(position, velocity),
-                        MinMax::Min,
-                    );
-                    slope = (new_point.velocity - velocity) / (new_point.position - position);
+                new_trajectory.push(new_point.clone());
 
-                    if velocity < 0.0 {
-                        panic!("Velocity cannot be less than zero");
-                    }
-                } else {
-                    parts = it.next();
-                }
+                velocity -= self.timestep * before_acceleration;
+                position -= self.timestep * 0.5 * (velocity + new_point.velocity);
+                before_acceleration = self.get_min_max_path_acceleration(
+                    &PositionAndVelocity::new(position, velocity),
+                    MinMax::Min,
+                );
+                slope = (new_point.velocity - velocity) / (new_point.position - position);
 
-                // Second if let here due to the `parts = it.next()` above
-                // TODO: Refactor so I don't have to do this
-                if let Some(&[ref start1, ref start2]) = parts {
-                    let start_slope =
-                        (start2.velocity - start1.velocity) / (start2.position - start1.position);
-
-                    // Normalised position along segment where intersection occurs
-                    let intersection_position = (start1.velocity - velocity + slope * position
-                        - start_slope * start1.position)
-                        / (slope - start_slope);
-
-                    // Check for intersection between path and current segment
-                    if start1.position.max(position) - self.epsilon <= intersection_position
-                        && intersection_position
-                            <= self.epsilon
-                                + start2.position.min(new_trajectory.last().unwrap().position)
-                    {
-                        let intersection_velocity = start1.velocity
-                            + start_slope * (intersection_position - start1.position);
-
-                        let mut ret = start_trajectory
-                            .iter()
-                            .cloned()
-                            // Remove items in current trajectory after intersection point
-                            .filter(|step| step.position < start2.position)
-                            // Add intersection point
-                            .chain(std::iter::once(PositionAndVelocity::new(
-                                intersection_position,
-                                intersection_velocity,
-                            )))
-                            // Append new items
-                            .chain(new_trajectory.into_iter().rev())
-                            .collect::<Vec<PositionAndVelocity>>();
-
-                        return Some((
-                            ret,
-                            TrajectorySwitchingPoint {
-                                pos: PositionAndVelocity::new(position, velocity),
-                                before_acceleration,
-                                ..TrajectorySwitchingPoint::default()
-                            },
-                        ));
-                    }
+                if velocity < 0.0 {
+                    panic!("Velocity cannot be less than zero");
                 }
             } else {
-                panic!("Could not get parts");
+                parts = it.next();
+            }
+
+            // If let here due to the `parts = it.next()` above
+            // TODO: Refactor so I don't have to do this
+            if let Some(&[ref start1, ref start2]) = parts {
+                let start_slope =
+                    (start2.velocity - start1.velocity) / (start2.position - start1.position);
+
+                // Normalised position along segment where intersection occurs
+                let intersection_position = (start1.velocity - velocity + slope * position
+                    - start_slope * start1.position)
+                    / (slope - start_slope);
+
+                // Check for intersection between path and current segment
+                if start1.position.max(position) - self.epsilon <= intersection_position
+                    && intersection_position
+                        <= self.epsilon
+                            + start2.position.min(new_trajectory.last().unwrap().position)
+                {
+                    let intersection_velocity =
+                        start1.velocity + start_slope * (intersection_position - start1.position);
+
+                    // Add intersection point
+                    new_trajectory.push(PositionAndVelocity::new(
+                        intersection_position,
+                        intersection_velocity,
+                    ));
+
+                    let ret = start_trajectory
+                        .iter()
+                        .cloned()
+                        // Remove items in current trajectory after intersection point
+                        .filter(|step| step.position < start2.position)
+                        // Append new items
+                        .chain(new_trajectory.into_iter().rev())
+                        .collect::<Vec<PositionAndVelocity>>();
+
+                    return Some(ret);
+                }
             }
         }
 
