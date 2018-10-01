@@ -1,7 +1,7 @@
 use super::PathItem;
 use std::f64;
-use Coord;
-use TRAJ_EPSILON;
+use crate::Coord;
+use crate::TRAJ_EPSILON;
 
 /// Circular path segment
 ///
@@ -184,7 +184,7 @@ impl PathItem for CircularPathSegment {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test_helpers::*;
+    use crate::test_helpers::*;
 
     #[test]
     fn it_gets_switching_points() {

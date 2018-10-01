@@ -1,5 +1,5 @@
 use super::PathItem;
-use Coord;
+use crate::Coord;
 
 /// Circular path segment
 ///

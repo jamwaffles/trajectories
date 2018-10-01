@@ -16,13 +16,10 @@
     unused_extern_crates, unused_import_braces, unused_qualifications, unused_results
 )]
 
-extern crate nalgebra;
 #[macro_use]
 extern crate approx;
-extern crate csv;
 #[macro_use]
 extern crate serde_derive;
-extern crate svg;
 
 #[macro_use]
 mod macros;
@@ -31,9 +28,9 @@ pub mod prelude;
 pub mod test_helpers;
 mod trajectory;
 
+pub use crate::path::Path;
+pub use crate::trajectory::Trajectory;
 use nalgebra::{VectorN, U3};
-pub use path::Path;
-pub use trajectory::Trajectory;
 
 /// Type alias for all vector operations
 ///

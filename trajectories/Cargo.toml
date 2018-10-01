@@ -2,6 +2,7 @@
 authors = ["James Waples <jamwaffles@gmail.com>"]
 name = "trajectories"
 version = "0.1.0"
+edition = "2018"
 [[bench]]
 harness = false
 name = "path"

@@ -38,8 +38,8 @@ fn get_next_switching_point(c: &mut Criterion) {
         let path = Path::from_waypoints(&waypoints, DEVIATION);
 
         b.iter(|| {
-            let next_waypoint = path.get_next_switching_point(4.0);
-            let next_waypoint = path.get_next_switching_point(13.0);
+            let _next_waypoint = path.get_next_switching_point(4.0);
+            let _next_waypoint = path.get_next_switching_point(13.0);
         })
     });
 }

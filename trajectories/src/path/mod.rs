@@ -5,7 +5,7 @@ mod segment;
 pub use self::circular_segment::CircularPathSegment;
 pub use self::linear_segment::LinearPathSegment;
 pub use self::segment::PathSegment;
-use Coord;
+use crate::Coord;
 
 /// Helpful methods to get information about a path
 pub trait PathItem: PartialEq {
@@ -220,7 +220,7 @@ impl PathItem for Path {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test_helpers::*;
+    use crate::test_helpers::*;
 
     #[test]
     fn get_segment_at_position() {

@@ -1,9 +1,9 @@
 //! Test helpers
 
 use csv;
-pub use path::CircularPathSegment;
-use path::PathItem;
-use path::{Continuity, Path as TrajPath, PathSegment};
+pub use crate::path::CircularPathSegment;
+use crate::path::PathItem;
+use crate::path::{Continuity, Path as TrajPath, PathSegment};
 use std::fmt;
 use std::fs::File;
 use svg;
@@ -11,7 +11,7 @@ use svg::node::element::path::Data;
 use svg::node::element::{Circle, Group, Path as SvgPath, Rectangle, Text};
 use svg::node::Text as TextContent;
 use svg::Document;
-use Coord;
+use crate::Coord;
 
 const PADDING: f64 = 1.0;
 

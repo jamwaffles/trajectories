@@ -1,3 +1,3 @@
 //! Prelude
 
-pub use path::PathItem;
+pub use crate::path::PathItem;

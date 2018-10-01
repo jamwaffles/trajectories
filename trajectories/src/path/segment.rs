@@ -1,5 +1,5 @@
-use path::{CircularPathSegment, LinearPathSegment, PathItem};
-use Coord;
+use crate::path::{CircularPathSegment, LinearPathSegment, PathItem};
+use crate::Coord;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum PathSegment {

@@ -1,6 +1,6 @@
 //! Trajectory switching point
 
-use trajectory::TrajectoryStep;
+use crate::trajectory::TrajectoryStep;
 
 #[derive(Debug, Clone)]
 pub struct SwitchingPoint {

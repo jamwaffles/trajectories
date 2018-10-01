@@ -7,9 +7,9 @@ use self::min_max::MinMax;
 use self::path_position::PathPosition;
 use self::switching_point::SwitchingPoint as TrajectorySwitchingPoint;
 use self::trajectory_step::TrajectoryStep;
-use path::{Continuity, Path, PathItem, SwitchingPoint};
+use crate::path::{Continuity, Path, PathItem, SwitchingPoint};
 use std;
-use Coord;
+use crate::Coord;
 
 /// Motion trajectory
 #[derive(Debug)]
@@ -750,7 +750,7 @@ impl Trajectory {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test_helpers::*;
+    use crate::test_helpers::*;
 
     #[test]
     fn create_example_cpp_trajectory() {
