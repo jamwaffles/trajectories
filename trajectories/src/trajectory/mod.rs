@@ -153,16 +153,14 @@ impl Trajectory {
             panic!("Last section integrate backward failed");
         }
 
-        let mut t = 0.0;
-
         // Set times on segments
-        let timed = std::iter::once(TrajectoryStep::new(0.0, 0.0).with_time(t))
-            .chain(trajectory.windows(2).map(|parts| {
+        let timed = std::iter::once(TrajectoryStep::new(0.0, 0.0).with_time(0.0))
+            .chain(trajectory.windows(2).scan(0.0, |t, parts| {
                 if let &[ref previous, ref current] = parts {
-                    t += (current.position - previous.position)
+                    *t += (current.position - previous.position)
                         / ((current.velocity + previous.velocity) / 2.0);
 
-                    current.clone().with_time(t)
+                    Some(current.clone().with_time(*t))
                 } else {
                     panic!("Time windows");
                 }
