@@ -6,35 +6,48 @@ pub use self::circular_segment::CircularPathSegment;
 pub use self::linear_segment::LinearPathSegment;
 pub use self::segment::PathSegment;
 use crate::Coord;
+use nalgebra::allocator::Allocator;
+use nalgebra::DefaultAllocator;
+use nalgebra::DimName;
+use nalgebra::Real;
+use nalgebra::VectorN;
 
 /// Helpful methods to get information about a path
-pub trait PathItem: PartialEq {
+pub trait PathItem<N, D>: PartialEq
+where
+    N: Real,
+    D: DimName,
+    DefaultAllocator: Allocator<N, D>,
+{
     /// Get length of path
-    fn get_length(&self) -> f64;
+    fn get_length(&self) -> N;
 
     /// Get position at a point along path
-    fn get_position(&self, distance_along_line: f64) -> Coord;
+    fn get_position(&self, distance_along_line: N) -> VectorN<N, D>;
 
     /// Get first derivative (tangent) at a point
-    fn get_tangent(&self, distance_along_line: f64) -> Coord;
+    fn get_tangent(&self, distance_along_line: N) -> VectorN<N, D>;
 
     /// Get second derivative (curvature) at a point
-    fn get_curvature(&self, distance_along_line: f64) -> Coord;
+    fn get_curvature(&self, distance_along_line: N) -> VectorN<N, D>;
 }
 
 /// A switching point
 #[derive(Debug, Clone, PartialEq)]
-pub struct SwitchingPoint {
+pub struct SwitchingPoint<N: Real> {
     /// Position along the path at which this switching point occurs
-    pub position: f64,
+    pub position: N,
     /// Whether this switching point is discontinuous or not
     pub continuity: Continuity,
 }
 
-impl SwitchingPoint {
+impl<N> SwitchingPoint<N>
+where
+    N: Real,
+{
     /// Create a new switching point from position and continuity flag
     #[inline(always)]
-    pub fn new(position: f64, continuity: Continuity) -> Self {
+    pub fn new(position: N, continuity: Continuity) -> Self {
         Self {
             position,
             continuity,
@@ -54,33 +67,41 @@ pub enum Continuity {
 
 /// A path with circular blends between segments
 #[derive(Debug, PartialEq)]
-pub struct Path {
+pub struct Path<N: Real, D: DimName>
+where
+    DefaultAllocator: Allocator<N, D>,
+{
     /// Linear path segments and circular blends
-    pub segments: Vec<PathSegment>,
+    pub segments: Vec<PathSegment<N, D>>,
 
     /// Total path length
-    length: f64,
+    length: N,
 
     /// Switching points. Bool denotes whether point is discontinuous (`true`) or not (`false`)
-    switching_points: Vec<SwitchingPoint>,
+    switching_points: Vec<SwitchingPoint<N>>,
 }
 
-impl Path {
+impl<N, D> Path<N, D>
+where
+    N: Real,
+    D: DimName,
+    DefaultAllocator: Allocator<N, D>,
+{
     /// Create a blended path from a set of waypoints
     ///
     /// The path must be differentiable, so small blends are added between linear segments
-    pub fn from_waypoints(waypoints: &Vec<Coord>, max_deviation: f64) -> Self {
-        let mut start_offset = 0.0;
+    pub fn from_waypoints(waypoints: &Vec<VectorN<N, D>>, max_deviation: N) -> Self {
+        let mut start_offset = nalgebra::convert(0.0);
         let mut switching_points = Vec::with_capacity((waypoints.len() as f32 * 2.5) as usize);
 
         let segments = waypoints.windows(3).fold(
             Vec::with_capacity(waypoints.len() * 3),
-            |mut segments: Vec<PathSegment>, parts| {
+            |mut segments, parts| {
                 if let &[prev, curr, next] = parts {
                     let blend_segment =
                         CircularPathSegment::from_waypoints(&prev, &curr, &next, max_deviation);
 
-                    let blend_start = blend_segment.get_position(0.0);
+                    let blend_start = blend_segment.get_position(nalgebra::convert(0.0));
                     let blend_end = blend_segment.get_position(blend_segment.get_length());
 
                     // Update previous segment with new end point, or create a new one if we're
@@ -116,7 +137,7 @@ impl Path {
                         &mut blend_switching_points
                             .iter()
                             .filter_map(|p| {
-                                let p_offset = p + blend_segment.start_offset;
+                                let p_offset = *p + blend_segment.start_offset;
 
                                 if p_offset < blend_end_offset {
                                     Some(SwitchingPoint::new(p_offset, Continuity::Continuous))
@@ -163,7 +184,7 @@ impl Path {
     }
 
     /// Get a path segment for a position along the entire path
-    pub fn get_segment_at_position(&self, position_along_path: f64) -> &PathSegment {
+    pub fn get_segment_at_position(&self, position_along_path: N) -> &PathSegment<N, D> {
         let clamped = position_along_path.min(self.length);
 
         self.segments
@@ -174,14 +195,14 @@ impl Path {
     }
 
     /// Get all switching points along this path
-    pub fn get_switching_points(&self) -> &Vec<SwitchingPoint> {
+    pub fn get_switching_points(&self) -> &Vec<SwitchingPoint<N>> {
         &self.switching_points
     }
 
     /// Get position of next switching point after a position along the path
     ///
     /// Returns the end of the path as position if no switching point could be found
-    pub fn get_next_switching_point(&self, position_along_path: f64) -> SwitchingPoint {
+    pub fn get_next_switching_point(&self, position_along_path: N) -> SwitchingPoint<N> {
         self.switching_points
             .iter()
             .cloned()
@@ -191,27 +212,32 @@ impl Path {
     }
 }
 
-impl PathItem for Path {
+impl<N, D> PathItem<N, D> for Path<N, D>
+where
+    N: Real,
+    D: DimName,
+    DefaultAllocator: Allocator<N, D>,
+{
     /// Get the length of the complete path
     #[inline(always)]
-    fn get_length(&self) -> f64 {
+    fn get_length(&self) -> N {
         self.length
     }
 
     /// Get position at a point along path
-    fn get_position(&self, distance_along_line: f64) -> Coord {
+    fn get_position(&self, distance_along_line: N) -> VectorN<N, D> {
         self.get_segment_at_position(distance_along_line)
             .get_position(distance_along_line)
     }
 
     /// Get first derivative (tangent) at a point
-    fn get_tangent(&self, distance_along_line: f64) -> Coord {
+    fn get_tangent(&self, distance_along_line: N) -> VectorN<N, D> {
         self.get_segment_at_position(distance_along_line)
             .get_tangent(distance_along_line)
     }
 
     /// Get second derivative (curvature) at a point
-    fn get_curvature(&self, distance_along_line: f64) -> Coord {
+    fn get_curvature(&self, distance_along_line: N) -> VectorN<N, D> {
         self.get_segment_at_position(distance_along_line)
             .get_curvature(distance_along_line)
     }

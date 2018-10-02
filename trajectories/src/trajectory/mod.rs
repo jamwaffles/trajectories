@@ -9,27 +9,45 @@ use self::switching_point::SwitchingPoint as TrajectorySwitchingPoint;
 use self::trajectory_step::TrajectoryStep;
 use crate::path::{Continuity, Path, PathItem, SwitchingPoint};
 use crate::Coord;
+use nalgebra::allocator::Allocator;
+use nalgebra::DefaultAllocator;
+use nalgebra::DimName;
+use nalgebra::Real;
+use nalgebra::VectorN;
 use std;
 
 /// Motion trajectory
 #[derive(Debug)]
-pub struct Trajectory {
-    path: Path,
-    velocity_limit: Coord,
-    acceleration_limit: Coord,
-    timestep: f64,
-    trajectory: Vec<TrajectoryStep>,
-    epsilon: f64,
+pub struct Trajectory<N: Real, D: DimName>
+where
+    DefaultAllocator: Allocator<N, D>,
+{
+    path: Path<N, D>,
+    velocity_limit: VectorN<N, D>,
+    acceleration_limit: VectorN<N, D>,
+    timestep: N,
+    trajectory: Vec<TrajectoryStep<N>>,
+    epsilon: N,
 }
 
-impl Trajectory {
+impl<N, D> Trajectory<N, D>
+where
+    N: Real,
+    D: DimName,
+    DefaultAllocator: Allocator<N, D>,
+{
     /// Create a new trajectory from a given path and max velocity and acceleration
-    pub fn new(path: Path, velocity_limit: Coord, acceleration_limit: Coord, epsilon: f64) -> Self {
+    pub fn new(
+        path: Path<N, D>,
+        velocity_limit: VectorN<N, D>,
+        acceleration_limit: VectorN<N, D>,
+        epsilon: N,
+    ) -> Self {
         let mut traj = Self {
             path,
             velocity_limit,
             acceleration_limit,
-            timestep: 0.001,
+            timestep: nalgebra::convert::<f64, N>(0.001),
             trajectory: Vec::new(),
             epsilon,
         };
@@ -40,45 +58,56 @@ impl Trajectory {
     }
 
     /// Get duration of complete trajectory
-    pub fn get_duration(&self) -> f64 {
+    pub fn get_duration(&self) -> N {
         self.trajectory.last().unwrap().time
     }
 
     /// Get a position in n-dimensional space given a time along the trajectory
-    pub fn get_position(&self, time: f64) -> Coord {
+    pub fn get_position(&self, time: N) -> VectorN<N, D> {
         let (previous, current) = self.get_trajectory_segment(time);
 
         let mut segment_len = current.time - previous.time;
-        let acceleration = 2.0
+        let acceleration = nalgebra::convert::<f64, N>(2.0)
             * (current.position - previous.position - segment_len * previous.velocity)
             / segment_len.powi(2);
 
         segment_len = time - previous.time;
 
         let position = previous.position
-            + segment_len * previous.velocity * 0.5 * segment_len.powi(2) * acceleration;
+            + segment_len
+                * previous.velocity
+                * nalgebra::convert::<f64, N>(0.5)
+                * segment_len.powi(2)
+                * acceleration;
 
         self.path.get_position(position)
     }
 
     /// Get velocity for each joint at a time along the path
-    pub fn get_velocity(&self, time: f64) -> Coord {
+    pub fn get_velocity(&self, time: N) -> VectorN<N, D> {
         let (previous, current) = self.get_trajectory_segment(time);
 
         let segment_len = current.time - previous.time;
-        let acceleration = 2.0
+        let acceleration = nalgebra::convert::<f64, N>(2.0)
             * (current.position - previous.position - segment_len * previous.velocity)
             / segment_len.powi(2);
 
         let position = previous.position
-            + segment_len * previous.velocity * 0.5 * segment_len.powi(2) * acceleration;
+            + segment_len
+                * previous.velocity
+                * nalgebra::convert::<f64, N>(0.5)
+                * segment_len.powi(2)
+                * acceleration;
         let velocity = previous.velocity + segment_len * acceleration;
 
         self.path.get_tangent(position) * velocity
     }
 
     /// Get the (previous_segment, segment) of the trajectory that the given time lies on
-    fn get_trajectory_segment<'a>(&'a self, time: f64) -> (&'a TrajectoryStep, &'a TrajectoryStep) {
+    fn get_trajectory_segment<'a>(
+        &'a self,
+        time: N,
+    ) -> (&'a TrajectoryStep<N>, &'a TrajectoryStep<N>) {
         let traj_len = self.trajectory.len();
 
         let pos = self
@@ -102,12 +131,23 @@ impl Trajectory {
 
     /// Compute complete trajectory
     fn setup(&mut self) {
-        let mut trajectory = vec![TrajectoryStep::new(0.0, 0.0)];
+        let mut trajectory = vec![TrajectoryStep::new(
+            nalgebra::convert::<f64, N>(0.0),
+            nalgebra::convert::<f64, N>(0.0),
+        )];
         let mut switching_point = TrajectorySwitchingPoint {
-            before_acceleration: 0.0,
-            after_acceleration: self
-                .get_min_max_path_acceleration(&TrajectoryStep::new(0.0, 0.0), MinMax::Max),
-            pos: TrajectoryStep::new(0.0, 0.0),
+            before_acceleration: nalgebra::convert::<f64, N>(0.0),
+            after_acceleration: self.get_min_max_path_acceleration(
+                &TrajectoryStep::new(
+                    nalgebra::convert::<f64, N>(0.0),
+                    nalgebra::convert::<f64, N>(0.0),
+                ),
+                MinMax::Max,
+            ),
+            pos: TrajectoryStep::new(
+                nalgebra::convert::<f64, N>(0.0),
+                nalgebra::convert::<f64, N>(0.0),
+            ),
         };
 
         loop {
@@ -138,12 +178,12 @@ impl Trajectory {
         if let Some(updated_traj) = self.integrate_backward(
             &trajectory,
             &TrajectorySwitchingPoint {
-                pos: TrajectoryStep::new(self.path.get_length(), 0.0),
+                pos: TrajectoryStep::new(self.path.get_length(), nalgebra::convert::<f64, N>(0.0)),
                 before_acceleration: self.get_min_max_path_acceleration(
-                    &TrajectoryStep::new(self.path.get_length(), 0.0),
+                    &TrajectoryStep::new(self.path.get_length(), nalgebra::convert::<f64, N>(0.0)),
                     MinMax::Min,
                 ),
-                after_acceleration: 0.0,
+                after_acceleration: nalgebra::convert::<f64, N>(0.0),
             },
         ) {
             trajectory = updated_traj;
@@ -152,27 +192,38 @@ impl Trajectory {
         }
 
         // Set times on segments
-        let timed = std::iter::once(TrajectoryStep::new(0.0, 0.0).with_time(0.0))
-            .chain(trajectory.windows(2).scan(0.0, |t, parts| {
-                if let &[ref previous, ref current] = parts {
-                    *t += (current.position - previous.position)
-                        / ((current.velocity + previous.velocity) / 2.0);
+        let timed = std::iter::once(
+            TrajectoryStep::new(
+                nalgebra::convert::<f64, N>(0.0),
+                nalgebra::convert::<f64, N>(0.0),
+            )
+            .with_time(nalgebra::convert::<f64, N>(0.0)),
+        )
+        .chain(
+            trajectory
+                .windows(2)
+                .scan(nalgebra::convert::<f64, N>(0.0), |t, parts| {
+                    if let &[ref previous, ref current] = parts {
+                        *t += (current.position - previous.position)
+                            / ((current.velocity + previous.velocity)
+                                / nalgebra::convert::<f64, N>(2.0));
 
-                    Some(current.clone().with_time(*t))
-                } else {
-                    panic!("Time windows");
-                }
-            }))
-            .collect::<Vec<TrajectoryStep>>();
+                        Some(current.clone().with_time(*t))
+                    } else {
+                        panic!("Time windows");
+                    }
+                }),
+        )
+        .collect::<Vec<TrajectoryStep<N>>>();
 
         self.trajectory = timed;
     }
 
     fn integrate_forward(
         &self,
-        trajectory: &Vec<TrajectoryStep>,
-        start_acceleration: f64,
-    ) -> (Vec<TrajectoryStep>, PathPosition) {
+        trajectory: &Vec<TrajectoryStep<N>>,
+        start_acceleration: N,
+    ) -> (Vec<TrajectoryStep<N>>, PathPosition) {
         let mut new_points = Vec::new();
         let TrajectoryStep {
             mut position,
@@ -195,7 +246,8 @@ impl Trajectory {
             let old_velocity = velocity;
 
             velocity += self.timestep * acceleration;
-            position += self.timestep * 0.5 * (old_velocity + velocity);
+            position +=
+                self.timestep * nalgebra::convert::<f64, N>(0.5) * (old_velocity + velocity);
 
             if let Some(next_disc) = next_discontinuity {
                 if position > next_disc.position {
@@ -210,7 +262,7 @@ impl Trajectory {
                 new_points.push(TrajectoryStep::new(position, velocity));
 
                 break (new_points, PathPosition::End);
-            } else if velocity < 0.0 {
+            } else if velocity < nalgebra::convert::<f64, N>(0.0) {
                 panic!("Integrate forward velocity cannot be 0");
             }
 
@@ -251,8 +303,9 @@ impl Trajectory {
                 let mut midpoint_velocity;
 
                 while after - before > self.epsilon {
-                    midpoint = 0.5 * (before + after);
-                    midpoint_velocity = 0.5 * (before_velocity + after_velocity);
+                    midpoint = nalgebra::convert::<f64, N>(0.5) * (before + after);
+                    midpoint_velocity =
+                        nalgebra::convert::<f64, N>(0.5) * (before_velocity + after_velocity);
 
                     let max_midpoint_velocity = self.get_max_velocity_from_velocity(midpoint);
 
@@ -306,9 +359,9 @@ impl Trajectory {
 
     fn integrate_backward(
         &self,
-        start_trajectory: &Vec<TrajectoryStep>,
-        start_switching_point: &TrajectorySwitchingPoint,
-    ) -> Option<Vec<TrajectoryStep>> {
+        start_trajectory: &Vec<TrajectoryStep<N>>,
+        start_switching_point: &TrajectorySwitchingPoint<N>,
+    ) -> Option<Vec<TrajectoryStep<N>>> {
         let TrajectorySwitchingPoint {
             pos:
                 TrajectoryStep {
@@ -319,13 +372,13 @@ impl Trajectory {
             mut before_acceleration,
             ..
         } = start_switching_point.clone();
-        let mut slope = 0.0;
+        let mut slope = nalgebra::convert::<f64, N>(0.0);
         let mut it = start_trajectory.windows(2).rev();
-        let mut new_trajectory: Vec<TrajectoryStep> = Vec::new();
+        let mut new_trajectory: Vec<TrajectoryStep<N>> = Vec::new();
         let mut parts = it.next();
 
         while let Some(&[ref start1, ref _start2]) = parts {
-            if position < 0.0 {
+            if position < nalgebra::convert::<f64, N>(0.0) {
                 break;
             }
 
@@ -335,14 +388,16 @@ impl Trajectory {
                 new_trajectory.push(new_point.clone());
 
                 velocity -= self.timestep * before_acceleration;
-                position -= self.timestep * 0.5 * (velocity + new_point.velocity);
+                position -= self.timestep
+                    * nalgebra::convert::<f64, N>(0.5)
+                    * (velocity + new_point.velocity);
                 before_acceleration = self.get_min_max_path_acceleration(
                     &TrajectoryStep::new(position, velocity),
                     MinMax::Min,
                 );
                 slope = (new_point.velocity - velocity) / (new_point.position - position);
 
-                if velocity < 0.0 {
+                if velocity < nalgebra::convert::<f64, N>(0.0) {
                     panic!("Velocity cannot be less than zero");
                 }
             } else {
@@ -382,7 +437,7 @@ impl Trajectory {
                         .filter(|step| step.position < start2.position)
                         // Append new items
                         .chain(new_trajectory.into_iter().rev())
-                        .collect::<Vec<TrajectoryStep>>();
+                        .collect::<Vec<TrajectoryStep<N>>>();
 
                     return Some(ret);
                 }
@@ -395,11 +450,11 @@ impl Trajectory {
     /// Get next switching point along the path, bounded by velocity or acceleration
     fn get_next_switching_point(
         &self,
-        position_along_path: f64,
-    ) -> Option<TrajectorySwitchingPoint> {
-        let mut acceleration_switching_point: Option<TrajectorySwitchingPoint> =
+        position_along_path: N,
+    ) -> Option<TrajectorySwitchingPoint<N>> {
+        let mut acceleration_switching_point: Option<TrajectorySwitchingPoint<N>> =
             Some(TrajectorySwitchingPoint {
-                pos: TrajectoryStep::new(position_along_path, 0.0),
+                pos: TrajectoryStep::new(position_along_path, nalgebra::convert::<f64, N>(0.0)),
                 ..TrajectorySwitchingPoint::default()
             });
 
@@ -417,7 +472,7 @@ impl Trajectory {
             }
         }
 
-        let mut velocity_switching_point: Option<TrajectorySwitchingPoint> = None;
+        let mut velocity_switching_point: Option<TrajectorySwitchingPoint<N>> = None;
 
         // Find the next velocity switching point
         while let Some(point) = self.get_next_velocity_switching_point(
@@ -456,7 +511,7 @@ impl Trajectory {
     }
 
     /// Find minimum or maximum acceleration at a point along path
-    fn get_min_max_path_acceleration(&self, pos_vel: &TrajectoryStep, min_max: MinMax) -> f64 {
+    fn get_min_max_path_acceleration(&self, pos_vel: &TrajectoryStep<N>, min_max: MinMax) -> N {
         let &TrajectoryStep {
             position, velocity, ..
         } = pos_vel;
@@ -470,17 +525,17 @@ impl Trajectory {
             .iter()
             .zip(derivative.iter().zip(second_derivative.iter()))
             .fold(
-                std::f64::MAX,
-                |acc,
+                nalgebra::convert::<f64, N>(std::f64::MAX),
+                |acc: N,
                  (
                     acceleration_limit_component,
                     (derivative_component, second_derivative_component),
                 )| {
-                    if *derivative_component != 0.0 {
+                    if *derivative_component != nalgebra::convert::<f64, N>(0.0) {
                         acc.min(
-                            acceleration_limit_component / derivative_component.abs()
-                                - factor * second_derivative_component * velocity.powi(2)
-                                    / derivative_component,
+                            *acceleration_limit_component / derivative_component.abs()
+                                - factor * *second_derivative_component * velocity.powi(2)
+                                    / *derivative_component,
                         )
                     } else {
                         acc
@@ -495,21 +550,21 @@ impl Trajectory {
     ///
     /// This method calculates the velocity limit as the smallest component of the tangent
     /// (derivative of position, i.e velocity) at the given point.
-    fn get_max_velocity_from_velocity(&self, position_along_path: f64) -> f64 {
+    fn get_max_velocity_from_velocity(&self, position_along_path: N) -> N {
         let tangent = self.path.get_tangent(position_along_path);
 
         tangent.iter().zip(self.velocity_limit.iter()).fold(
-            std::f64::MAX,
+            nalgebra::convert::<f64, N>(std::f64::MAX),
             |acc, (tangent_component, component_max)| {
-                acc.min(component_max / tangent_component.abs())
+                acc.min(*component_max / tangent_component.abs())
             },
         )
     }
 
     /// Get the derivative of the max acceleration-bounded velocity at a point along the path
-    fn get_max_velocity_from_velocity_derivative(&self, position_along_path: f64) -> f64 {
+    fn get_max_velocity_from_velocity_derivative(&self, position_along_path: N) -> N {
         let tangent = self.path.get_tangent(position_along_path);
-        let mut max_velocity = std::f64::MAX;
+        let mut max_velocity = nalgebra::convert::<f64, N>(std::f64::MAX);
         let mut constraint_axis = 0;
 
         // TODO: Use iterators
@@ -529,24 +584,24 @@ impl Trajectory {
     }
 
     /// Find maximum allowable velocity as limited by the acceleration at a point on the path
-    fn get_max_velocity_from_acceleration(&self, position_along_path: f64) -> f64 {
+    fn get_max_velocity_from_acceleration(&self, position_along_path: N) -> N {
         let segment = self.path.get_segment_at_position(position_along_path);
         let velocity = segment.get_tangent(position_along_path);
         let acceleration = segment.get_curvature(position_along_path);
 
         // TODO: Get length of input vector using na::dimension::<V>() (from https://www.nalgebra.org/generic_programming/)
-        let n = velocity.len();
+        let n = nalgebra::dimension::<VectorN<N, D>>();
 
-        let mut max_path_velocity = std::f64::INFINITY;
+        let mut max_path_velocity: N = nalgebra::convert::<f64, N>(std::f64::INFINITY);
 
         for i in 0..n {
-            if velocity[i] != 0.0 {
+            if velocity[i] != nalgebra::convert::<f64, N>(0.0) {
                 for j in (i + 1)..n {
-                    if velocity[j] != 0.0 {
+                    if velocity[j] != nalgebra::convert::<f64, N>(0.0) {
                         // TODO: Come up with a less mathsy name
                         let a_ij = acceleration[i] / velocity[i] - acceleration[j] / velocity[j];
 
-                        if a_ij != 0.0 {
+                        if a_ij != nalgebra::convert::<f64, N>(0.0) {
                             max_path_velocity = max_path_velocity.min(
                                 ((self.acceleration_limit[i] / velocity[i].abs()
                                     + self.acceleration_limit[j] / velocity[j].abs())
@@ -556,7 +611,7 @@ impl Trajectory {
                         }
                     }
                 }
-            } else if acceleration[i] != 0.0 {
+            } else if acceleration[i] != nalgebra::convert::<f64, N>(0.0) {
                 max_path_velocity = max_path_velocity
                     .min((self.acceleration_limit[i] / acceleration[i].abs()).sqrt());
             }
@@ -568,24 +623,24 @@ impl Trajectory {
     /// Get the derivative of the max velocity at a point along the path
     ///
     /// The max velocity in this case is bounded by the acceleration limits at the point
-    fn get_max_velocity_from_acceleration_derivative(&self, position_along_path: f64) -> f64 {
+    fn get_max_velocity_from_acceleration_derivative(&self, position_along_path: N) -> N {
         (self.get_max_velocity_from_acceleration(position_along_path + self.epsilon)
             - self.get_max_velocity_from_acceleration(position_along_path - self.epsilon))
-            / (2.0 * self.epsilon)
+            / (nalgebra::convert::<f64, N>(2.0) * self.epsilon)
     }
 
     /// Get the minimum or maximum phase slope for a position along the path
     ///
     /// TODO: Figure out what phase slope means in this context and give it a better name
-    fn get_min_max_phase_slope(&self, pos_vel: &TrajectoryStep, min_max: MinMax) -> f64 {
+    fn get_min_max_phase_slope(&self, pos_vel: &TrajectoryStep<N>, min_max: MinMax) -> N {
         self.get_min_max_path_acceleration(&pos_vel, min_max) / pos_vel.position
     }
 
     /// Get the next acceleration-bounded switching point after the current position
     fn get_next_acceleration_switching_point(
         &self,
-        position_along_path: f64,
-    ) -> Option<TrajectorySwitchingPoint> {
+        position_along_path: N,
+    ) -> Option<TrajectorySwitchingPoint<N>> {
         let mut velocity;
         let mut current_point = SwitchingPoint::new(position_along_path, Continuity::Continuous);
 
@@ -622,11 +677,13 @@ impl Trajectory {
 
                     let before_max_velocity_deriv = self
                         .get_max_velocity_from_acceleration_derivative(
-                            current_point.position - 2.0 * self.epsilon,
+                            current_point.position
+                                - nalgebra::convert::<f64, N>(2.0) * self.epsilon,
                         );
                     let after_max_velocity_deriv = self
                         .get_max_velocity_from_acceleration_derivative(
-                            current_point.position + 2.0 * self.epsilon,
+                            current_point.position
+                                + nalgebra::convert::<f64, N>(2.0) * self.epsilon,
                         );
 
                     if (before_velocity > after_velocity
@@ -651,11 +708,13 @@ impl Trajectory {
                         current_point.position + self.epsilon,
                     );
 
-                    if low_deriv < 0.0 && high_deriv > 0.0 {
+                    if low_deriv < nalgebra::convert::<f64, N>(0.0)
+                        && high_deriv > nalgebra::convert::<f64, N>(0.0)
+                    {
                         return Some(TrajectorySwitchingPoint {
                             pos: TrajectoryStep::new(current_point.position, velocity),
-                            before_acceleration: 0.0,
-                            after_acceleration: 0.0,
+                            before_acceleration: nalgebra::convert::<f64, N>(0.0),
+                            after_acceleration: nalgebra::convert::<f64, N>(0.0),
                         });
                     }
                 }
@@ -673,10 +732,10 @@ impl Trajectory {
     /// to find the specific switching point to within a more accurate epsilon.
     fn get_next_velocity_switching_point(
         &self,
-        position_along_path: f64,
-    ) -> Option<TrajectorySwitchingPoint> {
+        position_along_path: N,
+    ) -> Option<TrajectorySwitchingPoint<N>> {
         // Broad phase search step
-        let step_size = 0.001;
+        let step_size = nalgebra::convert::<f64, N>(0.001);
         let mut position = position_along_path;
         let mut start = false;
 
@@ -712,7 +771,7 @@ impl Trajectory {
 
         // Binary search through interval to find switching point within an epsilon
         while after_position - prev_position > self.epsilon {
-            position = (prev_position + after_position) / 2.0;
+            position = (prev_position + after_position) / nalgebra::convert::<f64, N>(2.0);
 
             if self.get_min_max_phase_slope(
                 &TrajectoryStep::new(position, self.get_max_velocity_from_velocity(position)),
