@@ -1,45 +1,37 @@
 //! A discrete step along a complete trajectory
 
-use nalgebra::Real;
-
 /// Trajectory step
 #[derive(Debug, Clone)]
-pub(crate) struct TrajectoryStep<N: Real> {
+pub(crate) struct TrajectoryStep {
     /// Position
-    pub(crate) position: N,
+    pub(crate) position: f64,
     /// Velocity
-    pub(crate) velocity: N,
+    pub(crate) velocity: f64,
     /// Time
-    pub(crate) time: N,
+    pub(crate) time: f64,
 }
 
-impl<N> TrajectoryStep<N>
-where
-    N: Real,
-{
+impl TrajectoryStep {
     #[inline(always)]
-    pub fn new(position: N, velocity: N) -> Self {
+    pub fn new(position: f64, velocity: f64) -> Self {
         Self {
             position,
             velocity,
-            time: nalgebra::convert(0.0),
+            time: 0.0,
         }
     }
 
-    pub fn with_time(self, time: N) -> Self {
+    pub fn with_time(self, time: f64) -> Self {
         Self { time, ..self }
     }
 }
 
-impl<N> Default for TrajectoryStep<N>
-where
-    N: Real,
-{
+impl Default for TrajectoryStep {
     fn default() -> Self {
         Self {
-            position: nalgebra::convert(0.0),
-            velocity: nalgebra::convert(0.0),
-            time: nalgebra::convert(0.0),
+            position: 0.0,
+            velocity: 0.0,
+            time: 0.0,
         }
     }
 }

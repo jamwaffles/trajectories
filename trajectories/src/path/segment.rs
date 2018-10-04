@@ -1,28 +1,15 @@
 use crate::path::{CircularPathSegment, LinearPathSegment, PathItem};
 use crate::Coord;
-use nalgebra::allocator::Allocator;
-use nalgebra::DefaultAllocator;
-use nalgebra::DimName;
-use nalgebra::Real;
-use nalgebra::VectorN;
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum PathSegment<N: Real, D: DimName>
-where
-    DefaultAllocator: Allocator<N, D>,
-{
-    Linear(LinearPathSegment<N, D>),
-    Circular(CircularPathSegment<N, D>),
+pub enum PathSegment {
+    Linear(LinearPathSegment),
+    Circular(CircularPathSegment),
 }
 
-impl<N, D> PathItem<N, D> for PathSegment<N, D>
-where
-    N: Real,
-    D: DimName,
-    DefaultAllocator: Allocator<N, D>,
-{
+impl PathItem for PathSegment {
     /// Get length of path
-    fn get_length(&self) -> N {
+    fn get_length(&self) -> f64 {
         match self {
             PathSegment::Linear(s) => s.get_length(),
             PathSegment::Circular(s) => s.get_length(),
@@ -30,7 +17,7 @@ where
     }
 
     /// Get position at a point along path
-    fn get_position(&self, distance_along_line: N) -> VectorN<N, D> {
+    fn get_position(&self, distance_along_line: f64) -> Coord {
         match self {
             PathSegment::Linear(s) => s.get_position(distance_along_line),
             PathSegment::Circular(s) => s.get_position(distance_along_line),
@@ -38,7 +25,7 @@ where
     }
 
     /// Get first derivative (tangent) at a point
-    fn get_tangent(&self, distance_along_line: N) -> VectorN<N, D> {
+    fn get_tangent(&self, distance_along_line: f64) -> Coord {
         match self {
             PathSegment::Linear(s) => s.get_tangent(distance_along_line),
             PathSegment::Circular(s) => s.get_tangent(distance_along_line),
@@ -46,7 +33,7 @@ where
     }
 
     /// Get second derivative (curvature) at a point
-    fn get_curvature(&self, distance_along_line: N) -> VectorN<N, D> {
+    fn get_curvature(&self, distance_along_line: f64) -> Coord {
         match self {
             PathSegment::Linear(s) => s.get_curvature(distance_along_line),
             PathSegment::Circular(s) => s.get_curvature(distance_along_line),
@@ -54,15 +41,10 @@ where
     }
 }
 
-impl<N, D> PathSegment<N, D>
-where
-    N: Real,
-    D: DimName,
-    DefaultAllocator: Allocator<N, D>,
-{
+impl PathSegment {
     /// Clone segment and give it a start offset
     // TODO: Trait
-    pub fn with_start_offset(&self, offset: N) -> Self {
+    pub fn with_start_offset(&self, offset: f64) -> Self {
         match self {
             PathSegment::Linear(s) => PathSegment::Linear(s.with_start_offset(offset)),
             PathSegment::Circular(s) => PathSegment::Circular(s.with_start_offset(offset)),
@@ -71,7 +53,7 @@ where
 
     /// Get start offset of this segment
     // TODO: Trait
-    pub fn get_start_offset(&self) -> N {
+    pub fn get_start_offset(&self) -> f64 {
         match self {
             PathSegment::Linear(s) => s.start_offset,
             PathSegment::Circular(s) => s.start_offset,
@@ -80,7 +62,7 @@ where
 
     /// Get the switching points for this path segment
     // TODO: Trait?
-    pub fn get_switching_points(&self) -> Vec<N> {
+    pub fn get_switching_points(&self) -> Vec<f64> {
         match self {
             PathSegment::Linear(s) => s.get_switching_points(),
             PathSegment::Circular(s) => s.get_switching_points(),

@@ -1,25 +1,21 @@
 //! Trajectory switching point
 
 use crate::trajectory::TrajectoryStep;
-use nalgebra::Real;
 
 #[derive(Debug, Clone)]
-pub struct SwitchingPoint<N: Real> {
+pub struct SwitchingPoint {
     // TODO: Split this out into position and velocity
-    pub(crate) pos: TrajectoryStep<N>,
-    pub(crate) before_acceleration: N,
-    pub(crate) after_acceleration: N,
+    pub(crate) pos: TrajectoryStep,
+    pub(crate) before_acceleration: f64,
+    pub(crate) after_acceleration: f64,
 }
 
-impl<N> Default for SwitchingPoint<N>
-where
-    N: Real,
-{
+impl Default for SwitchingPoint {
     fn default() -> Self {
         SwitchingPoint {
-            pos: TrajectoryStep::new(nalgebra::convert(0.0), nalgebra::convert(0.0)),
-            before_acceleration: nalgebra::convert(0.0),
-            after_acceleration: nalgebra::convert(0.0),
+            pos: TrajectoryStep::new(0.0, 0.0),
+            before_acceleration: 0.0,
+            after_acceleration: 0.0,
         }
     }
 }
