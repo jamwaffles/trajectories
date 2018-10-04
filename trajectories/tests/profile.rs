@@ -8,14 +8,14 @@ use trajectories::*;
 
 #[test]
 fn profile_native() {
-    let waypoints: Vec<Coord> = vec![
-        Coord::new(0.0, 0.0, 0.0),
-        Coord::new(0.0, 0.2, 1.0),
-        Coord::new(0.0, 3.0, 0.5),
-        Coord::new(1.1, 2.0, 0.0),
-        Coord::new(1.0, 0.0, 0.0),
-        Coord::new(0.0, 1.0, 0.0),
-        Coord::new(0.0, 0.0, 1.0),
+    let waypoints: Vec<TestCoord3> = vec![
+        TestCoord3::new(0.0, 0.0, 0.0),
+        TestCoord3::new(0.0, 0.2, 1.0),
+        TestCoord3::new(0.0, 3.0, 0.5),
+        TestCoord3::new(1.1, 2.0, 0.0),
+        TestCoord3::new(1.0, 0.0, 0.0),
+        TestCoord3::new(0.0, 1.0, 0.0),
+        TestCoord3::new(0.0, 0.0, 1.0),
     ];
 
     // start_profile();
@@ -24,8 +24,8 @@ fn profile_native() {
 
     let trajectory = Trajectory::new(
         p,
-        Coord::new(1.0, 1.0, 1.0),
-        Coord::new(1.0, 1.0, 1.0),
+        TestCoord3::new(1.0, 1.0, 1.0),
+        TestCoord3::new(1.0, 1.0, 1.0),
         0.000001,
     );
 

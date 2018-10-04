@@ -1,25 +1,33 @@
 use super::PathItem;
-use std::f64;
 use crate::Coord;
 use crate::TRAJ_EPSILON;
+use nalgebra::allocator::Allocator;
+use nalgebra::allocator::SameShapeVectorAllocator;
+use nalgebra::DefaultAllocator;
+use nalgebra::DimName;
+use std::f64;
 
 /// Circular path segment
 ///
 /// Used to blend two straight path segments along a circular path. `x` and `y` form a plane on
 /// on which the blend circle lies, with its center at `center`. Radius is radius.
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub struct CircularPathSegment {
+#[derive(Clone, Debug, PartialEq)]
+pub struct CircularPathSegment<N>
+where
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+{
     /// Center point of circle
-    pub center: Coord,
+    pub center: Coord<N>,
 
     /// Radius of circle
     pub radius: f64,
 
     /// First vector along which the blend circle lies
-    pub x: Coord,
+    pub x: Coord<N>,
 
     /// Second vector along which the blend circle lies
-    pub y: Coord,
+    pub y: Coord<N>,
 
     /// Length of the arc in radians to use in calculating the blend
     pub arc_length: f64,
@@ -28,7 +36,11 @@ pub struct CircularPathSegment {
     pub start_offset: f64,
 }
 
-impl Default for CircularPathSegment {
+impl<N> Default for CircularPathSegment<N>
+where
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+{
     fn default() -> Self {
         Self {
             arc_length: 0.0,
@@ -41,12 +53,16 @@ impl Default for CircularPathSegment {
     }
 }
 
-impl CircularPathSegment {
+impl<N> CircularPathSegment<N>
+where
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+{
     /// Create a blend segment for two line segments comprised of three points
     pub fn from_waypoints(
-        previous: &Coord,
-        current: &Coord,
-        next: &Coord,
+        previous: &Coord<N>,
+        current: &Coord<N>,
+        next: &Coord<N>,
         max_deviation: f64,
     ) -> Self {
         // If either segment is of negligible length, we don't need to blend it, however a blend
@@ -70,7 +86,7 @@ impl CircularPathSegment {
 
         // If segments are essentially parallel, they don't need blending, however a blend
         // is still required to make the path differentiable.
-        if (previous_normalised - next_normalised).norm() < TRAJ_EPSILON {
+        if (&previous_normalised - &next_normalised).norm() < TRAJ_EPSILON {
             return CircularPathSegment {
                 center: current.clone(),
                 ..Self::default()
@@ -78,7 +94,7 @@ impl CircularPathSegment {
         }
 
         // ⍺i (outside angle in radians, i.e. 180º - angle)
-        let angle = previous_normalised.angle(&next_normalised);
+        let angle = &previous_normalised.angle(&next_normalised);
 
         let radius_limit = (max_deviation * (angle / 2.0).sin()) / (1.0 - (angle / 2.0).cos());
 
@@ -90,10 +106,11 @@ impl CircularPathSegment {
 
         // Ci (center)
         let center = current
-            + (next_normalised - previous_normalised).normalize() * (radius / (angle / 2.0).cos());
+            + (&next_normalised - &previous_normalised).normalize()
+                * (radius / (angle / 2.0).cos());
 
         // Xi (points from center of circle to point where circle touches previous segment)
-        let x = (current - max_blend_distance * previous_normalised - center).normalize();
+        let x = (current - max_blend_distance * &previous_normalised - &center).normalize();
         // Yi (direction of previous segment)
         let y = previous_normalised;
 
@@ -152,7 +169,11 @@ impl CircularPathSegment {
     }
 }
 
-impl PathItem for CircularPathSegment {
+impl<N> PathItem<N> for CircularPathSegment<N>
+where
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+{
     /// Get the arc length of this segment
     fn get_length(&self) -> f64 {
         self.arc_length
@@ -160,24 +181,25 @@ impl PathItem for CircularPathSegment {
 
     /// Get position ("robot configuration" in paper parlance) along arc from normalised distance
     /// along it (`s`)
-    fn get_position(&self, distance_along_arc: f64) -> Coord {
+    fn get_position(&self, distance_along_arc: f64) -> Coord<N> {
         let angle = (distance_along_arc - self.start_offset) / self.radius;
 
-        self.center + self.radius * ((self.x * angle.cos()) + (self.y * angle.sin()))
+        self.center.clone()
+            + self.radius * ((self.x.clone() * angle.cos()) + (self.y.clone() * angle.sin()))
     }
 
     /// Get derivative (tangent) of point along curve
-    fn get_tangent(&self, distance_along_arc: f64) -> Coord {
+    fn get_tangent(&self, distance_along_arc: f64) -> Coord<N> {
         let angle = (distance_along_arc - self.start_offset) / self.radius;
 
-        -self.x * angle.sin() + self.y * angle.cos()
+        -self.x.clone() * angle.sin() + self.y.clone() * angle.cos()
     }
 
     /// Get second derivative (rate of change of tangent, aka curvature) of point along curve
-    fn get_curvature(&self, distance_along_arc: f64) -> Coord {
+    fn get_curvature(&self, distance_along_arc: f64) -> Coord<N> {
         let angle = (distance_along_arc - self.start_offset) / self.radius;
 
-        -1.0 / self.radius * (self.x * angle.cos() + self.y * angle.sin())
+        -1.0 / self.radius * (&self.x * angle.cos() + &self.y * angle.sin())
     }
 }
 
@@ -188,9 +210,9 @@ mod tests {
 
     #[test]
     fn it_gets_switching_points() {
-        let before = Coord::new(0.0, 0.0, 0.0);
-        let current = Coord::new(1.0, 5.0, 0.0);
-        let after = Coord::new(5.0, 5.0, 0.0);
+        let before = TestCoord3::new(0.0, 0.0, 0.0);
+        let current = TestCoord3::new(1.0, 5.0, 0.0);
+        let after = TestCoord3::new(5.0, 5.0, 0.0);
 
         let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
 
@@ -209,9 +231,9 @@ mod tests {
 
     #[test]
     fn it_gets_the_position() {
-        let before = Coord::new(0.0, 0.0, 0.0);
-        let current = Coord::new(0.0, 5.0, 0.0);
-        let after = Coord::new(5.0, 10.0, 0.0);
+        let before = TestCoord3::new(0.0, 0.0, 0.0);
+        let current = TestCoord3::new(0.0, 5.0, 0.0);
+        let after = TestCoord3::new(5.0, 10.0, 0.0);
 
         let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
 
@@ -223,9 +245,9 @@ mod tests {
     ///
     /// /\
     fn it_computes_right_angles() {
-        let before = Coord::new(0.0, 0.0, 0.0);
-        let current = Coord::new(5.0, 5.0, 0.0);
-        let after = Coord::new(10.0, 0.0, 0.0);
+        let before = TestCoord3::new(0.0, 0.0, 0.0);
+        let current = TestCoord3::new(5.0, 5.0, 0.0);
+        let after = TestCoord3::new(10.0, 0.0, 0.0);
 
         let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
 
@@ -240,10 +262,16 @@ mod tests {
         let bc = blend_circle;
 
         assert_near!(bc.arc_length, 0.37922377958740805);
-        assert_near!(bc.center, Coord::new(5.0, 4.658578643762691, 0.0));
+        assert_near!(bc.center, TestCoord3::new(5.0, 4.658578643762691, 0.0));
         assert_near!(bc.radius, 0.24142135623730956);
-        assert_near!(bc.x, Coord::new(-0.70710678118654, 0.70710678118654, 0.0));
-        assert_near!(bc.y, Coord::new(0.70710678118654, 0.70710678118654, 0.0));
+        assert_near!(
+            bc.x,
+            TestCoord3::new(-0.70710678118654, 0.70710678118654, 0.0)
+        );
+        assert_near!(
+            bc.y,
+            TestCoord3::new(0.70710678118654, 0.70710678118654, 0.0)
+        );
     }
 
     #[test]
@@ -252,9 +280,9 @@ mod tests {
     ///  _
     /// |
     fn it_computes_more_right_angles() {
-        let before = Coord::new(0.0, 0.0, 0.0);
-        let current = Coord::new(0.0, 1.0, 0.0);
-        let after = Coord::new(1.0, 1.0, 0.0);
+        let before = TestCoord3::new(0.0, 0.0, 0.0);
+        let current = TestCoord3::new(0.0, 1.0, 0.0);
+        let after = TestCoord3::new(1.0, 1.0, 0.0);
 
         let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
 
@@ -269,10 +297,13 @@ mod tests {
         let bc = blend_circle;
 
         assert_near!(bc.arc_length, 0.37922377958740805);
-        assert_near!(bc.center, Coord::new(0.2414213562373, 0.758578643762, 0.0));
+        assert_near!(
+            bc.center,
+            TestCoord3::new(0.2414213562373, 0.758578643762, 0.0)
+        );
         assert_near!(bc.radius, 0.24142135623730956);
-        assert_near!(bc.x, Coord::new(-1.0, 0.0, 0.0));
-        assert_near!(bc.y, Coord::new(0.0, 1.0, 0.0));
+        assert_near!(bc.x, TestCoord3::new(-1.0, 0.0, 0.0));
+        assert_near!(bc.y, TestCoord3::new(0.0, 1.0, 0.0));
     }
 
     #[test]
@@ -281,9 +312,9 @@ mod tests {
     ///  /
     /// |
     fn it_computes_45_degree_angles() {
-        let before = Coord::new(0.0, 0.0, 0.0);
-        let current = Coord::new(0.0, 5.0, 0.0);
-        let after = Coord::new(5.0, 10.0, 0.0);
+        let before = TestCoord3::new(0.0, 0.0, 0.0);
+        let current = TestCoord3::new(0.0, 5.0, 0.0);
+        let after = TestCoord3::new(5.0, 10.0, 0.0);
 
         let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
 
@@ -300,11 +331,11 @@ mod tests {
         assert_near!(bc.arc_length, 0.9532433417365019);
         assert_near!(
             bc.center,
-            Coord::new(1.2137071184544088, 4.497266050787415, 0.0)
+            TestCoord3::new(1.2137071184544088, 4.497266050787415, 0.0)
         );
         assert_near!(bc.radius, 1.2137071184544088);
-        assert_near!(bc.x, Coord::new(-1.0, 0.0, 0.0));
-        assert_near!(bc.y, Coord::new(0.0, 1.0, 0.0));
+        assert_near!(bc.x, TestCoord3::new(-1.0, 0.0, 0.0));
+        assert_near!(bc.y, TestCoord3::new(0.0, 1.0, 0.0));
     }
 
     #[test]
@@ -313,9 +344,9 @@ mod tests {
     ///  /
     /// |
     fn it_works_with_large_max_deviations() {
-        let before = Coord::new(0.0, 0.0, 0.0);
-        let current = Coord::new(0.0, 5.0, 0.0);
-        let after = Coord::new(5.0, 10.0, 0.0);
+        let before = TestCoord3::new(0.0, 0.0, 0.0);
+        let current = TestCoord3::new(0.0, 5.0, 0.0);
+        let after = TestCoord3::new(5.0, 10.0, 0.0);
 
         let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 1.0);
 
@@ -330,10 +361,10 @@ mod tests {
         let bc = blend_circle;
 
         assert_near!(bc.arc_length, 4.740297244842599);
-        assert_near!(bc.center, Coord::new(6.035533905932737, 2.5, 0.0));
+        assert_near!(bc.center, TestCoord3::new(6.035533905932737, 2.5, 0.0));
         assert_near!(bc.radius, 6.035533905932737);
-        assert_near!(bc.x, Coord::new(-1.0, 0.0, 0.0));
-        assert_near!(bc.y, Coord::new(0.0, 1.0, 0.0));
+        assert_near!(bc.x, TestCoord3::new(-1.0, 0.0, 0.0));
+        assert_near!(bc.y, TestCoord3::new(0.0, 1.0, 0.0));
     }
 
     #[test]
@@ -342,9 +373,9 @@ mod tests {
     /// |
     /// |
     fn it_computes_0_degree_angles() {
-        let before = Coord::new(0.0, 0.0, 0.0);
-        let current = Coord::new(0.0, 5.0, 0.0);
-        let after = Coord::new(0.0, 10.0, 0.0);
+        let before = TestCoord3::new(0.0, 0.0, 0.0);
+        let current = TestCoord3::new(0.0, 5.0, 0.0);
+        let after = TestCoord3::new(0.0, 10.0, 0.0);
 
         let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
 
@@ -371,9 +402,9 @@ mod tests {
     ///  /
     /// /
     fn it_computes_straight_diagonals() {
-        let before = Coord::new(0.0, 0.0, 0.0);
-        let current = Coord::new(2.0, 2.0, 0.0);
-        let after = Coord::new(4.0, 4.0, 0.0);
+        let before = TestCoord3::new(0.0, 0.0, 0.0);
+        let current = TestCoord3::new(2.0, 2.0, 0.0);
+        let after = TestCoord3::new(4.0, 4.0, 0.0);
 
         let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
 
@@ -400,9 +431,9 @@ mod tests {
     /// |
     /// |
     fn it_computes_tiny_blends() {
-        let before = Coord::new(0.0, 0.0, 0.0);
-        let current = Coord::new(0.0, TRAJ_EPSILON / 2.0, 0.0);
-        let after = Coord::new(0.0, TRAJ_EPSILON, 0.0);
+        let before = TestCoord3::new(0.0, 0.0, 0.0);
+        let current = TestCoord3::new(0.0, TRAJ_EPSILON / 2.0, 0.0);
+        let after = TestCoord3::new(0.0, TRAJ_EPSILON, 0.0);
 
         let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
 
@@ -421,9 +452,9 @@ mod tests {
     ///  /
     /// |
     fn it_computes_blends_for_shallow_angles() {
-        let before = Coord::new(0.0, 0.0, 0.0);
-        let current = Coord::new(10.0, 7.0, 0.0);
-        let after = Coord::new(20.0, 4.0, 0.0);
+        let before = TestCoord3::new(0.0, 0.0, 0.0);
+        let current = TestCoord3::new(10.0, 7.0, 0.0);
+        let after = TestCoord3::new(20.0, 4.0, 0.0);
 
         let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
 
@@ -438,9 +469,15 @@ mod tests {
         let bc = blend_circle;
 
         assert_near!(bc.arc_length, 0.8117106237578);
-        assert_near!(bc.center, Coord::new(10.158912720301, 6.012992370967, 0.0));
+        assert_near!(
+            bc.center,
+            TestCoord3::new(10.158912720301, 6.012992370967, 0.0)
+        );
         assert_near!(bc.radius, 0.8997186166327);
-        assert_near!(bc.x, Coord::new(-0.5734623443633, 0.8192319205190, 0.0));
-        assert_near!(bc.y, Coord::new(0.8192319205190, 0.5734623443633, 0.0));
+        assert_near!(
+            bc.x,
+            TestCoord3::new(-0.5734623443633, 0.8192319205190, 0.0)
+        );
+        assert_near!(bc.y, TestCoord3::new(0.8192319205190, 0.5734623443633, 0.0));
     }
 }

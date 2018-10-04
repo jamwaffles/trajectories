@@ -5,7 +5,7 @@ extern crate trajectories_sys;
 
 use criterion::{Criterion, Fun};
 use std::time::Duration;
-use trajectories::{Coord, Path, Trajectory};
+use trajectories::{test_helpers::TestCoord3, Path, Trajectory};
 use trajectories_sys::{path_create, Trajectory as CPPTrajectory};
 
 fn cpp_bindings(c: &mut Criterion) {
@@ -30,22 +30,22 @@ fn cpp_bindings(c: &mut Criterion) {
 fn rust_native(c: &mut Criterion) {
     c.bench_function("rust native trajectory create", |b| {
         b.iter(|| {
-            let waypoints: Vec<Coord> = vec![
-                Coord::new(0.0, 0.0, 0.0),
-                Coord::new(0.0, 0.2, 1.0),
-                Coord::new(0.0, 3.0, 0.5),
-                Coord::new(1.1, 2.0, 0.0),
-                Coord::new(1.0, 0.0, 0.0),
-                Coord::new(0.0, 1.0, 0.0),
-                Coord::new(0.0, 0.0, 1.0),
+            let waypoints: Vec<TestCoord3> = vec![
+                TestCoord3::new(0.0, 0.0, 0.0),
+                TestCoord3::new(0.0, 0.2, 1.0),
+                TestCoord3::new(0.0, 3.0, 0.5),
+                TestCoord3::new(1.1, 2.0, 0.0),
+                TestCoord3::new(1.0, 0.0, 0.0),
+                TestCoord3::new(0.0, 1.0, 0.0),
+                TestCoord3::new(0.0, 0.0, 1.0),
             ];
 
             let p = Path::from_waypoints(&waypoints, 0.001);
 
             let _trajectory = Trajectory::new(
                 p,
-                Coord::new(1.0, 1.0, 1.0),
-                Coord::new(1.0, 1.0, 1.0),
+                TestCoord3::new(1.0, 1.0, 1.0),
+                TestCoord3::new(1.0, 1.0, 1.0),
                 0.000001,
             );
         })
@@ -55,22 +55,22 @@ fn rust_native(c: &mut Criterion) {
 fn compare(c: &mut Criterion) {
     let comp_native = Fun::new("c++ bindings", |b, _| {
         b.iter(|| {
-            let waypoints: Vec<Coord> = vec![
-                Coord::new(0.0, 0.0, 0.0),
-                Coord::new(0.0, 0.2, 1.0),
-                Coord::new(0.0, 3.0, 0.5),
-                Coord::new(1.1, 2.0, 0.0),
-                Coord::new(1.0, 0.0, 0.0),
-                Coord::new(0.0, 1.0, 0.0),
-                Coord::new(0.0, 0.0, 1.0),
+            let waypoints: Vec<TestCoord3> = vec![
+                TestCoord3::new(0.0, 0.0, 0.0),
+                TestCoord3::new(0.0, 0.2, 1.0),
+                TestCoord3::new(0.0, 3.0, 0.5),
+                TestCoord3::new(1.1, 2.0, 0.0),
+                TestCoord3::new(1.0, 0.0, 0.0),
+                TestCoord3::new(0.0, 1.0, 0.0),
+                TestCoord3::new(0.0, 0.0, 1.0),
             ];
 
             let p = Path::from_waypoints(&waypoints, 0.001);
 
             let _trajectory = Trajectory::new(
                 p,
-                Coord::new(1.0, 1.0, 1.0),
-                Coord::new(1.0, 1.0, 1.0),
+                TestCoord3::new(1.0, 1.0, 1.0),
+                TestCoord3::new(1.0, 1.0, 1.0),
                 0.000001,
             );
         })

@@ -6,20 +6,27 @@ pub use self::circular_segment::CircularPathSegment;
 pub use self::linear_segment::LinearPathSegment;
 pub use self::segment::PathSegment;
 use crate::Coord;
+use nalgebra::allocator::SameShapeVectorAllocator;
+use nalgebra::DefaultAllocator;
+use nalgebra::DimName;
 
 /// Helpful methods to get information about a path
-pub trait PathItem: PartialEq {
+pub trait PathItem<N>: PartialEq
+where
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+{
     /// Get length of path
     fn get_length(&self) -> f64;
 
     /// Get position at a point along path
-    fn get_position(&self, distance_along_line: f64) -> Coord;
+    fn get_position(&self, distance_along_line: f64) -> Coord<N>;
 
     /// Get first derivative (tangent) at a point
-    fn get_tangent(&self, distance_along_line: f64) -> Coord;
+    fn get_tangent(&self, distance_along_line: f64) -> Coord<N>;
 
     /// Get second derivative (curvature) at a point
-    fn get_curvature(&self, distance_along_line: f64) -> Coord;
+    fn get_curvature(&self, distance_along_line: f64) -> Coord<N>;
 }
 
 /// A switching point
@@ -54,9 +61,13 @@ pub enum Continuity {
 
 /// A path with circular blends between segments
 #[derive(Debug, PartialEq)]
-pub struct Path {
+pub struct Path<N>
+where
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+{
     /// Linear path segments and circular blends
-    pub segments: Vec<PathSegment>,
+    pub segments: Vec<PathSegment<N>>,
 
     /// Total path length
     length: f64,
@@ -65,18 +76,22 @@ pub struct Path {
     switching_points: Vec<SwitchingPoint>,
 }
 
-impl Path {
+impl<N> Path<N>
+where
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+{
     /// Create a blended path from a set of waypoints
     ///
     /// The path must be differentiable, so small blends are added between linear segments
-    pub fn from_waypoints(waypoints: &Vec<Coord>, max_deviation: f64) -> Self {
+    pub fn from_waypoints(waypoints: &Vec<Coord<N>>, max_deviation: f64) -> Self {
         let mut start_offset = 0.0;
         let mut switching_points = Vec::with_capacity((waypoints.len() as f32 * 2.5) as usize);
 
         let segments = waypoints.windows(3).fold(
             Vec::with_capacity(waypoints.len() * 3),
-            |mut segments: Vec<PathSegment>, parts| {
-                if let &[prev, curr, next] = parts {
+            |mut segments, parts| {
+                if let &[ref prev, ref curr, ref next] = parts {
                     let blend_segment =
                         CircularPathSegment::from_waypoints(&prev, &curr, &next, max_deviation);
 
@@ -89,13 +104,13 @@ impl Path {
                         .pop()
                         .map(|segment| match segment {
                             PathSegment::Linear(s) => {
-                                LinearPathSegment::from_waypoints(s.start, blend_start)
+                                LinearPathSegment::from_waypoints(s.start, blend_start.clone())
                                     .with_start_offset(s.start_offset)
                             }
                             _ => panic!("Invalid path: expected last segment to be linear"),
                         })
                         .unwrap_or(
-                            LinearPathSegment::from_waypoints(prev, blend_start)
+                            LinearPathSegment::from_waypoints(prev.clone(), blend_start)
                                 .with_start_offset(start_offset),
                         );
 
@@ -130,7 +145,7 @@ impl Path {
                     // Add blend segment length to path length total
                     start_offset = blend_end_offset;
 
-                    let next_segment = LinearPathSegment::from_waypoints(blend_end, next)
+                    let next_segment = LinearPathSegment::from_waypoints(blend_end, next.clone())
                         .with_start_offset(start_offset);
 
                     // Switching point where linear segment touches blend
@@ -163,7 +178,7 @@ impl Path {
     }
 
     /// Get a path segment for a position along the entire path
-    pub fn get_segment_at_position(&self, position_along_path: f64) -> &PathSegment {
+    pub fn get_segment_at_position(&self, position_along_path: f64) -> &PathSegment<N> {
         let clamped = position_along_path.min(self.length);
 
         self.segments
@@ -191,7 +206,11 @@ impl Path {
     }
 }
 
-impl PathItem for Path {
+impl<N> PathItem<N> for Path<N>
+where
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+{
     /// Get the length of the complete path
     #[inline(always)]
     fn get_length(&self) -> f64 {
@@ -199,19 +218,19 @@ impl PathItem for Path {
     }
 
     /// Get position at a point along path
-    fn get_position(&self, distance_along_line: f64) -> Coord {
+    fn get_position(&self, distance_along_line: f64) -> Coord<N> {
         self.get_segment_at_position(distance_along_line)
             .get_position(distance_along_line)
     }
 
     /// Get first derivative (tangent) at a point
-    fn get_tangent(&self, distance_along_line: f64) -> Coord {
+    fn get_tangent(&self, distance_along_line: f64) -> Coord<N> {
         self.get_segment_at_position(distance_along_line)
             .get_tangent(distance_along_line)
     }
 
     /// Get second derivative (curvature) at a point
-    fn get_curvature(&self, distance_along_line: f64) -> Coord {
+    fn get_curvature(&self, distance_along_line: f64) -> Coord<N> {
         self.get_segment_at_position(distance_along_line)
             .get_curvature(distance_along_line)
     }
@@ -225,9 +244,9 @@ mod tests {
     #[test]
     fn get_segment_at_position() {
         let waypoints = vec![
-            Coord::new(1.0, 0.0, 0.0),
-            Coord::new(2.0, 0.0, 0.0),
-            Coord::new(5.0, 0.0, 0.0),
+            TestCoord3::new(1.0, 0.0, 0.0),
+            TestCoord3::new(2.0, 0.0, 0.0),
+            TestCoord3::new(5.0, 0.0, 0.0),
         ];
 
         let path = Path::from_waypoints(&waypoints, 0.01);
@@ -235,8 +254,8 @@ mod tests {
         assert_eq!(
             path.get_segment_at_position(0.0),
             &PathSegment::Linear(LinearPathSegment::from_waypoints(
-                Coord::new(1.0, 0.0, 0.0),
-                Coord::new(2.0, 0.0, 0.0)
+                TestCoord3::new(1.0, 0.0, 0.0),
+                TestCoord3::new(2.0, 0.0, 0.0)
             ))
         );
 
@@ -244,8 +263,8 @@ mod tests {
             path.get_segment_at_position(3.0),
             &PathSegment::Linear(
                 LinearPathSegment::from_waypoints(
-                    Coord::new(2.0, 0.0, 0.0),
-                    Coord::new(5.0, 0.0, 0.0)
+                    TestCoord3::new(2.0, 0.0, 0.0),
+                    TestCoord3::new(5.0, 0.0, 0.0)
                 )
                 .with_start_offset(1.0)
             )
@@ -254,8 +273,8 @@ mod tests {
         assert_eq!(
             path.get_segment_at_position(1.0),
             &PathSegment::Linear(LinearPathSegment {
-                start: Coord::new(2.0, 0.0, 0.0),
-                end: Coord::new(5.0, 0.0, 0.0),
+                start: TestCoord3::new(2.0, 0.0, 0.0),
+                end: TestCoord3::new(5.0, 0.0, 0.0),
                 start_offset: 1.0,
                 length: 3.0,
             })
@@ -263,8 +282,8 @@ mod tests {
         assert_eq!(
             path.get_segment_at_position(1.01),
             &PathSegment::Linear(LinearPathSegment {
-                start: Coord::new(2.0, 0.0, 0.0),
-                end: Coord::new(5.0, 0.0, 0.0),
+                start: TestCoord3::new(2.0, 0.0, 0.0),
+                end: TestCoord3::new(5.0, 0.0, 0.0),
                 start_offset: 1.0,
                 length: 3.0,
             })
@@ -273,8 +292,8 @@ mod tests {
         assert_eq!(
             path.get_segment_at_position(5.0),
             &PathSegment::Linear(LinearPathSegment {
-                start: Coord::new(2.0, 0.0, 0.0),
-                end: Coord::new(5.0, 0.0, 0.0),
+                start: TestCoord3::new(2.0, 0.0, 0.0),
+                end: TestCoord3::new(5.0, 0.0, 0.0),
                 start_offset: 1.0,
                 length: 3.0,
             })
@@ -285,13 +304,13 @@ mod tests {
     fn get_derivatives() {
         // Data from Example.cpp in C++ example code
         let waypoints = vec![
-            Coord::new(0.0, 0.0, 0.0),
-            Coord::new(0.0, 0.2, 1.0),
-            Coord::new(0.0, 3.0, 0.5),
-            Coord::new(1.1, 2.0, 0.0),
-            Coord::new(1.0, 0.0, 0.0),
-            Coord::new(0.0, 1.0, 0.0),
-            Coord::new(0.0, 0.0, 1.0),
+            TestCoord3::new(0.0, 0.0, 0.0),
+            TestCoord3::new(0.0, 0.2, 1.0),
+            TestCoord3::new(0.0, 3.0, 0.5),
+            TestCoord3::new(1.1, 2.0, 0.0),
+            TestCoord3::new(1.0, 0.0, 0.0),
+            TestCoord3::new(0.0, 1.0, 0.0),
+            TestCoord3::new(0.0, 0.0, 1.0),
         ];
 
         // Match Example.cpp accuracy
@@ -301,78 +320,78 @@ mod tests {
         let expected = vec![
             (
                 0.0,
-                Coord::new(0.0, 0.1961161351381840, 0.9805806756909202),
-                Coord::new(0.0, 0.0, 0.0),
+                TestCoord3::new(0.0, 0.1961161351381840, 0.9805806756909202),
+                TestCoord3::new(0.0, 0.0, 0.0),
             ),
             (
                 0.5099017027977882,
-                Coord::new(0.0, 0.1961161351381840, 0.9805806756909202),
-                Coord::new(0.0, 0.0, 0.0),
+                TestCoord3::new(0.0, 0.1961161351381840, 0.9805806756909202),
+                TestCoord3::new(0.0, 0.0, 0.0),
             ),
             (
                 1.0201861237223337,
-                Coord::new(0.0, 0.9710853103707811, 0.2387327375583182),
-                Coord::new(-0.0, 95.4477291274329076, -388.2495907845863030),
+                TestCoord3::new(0.0, 0.9710853103707811, 0.2387327375583182),
+                TestCoord3::new(-0.0, 95.4477291274329076, -388.2495907845863030),
             ),
             (
                 1.5569160753598927,
-                Coord::new(-0.0, 0.9844275755084820, -0.1757906384836575),
-                Coord::new(0.0, 0.0, 0.0),
+                TestCoord3::new(-0.0, 0.9844275755084820, -0.1757906384836575),
+                TestCoord3::new(0.0, 0.0, 0.0),
             ),
             (
                 2.5727348363119251,
-                Coord::new(-0.0, 0.9844275755084820, -0.1757906384836575),
-                Coord::new(0.0, 0.0, 0.0),
+                TestCoord3::new(-0.0, 0.9844275755084820, -0.1757906384836575),
+                TestCoord3::new(0.0, 0.0, 0.0),
             ),
             (
                 3.5614767161100072,
-                Coord::new(-0.0, 0.9844275755084820, -0.1757906384836575),
-                Coord::new(0.0, 0.0, 0.0),
+                TestCoord3::new(-0.0, 0.9844275755084820, -0.1757906384836575),
+                TestCoord3::new(0.0, 0.0, 0.0),
             ),
             (
                 3.8984742788054678,
-                Coord::new(0.7013343843696721, -0.6375767130633382, -0.3187883565316692),
-                Coord::new(0.0, 0.0, 0.0),
+                TestCoord3::new(0.7013343843696721, -0.6375767130633382, -0.3187883565316692),
+                TestCoord3::new(0.0, 0.0, 0.0),
             ),
             (
                 4.8831177467169011,
-                Coord::new(0.7013343843696721, -0.6375767130633382, -0.3187883565316692),
-                Coord::new(0.0, 0.0, 0.0),
+                TestCoord3::new(0.7013343843696721, -0.6375767130633382, -0.3187883565316692),
+                TestCoord3::new(0.0, 0.0, 0.0),
             ),
             (
                 5.4523088538682449,
-                Coord::new(-0.0499376169438922, -0.9987523388778448, -0.0),
-                Coord::new(0.0, 0.0, 0.0),
+                TestCoord3::new(-0.0499376169438922, -0.9987523388778448, -0.0),
+                TestCoord3::new(0.0, 0.0, 0.0),
             ),
             (
                 6.1453761368528133,
-                Coord::new(-0.0499376169438922, -0.9987523388778448, -0.0),
-                Coord::new(0.0, 0.0, 0.0),
+                TestCoord3::new(-0.0499376169438922, -0.9987523388778448, -0.0),
+                TestCoord3::new(0.0, 0.0, 0.0),
             ),
             (
                 7.1232278747423878,
-                Coord::new(-0.0499376169438922, -0.9987523388778448, -0.0),
-                Coord::new(0.0, 0.0, 0.0),
+                TestCoord3::new(-0.0499376169438922, -0.9987523388778448, -0.0),
+                TestCoord3::new(0.0, 0.0, 0.0),
             ),
             (
                 7.4612006384156970,
-                Coord::new(-0.7071067811865476, 0.7071067811865475, 0.0),
-                Coord::new(0.0, 0.0, 0.0),
+                TestCoord3::new(-0.7071067811865476, 0.7071067811865475, 0.0),
+                TestCoord3::new(0.0, 0.0, 0.0),
             ),
             (
                 8.3975630709442228,
-                Coord::new(-0.7071067811865476, 0.7071067811865475, 0.0),
-                Coord::new(0.0, 0.0, 0.0),
+                TestCoord3::new(-0.7071067811865476, 0.7071067811865475, 0.0),
+                TestCoord3::new(0.0, 0.0, 0.0),
             ),
             (
                 8.8718474912408851,
-                Coord::new(-0.0, -0.7071067811865476, 0.7071067811865476),
-                Coord::new(0.0, 0.0, 0.0),
+                TestCoord3::new(-0.0, -0.7071067811865476, 0.7071067811865476),
+                TestCoord3::new(0.0, 0.0, 0.0),
             ),
             (
                 9.8017700948612454,
-                Coord::new(-0.0, -0.7071067811865476, 0.7071067811865476),
-                Coord::new(0.0, 0.0, 0.0),
+                TestCoord3::new(-0.0, -0.7071067811865476, 0.7071067811865476),
+                TestCoord3::new(0.0, 0.0, 0.0),
             ),
         ];
 
@@ -393,13 +412,13 @@ mod tests {
     fn get_next_switching_point() {
         // Data from Example.cpp in C++ example code
         let waypoints = vec![
-            Coord::new(0.0, 0.0, 0.0),
-            Coord::new(0.0, 0.2, 1.0),
-            Coord::new(0.0, 3.0, 0.5),
-            Coord::new(1.1, 2.0, 0.0),
-            Coord::new(1.0, 0.0, 0.0),
-            Coord::new(0.0, 1.0, 0.0),
-            Coord::new(0.0, 0.0, 1.0),
+            TestCoord3::new(0.0, 0.0, 0.0),
+            TestCoord3::new(0.0, 0.2, 1.0),
+            TestCoord3::new(0.0, 3.0, 0.5),
+            TestCoord3::new(1.1, 2.0, 0.0),
+            TestCoord3::new(1.0, 0.0, 0.0),
+            TestCoord3::new(0.0, 1.0, 0.0),
+            TestCoord3::new(0.0, 0.0, 1.0),
         ];
 
         // Match Example.cpp accuracy
@@ -425,10 +444,10 @@ mod tests {
     #[test]
     fn length_limit_blend_size() {
         let waypoints = vec![
-            Coord::new(0.0, 0.0, 0.0),
-            Coord::new(0.0, 1.0, 0.0),
-            Coord::new(1.0, 1.0, 0.0),
-            Coord::new(1.0, 2.0, 0.0),
+            TestCoord3::new(0.0, 0.0, 0.0),
+            TestCoord3::new(0.0, 1.0, 0.0),
+            TestCoord3::new(1.0, 1.0, 0.0),
+            TestCoord3::new(1.0, 2.0, 0.0),
         ];
 
         let path = Path::from_waypoints(&waypoints, 1.5);
@@ -444,13 +463,13 @@ mod tests {
     fn correct_path_switching_points() {
         // Data from Example.cpp in C++ example code
         let waypoints = vec![
-            Coord::new(0.0, 0.0, 0.0),
-            Coord::new(0.0, 0.2, 1.0),
-            Coord::new(0.0, 3.0, 0.5),
-            Coord::new(1.1, 2.0, 0.0),
-            Coord::new(1.0, 0.0, 0.0),
-            Coord::new(0.0, 1.0, 0.0),
-            Coord::new(0.0, 0.0, 1.0),
+            TestCoord3::new(0.0, 0.0, 0.0),
+            TestCoord3::new(0.0, 0.2, 1.0),
+            TestCoord3::new(0.0, 3.0, 0.5),
+            TestCoord3::new(1.1, 2.0, 0.0),
+            TestCoord3::new(1.0, 0.0, 0.0),
+            TestCoord3::new(0.0, 1.0, 0.0),
+            TestCoord3::new(0.0, 0.0, 1.0),
         ];
 
         // Switching generated from waypoints from Example.cpp
@@ -497,13 +516,13 @@ mod tests {
     fn debug_switching_points() {
         // Data from Example.cpp in C++ example code
         let waypoints = vec![
-            Coord::new(0.0, 0.0, 0.0),
-            Coord::new(0.0, 0.2, 0.0),
-            Coord::new(0.0, 3.0, 0.0),
-            Coord::new(1.1, 2.0, 0.0),
-            Coord::new(1.0, 0.0, 0.0),
-            Coord::new(0.0, 1.0, 0.0),
-            Coord::new(0.0, 0.0, 0.0),
+            TestCoord3::new(0.0, 0.0, 0.0),
+            TestCoord3::new(0.0, 0.2, 0.0),
+            TestCoord3::new(0.0, 3.0, 0.0),
+            TestCoord3::new(1.1, 2.0, 0.0),
+            TestCoord3::new(1.0, 0.0, 0.0),
+            TestCoord3::new(0.0, 1.0, 0.0),
+            TestCoord3::new(0.0, 0.0, 0.0),
         ];
 
         let accuracy = 0.05;
@@ -517,13 +536,13 @@ mod tests {
     fn correct_segment_switching_points() {
         // Data from Example.cpp in C++ example code
         let waypoints = vec![
-            Coord::new(0.0, 0.0, 0.0),
-            Coord::new(0.0, 0.2, 1.0),
-            Coord::new(0.0, 3.0, 0.5),
-            Coord::new(1.1, 2.0, 0.0),
-            Coord::new(1.0, 0.0, 0.0),
-            Coord::new(0.0, 1.0, 0.0),
-            Coord::new(0.0, 0.0, 1.0),
+            TestCoord3::new(0.0, 0.0, 0.0),
+            TestCoord3::new(0.0, 0.2, 1.0),
+            TestCoord3::new(0.0, 3.0, 0.5),
+            TestCoord3::new(1.1, 2.0, 0.0),
+            TestCoord3::new(1.0, 0.0, 0.0),
+            TestCoord3::new(0.0, 1.0, 0.0),
+            TestCoord3::new(0.0, 0.0, 1.0),
         ];
 
         // Switching generated from waypoints from Example.cpp. Empty Vecs are linear segments
@@ -566,13 +585,13 @@ mod tests {
     #[test]
     fn it_creates_path_with_blends() {
         let waypoints = vec![
-            Coord::new(0.0, 0.0, 0.0),
-            Coord::new(1.0, 2.0, 0.0),
-            Coord::new(1.5, 1.5, 0.0),
-            Coord::new(3.0, 5.0, 0.0),
-            Coord::new(4.0, 6.0, 0.0),
-            Coord::new(5.0, 5.0, 0.0),
-            Coord::new(4.0, 4.0, 0.0),
+            TestCoord3::new(0.0, 0.0, 0.0),
+            TestCoord3::new(1.0, 2.0, 0.0),
+            TestCoord3::new(1.5, 1.5, 0.0),
+            TestCoord3::new(3.0, 5.0, 0.0),
+            TestCoord3::new(4.0, 6.0, 0.0),
+            TestCoord3::new(5.0, 5.0, 0.0),
+            TestCoord3::new(4.0, 4.0, 0.0),
         ];
 
         let path = Path::from_waypoints(&waypoints, 0.1);
@@ -585,10 +604,10 @@ mod tests {
     #[test]
     fn get_pos_in_first_segment() {
         let waypoints = vec![
-            Coord::new(0.0, 0.0, 0.0),
-            Coord::new(0.0, 1.0, 0.0),
-            Coord::new(1.0, 1.0, 0.0),
-            Coord::new(2.0, 2.0, 0.0),
+            TestCoord3::new(0.0, 0.0, 0.0),
+            TestCoord3::new(0.0, 1.0, 0.0),
+            TestCoord3::new(1.0, 1.0, 0.0),
+            TestCoord3::new(2.0, 2.0, 0.0),
         ];
 
         let path = Path::from_waypoints(&waypoints, 0.1);
@@ -597,16 +616,16 @@ mod tests {
         debug_path_point("get_pos_in_first_segment", &path, &waypoints, &pos);
 
         assert_near!(path.get_length(), 3.2586540784544042);
-        assert_near!(pos, Coord::new(0.0, 0.5, 0.0));
+        assert_near!(pos, TestCoord3::new(0.0, 0.5, 0.0));
     }
 
     #[test]
     fn get_pos_in_last_segment() {
         let waypoints = vec![
-            Coord::new(0.0, 0.0, 0.0),
-            Coord::new(0.0, 1.0, 0.0),
-            Coord::new(1.0, 1.0, 0.0),
-            Coord::new(2.0, 2.0, 0.0),
+            TestCoord3::new(0.0, 0.0, 0.0),
+            TestCoord3::new(0.0, 1.0, 0.0),
+            TestCoord3::new(1.0, 1.0, 0.0),
+            TestCoord3::new(2.0, 2.0, 0.0),
         ];
 
         let path = Path::from_waypoints(&waypoints, 0.1);
@@ -615,16 +634,16 @@ mod tests {
         debug_path_point("get_pos_in_last_segment", &path, &waypoints, &pos);
 
         assert_near!(path.get_length(), 3.2586540784544042);
-        assert_near!(pos, Coord::new(1.5, 1.5, 0.0));
+        assert_near!(pos, TestCoord3::new(1.5, 1.5, 0.0));
     }
 
     #[test]
     fn get_pos_in_last_segment_other() {
         let waypoints = vec![
-            Coord::new(0.0, 0.0, 0.0),
-            Coord::new(0.0, 1.0, 0.0),
-            Coord::new(1.0, 1.0, 0.0),
-            Coord::new(2.5, 0.5, 0.0),
+            TestCoord3::new(0.0, 0.0, 0.0),
+            TestCoord3::new(0.0, 1.0, 0.0),
+            TestCoord3::new(1.0, 1.0, 0.0),
+            TestCoord3::new(2.5, 0.5, 0.0),
         ];
 
         let path = Path::from_waypoints(&waypoints, 0.1);
@@ -633,16 +652,19 @@ mod tests {
         debug_path_point("get_pos_in_last_segment_other", &path, &waypoints, &pos);
 
         assert_near!(path.get_length(), 3.4688780239495878);
-        assert_near!(pos, Coord::new(2.310263340389897, 0.5632455532033677, 0.0));
+        assert_near!(
+            pos,
+            TestCoord3::new(2.310263340389897, 0.5632455532033677, 0.0)
+        );
     }
 
     #[test]
     fn get_final_position() {
         let waypoints = vec![
-            Coord::new(0.0, 0.0, 0.0),
-            Coord::new(0.0, 1.0, 0.0),
-            Coord::new(1.0, 1.0, 0.0),
-            Coord::new(2.0, 2.0, 0.0),
+            TestCoord3::new(0.0, 0.0, 0.0),
+            TestCoord3::new(0.0, 1.0, 0.0),
+            TestCoord3::new(1.0, 1.0, 0.0),
+            TestCoord3::new(2.0, 2.0, 0.0),
         ];
 
         let path = Path::from_waypoints(&waypoints, 0.1);
@@ -651,6 +673,6 @@ mod tests {
         debug_path_point("get_pos_in_last_segment", &path, &waypoints, &pos);
 
         assert_near!(path.get_length(), 3.2586540784544042);
-        assert_near!(pos, Coord::new(2.0, 2.0, 0.0));
+        assert_near!(pos, TestCoord3::new(2.0, 2.0, 0.0));
     }
 }

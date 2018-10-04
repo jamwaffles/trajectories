@@ -1,9 +1,13 @@
 //! Test helpers
 
-use csv;
 pub use crate::path::CircularPathSegment;
 use crate::path::PathItem;
 use crate::path::{Continuity, Path as TrajPath, PathSegment};
+use crate::Coord;
+use csv;
+use nalgebra::allocator::SameShapeVectorAllocator;
+use nalgebra::DefaultAllocator;
+use nalgebra::DimName;
 use std::fmt;
 use std::fs::File;
 use svg;
@@ -11,11 +15,14 @@ use svg::node::element::path::Data;
 use svg::node::element::{Circle, Group, Path as SvgPath, Rectangle, Text};
 use svg::node::Text as TextContent;
 use svg::Document;
-use crate::Coord;
 
 const PADDING: f64 = 1.0;
 
-fn single_line(from: &Coord, to: &Coord, stroke: &str, stroke_width: u32) -> SvgPath {
+fn single_line<N>(from: &Coord<N>, to: &Coord<N>, stroke: &str, stroke_width: u32) -> SvgPath
+where
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+{
     SvgPath::new()
         .set("fill", "none")
         .set("stroke", stroke)
@@ -23,11 +30,17 @@ fn single_line(from: &Coord, to: &Coord, stroke: &str, stroke_width: u32) -> Svg
         .set("vector-effect", "non-scaling-stroke")
         .set(
             "d",
-            Data::new().move_to((from.x, from.y)).line_to((to.x, to.y)),
+            Data::new()
+                .move_to((from[0], from[1]))
+                .line_to((to[0], to[1])),
         )
 }
 
-fn cross_centered_at(center: &Coord, stroke: &str, stroke_width: f32) -> SvgPath {
+fn cross_centered_at<N>(center: &Coord<N>, stroke: &str, stroke_width: f32) -> SvgPath
+where
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+{
     let size = 0.1;
 
     SvgPath::new()
@@ -38,27 +51,35 @@ fn cross_centered_at(center: &Coord, stroke: &str, stroke_width: f32) -> SvgPath
         .set(
             "d",
             Data::new()
-                .move_to((center.x, center.y - size))
+                .move_to((center[0], center[1] - size))
                 .line_by((0, size * 2.0))
-                .move_to((center.x - size, center.y))
+                .move_to((center[0] - size, center[1]))
                 .line_by((size * 2.0, 0)),
         )
 }
 
-fn border(top_left: &Coord, bottom_right: &Coord) -> Rectangle {
+fn border<N>(top_left: &Coord<N>, bottom_right: &Coord<N>) -> Rectangle
+where
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+{
     Rectangle::new()
         .set("fill", "none")
         .set("stroke", "black")
         .set("stroke-width", 1)
         .set("vector-effect", "non-scaling-stroke")
-        .set("x", top_left.x)
-        .set("y", top_left.y)
-        .set("width", bottom_right.x)
-        .set("height", bottom_right.y)
+        .set("x", top_left[0])
+        .set("y", top_left[1])
+        .set("width", bottom_right[0])
+        .set("height", bottom_right[1])
 }
 
-fn create_document(top_left: &Coord, bottom_right: &Coord) -> Document {
-    let aspect = (bottom_right.x - top_left.x) / (bottom_right.y - top_left.y);
+fn create_document<N>(top_left: &Coord<N>, bottom_right: &Coord<N>) -> Document
+where
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+{
+    let aspect = (bottom_right[0] - top_left[0]) / (bottom_right[1] - top_left[1]);
     let width = 1024;
 
     Document::new()
@@ -67,7 +88,7 @@ fn create_document(top_left: &Coord, bottom_right: &Coord) -> Document {
         .set("height", (width as f64 * aspect) as u32)
         .set(
             "viewBox",
-            (top_left.x, top_left.y, bottom_right.x, bottom_right.y),
+            (top_left[0], top_left[1], bottom_right[0], bottom_right[1]),
         )
         .add(border(&top_left, &bottom_right))
 }
@@ -76,13 +97,17 @@ fn save_document(suite_name: &str, doc: &Document) {
     svg::save(format!("../target/{}.svg", suite_name), doc).unwrap();
 }
 
-fn draw_blend_circle(blend: &CircularPathSegment) -> Group {
+fn draw_blend_circle<N>(blend: &CircularPathSegment<N>) -> Group
+where
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+{
     let line_scale = 0.25;
 
     // Blend circle
     let circle = Circle::new()
-        .set("cx", blend.center.x)
-        .set("cy", blend.center.y)
+        .set("cx", blend.center[0])
+        .set("cy", blend.center[1])
         .set("stroke-width", 1)
         .set("stroke", "blue")
         .set("fill", "none")
@@ -92,7 +117,7 @@ fn draw_blend_circle(blend: &CircularPathSegment) -> Group {
     // Xi (green)
     let xi = single_line(
         &blend.center,
-        &(blend.center + blend.x * line_scale),
+        &(&blend.center + &blend.x * line_scale),
         "green",
         1,
     );
@@ -100,7 +125,7 @@ fn draw_blend_circle(blend: &CircularPathSegment) -> Group {
     // Yi (purple)
     let yi = single_line(
         &blend.center,
-        &(blend.center + blend.y * line_scale),
+        &(&blend.center + &blend.y * line_scale),
         "purple",
         1,
     );
@@ -108,34 +133,41 @@ fn draw_blend_circle(blend: &CircularPathSegment) -> Group {
     Group::new().add(circle).add(xi).add(yi)
 }
 
-fn calc_bbox(coords: &[Coord]) -> (Coord, Coord) {
+fn calc_bbox<N>(coords: &Vec<Coord<N>>) -> (Coord<N>, Coord<N>)
+where
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+{
     (
         coords
             .iter()
-            .min_by_key(|item| ((item.x + item.y + item.z) * 100.0) as u32)
+            .min_by_key(|item| ((item[0] + item[1] + item[2]) * 100.0) as u32)
             .unwrap()
             - Coord::repeat(PADDING),
         coords
             .iter()
-            .max_by_key(|item| ((item.x + item.y + item.z) * 100.0) as u32)
+            .max_by_key(|item| ((item[0] + item[1] + item[2]) * 100.0) as u32)
             .unwrap()
             + Coord::repeat(PADDING * 2.0),
     )
 }
 
 /// Produce an image of the blend between two path segments
-pub fn debug_blend(
+pub fn debug_blend<N>(
     p: &str,
-    before: &Coord,
-    current: &Coord,
-    after: &Coord,
-    blend: &CircularPathSegment,
-) {
+    before: &Coord<N>,
+    current: &Coord<N>,
+    after: &Coord<N>,
+    blend: &CircularPathSegment<N>,
+) where
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+{
     let path_before = single_line(&before, &current, "red", 1);
     let path_after = single_line(&current, &after, "red", 1);
     let blend = draw_blend_circle(blend);
 
-    let (top_left, bottom_right) = calc_bbox(&[*before, *current, *after]);
+    let (top_left, bottom_right) = calc_bbox(&vec![before.clone(), current.clone(), after.clone()]);
 
     let document = create_document(&top_left, &bottom_right)
         .add(blend)
@@ -146,23 +178,30 @@ pub fn debug_blend(
 }
 
 /// Draw points along a blend curve
-pub fn debug_blend_position(p: &str, blend: &CircularPathSegment) {
-    let top_left = blend.center - Coord::repeat(blend.radius + PADDING);
-    let bottom_right = blend.center + Coord::repeat(blend.radius + PADDING * 2.0);
+pub fn debug_blend_position<N>(p: &str, blend: &CircularPathSegment<N>)
+where
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+{
+    let top_left = blend.center.clone().add_scalar(-(blend.radius + PADDING));
+    let bottom_right = blend
+        .center
+        .clone()
+        .add_scalar(blend.radius + PADDING * 2.0);
 
     let circle = draw_blend_circle(&blend);
 
     let start = blend.get_position(0.0);
 
     let mut i = 0.0;
-    let mut data = Data::new().move_to((start.x, start.y));
+    let mut data = Data::new().move_to((start[0], start[1]));
 
     while i <= blend.get_length() {
         i += 0.1;
 
         let pos = blend.get_position(i);
 
-        data = data.line_to((pos.x, pos.y));
+        data = data.line_to((pos[0], pos[1]));
     }
 
     let path = SvgPath::new()
@@ -180,14 +219,18 @@ pub fn debug_blend_position(p: &str, blend: &CircularPathSegment) {
 }
 
 /// Debug an entire path
-pub fn debug_path(file_path: &'static str, path: &TrajPath, waypoints: &Vec<Coord>) {
-    let (top_left, bottom_right) = calc_bbox(waypoints.as_slice());
+pub fn debug_path<N>(file_path: &'static str, path: &TrajPath<N>, waypoints: &Vec<Coord<N>>)
+where
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+{
+    let (top_left, bottom_right) = calc_bbox(waypoints);
 
     let mut document = create_document(&top_left, &bottom_right);
 
     // Original waypoints in background to compare
     for parts in waypoints.windows(2) {
-        if let &[curr, next] = parts {
+        if let &[ref curr, ref next] = parts {
             document = document.add(single_line(&curr, &next, "black", 1));
         } else {
             panic!("Debug blend path failed");
@@ -203,8 +246,8 @@ pub fn debug_path(file_path: &'static str, path: &TrajPath, waypoints: &Vec<Coor
                     // Print start offset for line
                     .add(
                         Text::new()
-                            .set("x", line.start.x)
-                            .set("y", line.start.y)
+                            .set("x", line.start[0])
+                            .set("y", line.start[1])
                             .set("fill", "red")
                             .set("style", "font-size: 0.18px; font-family: monospace")
                             .add(TextContent::new(format!(
@@ -222,8 +265,8 @@ pub fn debug_path(file_path: &'static str, path: &TrajPath, waypoints: &Vec<Coor
                         let start = circ.get_position(0.0);
 
                         Text::new()
-                            .set("x", start.x)
-                            .set("y", start.y)
+                            .set("x", start[0])
+                            .set("y", start[1])
                             .set("fill", "blue")
                             .set("style", "font-size: 0.18px; font-family: monospace")
                             .add(TextContent::new(format!(
@@ -239,12 +282,15 @@ pub fn debug_path(file_path: &'static str, path: &TrajPath, waypoints: &Vec<Coor
 }
 
 /// Draw switching points on a path
-pub fn debug_path_switching_points(
+pub fn debug_path_switching_points<N>(
     file_path: &'static str,
-    path: &TrajPath,
-    waypoints: &Vec<Coord>,
-) {
-    let (top_left, bottom_right) = calc_bbox(waypoints.as_slice());
+    path: &TrajPath<N>,
+    waypoints: &Vec<Coord<N>>,
+) where
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+{
+    let (top_left, bottom_right) = calc_bbox(waypoints);
 
     let mut document = create_document(&top_left, &bottom_right);
 
@@ -276,12 +322,15 @@ pub fn debug_path_switching_points(
 }
 
 /// Draw a complete path with a given point marked on it
-pub fn debug_path_point(
+pub fn debug_path_point<N>(
     file_path: &'static str,
-    path: &TrajPath,
-    waypoints: &Vec<Coord>,
-    point: &Coord,
-) {
+    path: &TrajPath<N>,
+    waypoints: &Vec<Coord<N>>,
+    point: &Coord<N>,
+) where
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+{
     let (top_left, bottom_right) = calc_bbox(&waypoints);
 
     let mut document = create_document(&top_left, &bottom_right);
@@ -295,8 +344,8 @@ pub fn debug_path_point(
                     // Print start offset for line
                     .add(
                         Text::new()
-                            .set("x", line.start.x)
-                            .set("y", line.start.y)
+                            .set("x", line.start[0])
+                            .set("y", line.start[1])
                             .set("fill", "red")
                             .set("style", "font-size: 0.18px; font-family: monospace")
                             .add(TextContent::new(format!(
@@ -314,8 +363,8 @@ pub fn debug_path_point(
                         let start = circ.get_position(0.0);
 
                         Text::new()
-                            .set("x", start.x)
-                            .set("y", start.y)
+                            .set("x", start[0])
+                            .set("y", start[1])
                             .set("fill", "blue")
                             .set("style", "font-size: 0.18px; font-family: monospace")
                             .add(TextContent::new(format!(
@@ -384,7 +433,11 @@ impl TrajectoryStepRow {
     }
 
     /// Create a row from a time and position and velocity vectors
-    pub fn from_coords(time: f64, pos: &Coord, vel: &Coord) -> Self {
+    pub fn from_coords<N>(time: f64, pos: &Coord<N>, vel: &Coord<N>) -> Self
+    where
+        N: DimName + Copy,
+        DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    {
         Self {
             time,
             position_x: pos[0],

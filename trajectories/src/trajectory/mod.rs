@@ -9,22 +9,38 @@ use self::switching_point::SwitchingPoint as TrajectorySwitchingPoint;
 use self::trajectory_step::TrajectoryStep;
 use crate::path::{Continuity, Path, PathItem, SwitchingPoint};
 use crate::Coord;
+use nalgebra::allocator::SameShapeVectorAllocator;
+use nalgebra::DefaultAllocator;
+use nalgebra::DimName;
 use std;
 
 /// Motion trajectory
 #[derive(Debug)]
-pub struct Trajectory {
-    path: Path,
-    velocity_limit: Coord,
-    acceleration_limit: Coord,
+pub struct Trajectory<N>
+where
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+{
+    path: Path<N>,
+    velocity_limit: Coord<N>,
+    acceleration_limit: Coord<N>,
     timestep: f64,
     trajectory: Vec<TrajectoryStep>,
     epsilon: f64,
 }
 
-impl Trajectory {
+impl<N> Trajectory<N>
+where
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+{
     /// Create a new trajectory from a given path and max velocity and acceleration
-    pub fn new(path: Path, velocity_limit: Coord, acceleration_limit: Coord, epsilon: f64) -> Self {
+    pub fn new(
+        path: Path<N>,
+        velocity_limit: Coord<N>,
+        acceleration_limit: Coord<N>,
+        epsilon: f64,
+    ) -> Self {
         let mut traj = Self {
             path,
             velocity_limit,
@@ -45,7 +61,7 @@ impl Trajectory {
     }
 
     /// Get a position in n-dimensional space given a time along the trajectory
-    pub fn get_position(&self, time: f64) -> Coord {
+    pub fn get_position(&self, time: f64) -> Coord<N> {
         let (previous, current) = self.get_trajectory_segment(time);
 
         let mut segment_len = current.time - previous.time;
@@ -62,7 +78,7 @@ impl Trajectory {
     }
 
     /// Get velocity for each joint at a time along the path
-    pub fn get_velocity(&self, time: f64) -> Coord {
+    pub fn get_velocity(&self, time: f64) -> Coord<N> {
         let (previous, current) = self.get_trajectory_segment(time);
 
         let segment_len = current.time - previous.time;
@@ -754,21 +770,26 @@ mod tests {
 
     #[test]
     fn create_example_cpp_trajectory() {
-        let waypoints: Vec<Coord> = vec![
-            Coord::new(0.0, 0.0, 0.0),
-            Coord::new(0.0, 0.2, 1.0),
-            Coord::new(0.0, 3.0, 0.5),
-            Coord::new(1.1, 2.0, 0.0),
-            Coord::new(1.0, 0.0, 0.0),
-            Coord::new(0.0, 1.0, 0.0),
-            Coord::new(0.0, 0.0, 1.0),
+        let waypoints: Vec<TestCoord3> = vec![
+            TestCoord3::new(0.0, 0.0, 0.0),
+            TestCoord3::new(0.0, 0.2, 1.0),
+            TestCoord3::new(0.0, 3.0, 0.5),
+            TestCoord3::new(1.1, 2.0, 0.0),
+            TestCoord3::new(1.0, 0.0, 0.0),
+            TestCoord3::new(0.0, 1.0, 0.0),
+            TestCoord3::new(0.0, 0.0, 1.0),
         ];
         let mut rows = Vec::new();
 
         let path = Path::from_waypoints(&waypoints, 0.001);
 
         // Same epsilon as Example.cpp for equal comparison
-        let traj = Trajectory::new(path, Coord::repeat(1.0), Coord::repeat(1.0), 0.000001);
+        let traj = Trajectory::new(
+            path,
+            TestCoord3::repeat(1.0),
+            TestCoord3::repeat(1.0),
+            0.000001,
+        );
 
         let mut t = 0.0;
         let duration = traj.get_duration();

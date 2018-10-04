@@ -1,13 +1,24 @@
 use crate::path::{CircularPathSegment, LinearPathSegment, PathItem};
 use crate::Coord;
+use nalgebra::allocator::SameShapeVectorAllocator;
+use nalgebra::DefaultAllocator;
+use nalgebra::DimName;
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum PathSegment {
-    Linear(LinearPathSegment),
-    Circular(CircularPathSegment),
+pub enum PathSegment<N>
+where
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+{
+    Linear(LinearPathSegment<N>),
+    Circular(CircularPathSegment<N>),
 }
 
-impl PathItem for PathSegment {
+impl<N> PathItem<N> for PathSegment<N>
+where
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+{
     /// Get length of path
     fn get_length(&self) -> f64 {
         match self {
@@ -17,7 +28,7 @@ impl PathItem for PathSegment {
     }
 
     /// Get position at a point along path
-    fn get_position(&self, distance_along_line: f64) -> Coord {
+    fn get_position(&self, distance_along_line: f64) -> Coord<N> {
         match self {
             PathSegment::Linear(s) => s.get_position(distance_along_line),
             PathSegment::Circular(s) => s.get_position(distance_along_line),
@@ -25,7 +36,7 @@ impl PathItem for PathSegment {
     }
 
     /// Get first derivative (tangent) at a point
-    fn get_tangent(&self, distance_along_line: f64) -> Coord {
+    fn get_tangent(&self, distance_along_line: f64) -> Coord<N> {
         match self {
             PathSegment::Linear(s) => s.get_tangent(distance_along_line),
             PathSegment::Circular(s) => s.get_tangent(distance_along_line),
@@ -33,7 +44,7 @@ impl PathItem for PathSegment {
     }
 
     /// Get second derivative (curvature) at a point
-    fn get_curvature(&self, distance_along_line: f64) -> Coord {
+    fn get_curvature(&self, distance_along_line: f64) -> Coord<N> {
         match self {
             PathSegment::Linear(s) => s.get_curvature(distance_along_line),
             PathSegment::Circular(s) => s.get_curvature(distance_along_line),
@@ -41,7 +52,11 @@ impl PathItem for PathSegment {
     }
 }
 
-impl PathSegment {
+impl<N> PathSegment<N>
+where
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+{
     /// Clone segment and give it a start offset
     // TODO: Trait
     pub fn with_start_offset(&self, offset: f64) -> Self {
