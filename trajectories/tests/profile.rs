@@ -1,6 +1,5 @@
 //! Profile native Rust
 
-#[macro_use]
 extern crate trajectories;
 
 use trajectories::test_helpers::*;

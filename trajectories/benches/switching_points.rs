@@ -3,14 +3,12 @@ extern crate criterion;
 extern crate trajectories;
 
 use criterion::Criterion;
-use trajectories::prelude::*;
 use trajectories::{
     test_helpers::{CircularPathSegment, TestCoord3},
     Path,
 };
 
 const DEVIATION: f64 = 0.01;
-const NUM_POINTS: usize = 100;
 
 fn get_circular_segment_switching_points(c: &mut Criterion) {
     c.bench_function("circular segment switching points", |b| {

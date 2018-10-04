@@ -1,6 +1,5 @@
 use super::PathItem;
 use crate::Coord;
-use nalgebra::allocator::Allocator;
 use nalgebra::allocator::SameShapeVectorAllocator;
 use nalgebra::DefaultAllocator;
 use nalgebra::DimName;

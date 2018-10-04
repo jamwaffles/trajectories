@@ -39,6 +39,7 @@
     unused_results
 )]
 
+#[cfg(test)]
 #[macro_use]
 extern crate approx;
 #[macro_use]
@@ -51,24 +52,17 @@ pub mod prelude;
 pub mod test_helpers;
 mod trajectory;
 
-use core::fmt::Debug;
 pub use crate::path::Path;
 pub use crate::trajectory::Trajectory;
-use nalgebra::allocator::SameShapeVectorAllocator;
 use nalgebra::storage::Owned;
-use nalgebra::DimName;
 use nalgebra::Matrix;
-use nalgebra::MatrixArray;
-use nalgebra::MatrixMN;
 use nalgebra::U1;
-use nalgebra::{VectorN, U3};
-use std::hash::Hash;
 
 /// Type alias for all vector operations
 ///
 /// This defines how many dimensions are supported. Change this type to add/remove dimensions
 // pub type Coord<N: DimName + Copy + Clone> = VectorN<f64, N>;
-pub type Coord<N: DimName + Copy + Clone> = Matrix<f64, N, U1, Owned<f64, N, U1>>;
+pub type Coord<N> = Matrix<f64, N, U1, Owned<f64, N, U1>>;
 
 /// Custom defined epsilon for "near enough" float comparisons and accuracy checks. This is set to
 /// `(std::f64::EPSILON).sqrt()` on a Linux x64 machine with Rust 1.29 as per the
