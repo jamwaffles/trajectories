@@ -769,6 +769,49 @@ mod tests {
     use crate::test_helpers::*;
 
     #[test]
+    fn acceleration_switching_points() {
+        let expected_points = vec![
+            (0.5, 1.0173539279271488),
+            (1.02, 1.0207890617732325),
+            (2.0, 3.8614234182834446),
+            (3.8616, 3.8626971078471364),
+            (4.0, 5.4258429817965856),
+            (5.431, 5.4332575268899799),
+            (7.1, 7.4304355740660952),
+            (7.431, 7.4314735160725895),
+            (8.0, 8.8429532035794889),
+            (8.843, 8.8440004011306854),
+            (8.845, 8.845047598681882),
+        ];
+
+        let waypoints: Vec<TestCoord3> = vec![
+            TestCoord3::new(0.0, 0.0, 0.0),
+            TestCoord3::new(0.0, 0.2, 1.0),
+            TestCoord3::new(0.0, 3.0, 0.5),
+            TestCoord3::new(1.1, 2.0, 0.0),
+            TestCoord3::new(1.0, 0.0, 0.0),
+            TestCoord3::new(0.0, 1.0, 0.0),
+            TestCoord3::new(0.0, 0.0, 1.0),
+        ];
+
+        // Same epsilon as Example.cpp for equal comparison
+        let traj = Trajectory::new(
+            Path::from_waypoints(&waypoints, 0.001),
+            TestCoord3::repeat(1.0),
+            TestCoord3::repeat(1.0),
+            0.000001,
+        );
+
+        for (pos, next_point) in expected_points {
+            assert_eq!(
+                traj.get_next_acceleration_switching_point(pos)
+                    .map(|p| p.pos.position),
+                Some(next_point)
+            );
+        }
+    }
+
+    #[test]
     fn create_example_cpp_trajectory() {
         let waypoints: Vec<TestCoord3> = vec![
             TestCoord3::new(0.0, 0.0, 0.0),
