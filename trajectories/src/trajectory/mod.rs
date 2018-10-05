@@ -769,6 +769,49 @@ mod tests {
     use crate::test_helpers::*;
 
     #[test]
+    fn velocity_switching_points() {
+        let expected_points = vec![
+            (0.5, 1.0207890624999982),
+            (1.02, 1.0207890625),
+            (2.0, 5.433721679687759),
+            (3.8616, 3.862918359375),
+            (4.0, 5.433721679687979),
+            (5.431, 5.433721679687501),
+            (7.1, 7.432009765625111),
+            (7.431, 7.432009765625001),
+            (8.0, 8.845047851562033),
+            (8.843, 8.845047851562498),
+            (8.845, 8.845047851562502),
+        ];
+
+        let waypoints: Vec<TestCoord3> = vec![
+            TestCoord3::new(0.0, 0.0, 0.0),
+            TestCoord3::new(0.0, 0.2, 1.0),
+            TestCoord3::new(0.0, 3.0, 0.5),
+            TestCoord3::new(1.1, 2.0, 0.0),
+            TestCoord3::new(1.0, 0.0, 0.0),
+            TestCoord3::new(0.0, 1.0, 0.0),
+            TestCoord3::new(0.0, 0.0, 1.0),
+        ];
+
+        // Same epsilon as Example.cpp for equal comparison
+        let traj = Trajectory::new(
+            Path::from_waypoints(&waypoints, 0.001),
+            TestCoord3::repeat(1.0),
+            TestCoord3::repeat(1.0),
+            0.000001,
+        );
+
+        for (pos, next_point) in expected_points {
+            assert_eq!(
+                traj.get_next_velocity_switching_point(pos)
+                    .map(|p| p.pos.position),
+                Some(next_point)
+            );
+        }
+    }
+
+    #[test]
     fn acceleration_switching_points() {
         let expected_points = vec![
             (0.5, 1.0173539279271488),
