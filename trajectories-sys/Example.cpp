@@ -37,7 +37,7 @@
  */
 
 #include <iostream>
-#include <cstdio>
+#include <iomanip>
 #include <Eigen/Core>
 #include "Trajectory.hpp"
 #include "Path.hpp"
@@ -75,11 +75,32 @@ int main() {
 		// cout << "Trajectory duration: " << duration << " s" << endl << endl;
 		cout << "time,position_x,position_y,position_z,velocity_x,velocity_y,velocity_z" << endl;
 		for(double t = 0.0; t < duration; t += 0.1) {
-			printf("%6.4f,%7.4f, %7.4f, %7.4f,   %7.4f, %7.4f, %7.4f\n", t, trajectory.getPosition(t)[0], trajectory.getPosition(t)[1], trajectory.getPosition(t)[2],
-				trajectory.getVelocity(t)[0], trajectory.getVelocity(t)[1], trajectory.getVelocity(t)[2]);
+			Vector3d pos = trajectory.getPosition(t);
+			Vector3d vel = trajectory.getVelocity(t);
+
+			std::cout << fixed << std::setprecision(17)
+			<< t << ","
+			<< pos[0] << ","
+			<< pos[1] << ","
+			<< pos[2] << ","
+			<< vel[0] << ","
+			<< vel[1] << ","
+			<< vel[2]
+			<< std::endl;
 		}
-		printf("%6.15f,%7.4f, %7.4f, %7.4f,   %7.4f, %7.4f, %7.4f\n", duration, trajectory.getPosition(duration)[0], trajectory.getPosition(duration)[1], trajectory.getPosition(duration)[2],
-			trajectory.getVelocity(duration)[0], trajectory.getVelocity(duration)[1], trajectory.getVelocity(duration)[2]);
+
+		Vector3d pos = trajectory.getPosition(duration);
+		Vector3d vel = trajectory.getVelocity(duration);
+
+		std::cout << fixed << std::setprecision(17)
+		<< duration << ","
+		<< pos[0] << ","
+		<< pos[1] << ","
+		<< pos[2] << ","
+		<< vel[0] << ","
+		<< vel[1] << ","
+		<< vel[2]
+		<< std::endl;
 	}
 	else {
 		cout << "Trajectory generation failed." << endl;
