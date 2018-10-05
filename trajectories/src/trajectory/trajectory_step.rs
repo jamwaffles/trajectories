@@ -1,7 +1,7 @@
 //! A discrete step along a complete trajectory
 
 /// Trajectory step
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub(crate) struct TrajectoryStep {
     /// Position
     pub(crate) position: f64,
