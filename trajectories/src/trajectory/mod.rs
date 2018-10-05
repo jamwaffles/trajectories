@@ -694,31 +694,28 @@ where
         // Broad phase search step
         let step_size = 0.001;
         let mut position = position_along_path;
-        let mut start = false;
+        let mut start = true;
 
-        // Broad phase
+        // Broad phase - find two adjacent points that exceed velocity limits
         // TODO: Refactor `start = true` weirdness whilst maintaining speed. For some reason, moving
         // the first condition into the second massively slows down the algo.
         while {
-            if self.get_min_max_phase_slope(
+            let slope = self.get_min_max_phase_slope(
                 &TrajectoryStep::new(position, self.get_max_velocity_from_velocity(position)),
                 MinMax::Min,
-            ) >= self.get_max_velocity_from_velocity_derivative(position)
-            {
-                start = true;
+            );
+            let deriv = self.get_max_velocity_from_velocity_derivative(position);
+
+            if slope >= deriv {
+                start = false;
             }
 
-            (!start
-                || self.get_min_max_phase_slope(
-                    &TrajectoryStep::new(position, self.get_max_velocity_from_velocity(position)),
-                    MinMax::Min,
-                ) >= self.get_max_velocity_from_velocity_derivative(position))
-                && position < self.path.get_length()
+            (start == true || slope >= deriv) && position < self.path.get_length()
         } {
             position += step_size;
         }
 
-        if position > self.path.get_length() {
+        if position >= self.path.get_length() {
             return None;
         }
 
