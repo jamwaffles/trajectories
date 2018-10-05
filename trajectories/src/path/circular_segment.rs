@@ -126,10 +126,10 @@ where
     }
 
     /// Clone with a start offset
-    pub fn with_start_offset(&self, start_offset: f64) -> Self {
+    pub fn with_start_offset(self, start_offset: f64) -> Self {
         Self {
             start_offset,
-            ..self.clone()
+            ..self
         }
     }
 
@@ -183,15 +183,14 @@ where
     fn get_position(&self, distance_along_arc: f64) -> Coord<N> {
         let angle = (distance_along_arc - self.start_offset) / self.radius;
 
-        self.center.clone()
-            + self.radius * ((self.x.clone() * angle.cos()) + (self.y.clone() * angle.sin()))
+        &self.center + self.radius * ((&self.x * angle.cos()) + (&self.y * angle.sin()))
     }
 
     /// Get derivative (tangent) of point along curve
     fn get_tangent(&self, distance_along_arc: f64) -> Coord<N> {
         let angle = (distance_along_arc - self.start_offset) / self.radius;
 
-        -self.x.clone() * angle.sin() + self.y.clone() * angle.cos()
+        -&self.x * angle.sin() + &self.y * angle.cos()
     }
 
     /// Get second derivative (rate of change of tangent, aka curvature) of point along curve

@@ -28,6 +28,11 @@ fn profile_native() {
         0.000001,
     );
 
+    let _point1 = trajectory.get_position(0.01);
+    let _point2 = trajectory.get_position(5.678);
+    let _point3 = trajectory.get_position(7.89);
+    let _point4 = trajectory.get_position(14.00001);
+
     // assert_eq!(trajectory.trajectory.len(), 14814);
     assert_eq!(trajectory.get_duration(), 14.80283284731994);
 

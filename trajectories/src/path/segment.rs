@@ -59,7 +59,7 @@ where
 {
     /// Clone segment and give it a start offset
     // TODO: Trait
-    pub fn with_start_offset(&self, offset: f64) -> Self {
+    pub fn with_start_offset(self, offset: f64) -> Self {
         match self {
             PathSegment::Linear(s) => PathSegment::Linear(s.with_start_offset(offset)),
             PathSegment::Circular(s) => PathSegment::Circular(s.with_start_offset(offset)),

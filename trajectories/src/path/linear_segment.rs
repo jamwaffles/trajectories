@@ -44,10 +44,10 @@ where
     }
 
     /// Clone with a start offset
-    pub fn with_start_offset(&self, start_offset: f64) -> Self {
+    pub fn with_start_offset(self, start_offset: f64) -> Self {
         Self {
             start_offset,
-            ..self.clone()
+            ..self
         }
     }
 

@@ -348,8 +348,6 @@ where
             if start1.position <= position {
                 let new_point = TrajectoryStep::new(position, velocity);
 
-                new_trajectory.push(new_point.clone());
-
                 velocity -= self.timestep * before_acceleration;
                 position -= self.timestep * 0.5 * (velocity + new_point.velocity);
                 before_acceleration = self.get_min_max_path_acceleration(
@@ -357,6 +355,8 @@ where
                     MinMax::Min,
                 );
                 slope = (new_point.velocity - velocity) / (new_point.position - position);
+
+                new_trajectory.push(new_point);
 
                 if velocity < 0.0 {
                     panic!("Velocity cannot be less than zero");
@@ -392,7 +392,7 @@ where
                     ));
 
                     let ret = start_trajectory
-                        .iter()
+                        .into_iter()
                         .cloned()
                         // Remove items in current trajectory after intersection point
                         .filter(|step| step.position < start2.position)
