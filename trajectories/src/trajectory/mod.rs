@@ -42,12 +42,13 @@ where
         velocity_limit: Coord<N>,
         acceleration_limit: Coord<N>,
         epsilon: f64,
+        timestep: f64,
     ) -> Self {
         let mut traj = Self {
             path,
             velocity_limit,
             acceleration_limit,
-            timestep: 0.001,
+            timestep,
             trajectory: Vec::new(),
             epsilon,
         };
@@ -136,10 +137,14 @@ where
         };
 
         loop {
+            trace!("Setup loop");
+
             let (fwd, pos) =
                 self.integrate_forward(&trajectory, switching_point.after_acceleration);
 
             trajectory.extend(fwd);
+
+            trace!("Setup loop 2");
 
             if pos == PathPosition::End {
                 break;
@@ -157,9 +162,13 @@ where
                 break;
             }
 
+            trace!("Setup loop 3");
+
             if let Some(updated_traj) = self.integrate_backward(&trajectory, &switching_point) {
                 trajectory = updated_traj;
             }
+
+            trace!("Setup loop 4");
         }
 
         // Backwards integrate last section
@@ -210,6 +219,13 @@ where
         let mut acceleration = start_acceleration;
 
         loop {
+            trace!(
+                "Integrate forward loop, by {}, position {} out of {}",
+                self.timestep,
+                position,
+                self.path.get_length()
+            );
+
             let next_discontinuity =
                 self.path
                     .get_switching_points()
@@ -283,6 +299,11 @@ where
                 let mut midpoint_velocity;
 
                 while after - before > self.epsilon {
+                    trace!(
+                        "Integrate forward bisection, before {} after {}",
+                        before,
+                        after
+                    );
                     midpoint = 0.5 * (before + after);
                     midpoint_velocity = 0.5 * (before_velocity + after_velocity);
 
@@ -358,6 +379,8 @@ where
         let mut parts = it.next();
 
         while let Some(&[ref start1, ref _start2]) = parts {
+            trace!("Integrate backward loop, position {}", position);
+
             if position < 0.0 {
                 break;
             }
@@ -443,6 +466,13 @@ where
                 .map(|p| p.pos.position)
                 .unwrap_or(position_along_path),
         ) {
+            trace!(
+                "Get accel point pos {} vel {} from len {}, max_vel {}",
+                point.pos.position,
+                point.pos.velocity,
+                self.path.get_length(),
+                self.max_velocity_at(point.pos.position, Limit::Velocity)
+            );
             acceleration_switching_point = Some(point.clone());
 
             if point.pos.velocity <= self.max_velocity_at(point.pos.position, Limit::Velocity) {
@@ -459,6 +489,7 @@ where
                 .map(|p| p.pos.position)
                 .unwrap_or(position_along_path),
         ) {
+            trace!("Get vel point pos {}", point.pos.position);
             velocity_switching_point = Some(point.clone());
 
             if point.pos.position > acceleration_switching_point
@@ -825,6 +856,7 @@ mod tests {
             TestCoord3::repeat(1.0),
             TestCoord3::repeat(1.0),
             0.000001,
+            0.001,
         );
 
         for (pos, next_point) in expected_points {
@@ -868,6 +900,7 @@ mod tests {
             TestCoord3::repeat(1.0),
             TestCoord3::repeat(1.0),
             0.000001,
+            0.001,
         );
 
         for (pos, next_point) in expected_points {
@@ -900,6 +933,7 @@ mod tests {
             TestCoord3::repeat(1.0),
             TestCoord3::repeat(1.0),
             0.000001,
+            0.001,
         );
 
         let mut t = 0.0;
