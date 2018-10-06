@@ -168,7 +168,10 @@ where
             },
         );
 
-        let length = start_offset + segments.last().unwrap().get_length();
+        let length = start_offset + segments
+            .last()
+            .expect("Cannot get length of empty path")
+            .get_length();
 
         Self {
             switching_points,
@@ -185,7 +188,7 @@ where
             .iter()
             .rev()
             .find(|segment| segment.get_start_offset() <= clamped)
-            .unwrap()
+            .expect("Could not find segment")
     }
 
     /// Get all switching points along this path

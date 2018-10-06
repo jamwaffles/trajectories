@@ -59,7 +59,10 @@ where
 
     /// Get duration of complete trajectory
     pub fn get_duration(&self) -> f64 {
-        self.trajectory.last().unwrap().time
+        self.trajectory
+            .last()
+            .expect("Could not get duration of empty trajectory")
+            .time
     }
 
     /// Get a position in n-dimensional space given a time along the trajectory
@@ -106,14 +109,18 @@ where
             .position(|segment| segment.time <= time)
             // Iter is reversed, so munge index-from-end to index-from-start
             .map(|pos| traj_len - pos - 1)
-            .unwrap()
+            .expect("Get segment position")
             .max(1);
 
-        let prev = self
+        let prev = self.trajectory.get(pos - 1).unwrap_or(
+            self.trajectory
+                .first()
+                .expect("Cannot get segment of empty trajectory"),
+        );
+        let current = self
             .trajectory
-            .get(pos - 1)
-            .unwrap_or(self.trajectory.first().unwrap());
-        let current = self.trajectory.get(pos).unwrap();
+            .get(pos)
+            .expect("Segment position is invalid");
 
         (prev, current)
     }
@@ -138,9 +145,12 @@ where
                 break;
             }
 
-            if let Some(new_switching_point) =
-                self.get_next_switching_point(trajectory.last().unwrap().position)
-            {
+            if let Some(new_switching_point) = self.get_next_switching_point(
+                trajectory
+                    .last()
+                    .expect("Setup has empty trajectory")
+                    .position,
+            ) {
                 switching_point = new_switching_point;
             } else {
                 // Break if we've reached the end of the path
@@ -255,10 +265,14 @@ where
             if velocity > self.max_velocity_at(position, Limit::Acceleration)
                 || velocity > max_velocity_at_position
             {
-                let overshoot = new_points.pop().unwrap();
+                let overshoot = new_points.pop().expect("No overshoot available");
                 let last_point = new_points
                     .last()
-                    .unwrap_or(trajectory.last().unwrap())
+                    .unwrap_or(
+                        trajectory
+                            .last()
+                            .expect("Could not get last point of empty trajectory"),
+                    )
                     .clone();
 
                 let mut before = last_point.position;
@@ -303,7 +317,8 @@ where
                 if self.max_velocity_at(after, Limit::Acceleration)
                     < self.max_velocity_at(after, Limit::Velocity)
                 {
-                    if next_discontinuity.is_some() && after > next_discontinuity.unwrap().position
+                    if next_discontinuity.is_some()
+                        && after > next_discontinuity.expect("No next discontinuity").position
                     {
                         break (new_points, PathPosition::NotEnd);
                     }
@@ -378,10 +393,12 @@ where
 
                 // Check for intersection between path and current segment
                 if start1.position.max(position) - self.epsilon <= intersection_position
-                    && intersection_position
-                        <= self.epsilon
-                            + start2.position.min(new_trajectory.last().unwrap().position)
-                {
+                    && intersection_position <= self.epsilon + start2.position.min(
+                        new_trajectory
+                            .last()
+                            .expect("Integrate backwards cannot get last point of empty trajectory")
+                            .position,
+                    ) {
                     let intersection_velocity =
                         start1.velocity + start_slope * (intersection_position - start1.position);
 
