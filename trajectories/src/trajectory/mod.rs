@@ -1,8 +1,10 @@
+mod limit;
 mod min_max;
 mod path_position;
 mod switching_point;
 mod trajectory_step;
 
+use self::limit::Limit;
 use self::min_max::MinMax;
 use self::path_position::PathPosition;
 use self::switching_point::SwitchingPoint as TrajectorySwitchingPoint;
@@ -122,7 +124,7 @@ where
         let mut switching_point = TrajectorySwitchingPoint {
             before_acceleration: 0.0,
             after_acceleration: self
-                .get_min_max_path_acceleration(&TrajectoryStep::new(0.0, 0.0), MinMax::Max),
+                .get_acceleration_at(&TrajectoryStep::new(0.0, 0.0), MinMax::Max),
             pos: TrajectoryStep::new(0.0, 0.0),
         };
 
@@ -155,7 +157,7 @@ where
             &trajectory,
             &TrajectorySwitchingPoint {
                 pos: TrajectoryStep::new(self.path.get_length(), 0.0),
-                before_acceleration: self.get_min_max_path_acceleration(
+                before_acceleration: self.get_acceleration_at(
                     &TrajectoryStep::new(self.path.get_length(), 0.0),
                     MinMax::Min,
                 ),
@@ -230,16 +232,16 @@ where
                 panic!("Integrate forward velocity cannot be 0");
             }
 
-            let max_velocity_at_position = self.get_max_velocity_from_velocity(position);
+            let max_velocity_at_position = self.max_velocity_at(position, Limit::Velocity);
 
             if velocity > max_velocity_at_position
-                && self.get_min_max_phase_slope(
+                && self.get_phase_slope(
                     &TrajectoryStep::new(
                         old_position,
-                        self.get_max_velocity_from_velocity(old_position),
+                        self.max_velocity_at(old_position, Limit::Velocity),
                     ),
                     MinMax::Min,
-                ) <= self.get_max_velocity_from_velocity_derivative(old_position)
+                ) <= self.max_velocity_derivative_at(old_position, Limit::Velocity)
             {
                 velocity = max_velocity_at_position;
             }
@@ -248,9 +250,9 @@ where
 
             new_points.push(new_point.clone());
 
-            acceleration = self.get_min_max_path_acceleration(&new_point, MinMax::Max);
+            acceleration = self.get_acceleration_at(&new_point, MinMax::Max);
 
-            if velocity > self.get_max_velocity_from_acceleration(position)
+            if velocity > self.max_velocity_at(position, Limit::Acceleration)
                 || velocity > max_velocity_at_position
             {
                 let overshoot = new_points.pop().unwrap();
@@ -270,21 +272,21 @@ where
                     midpoint = 0.5 * (before + after);
                     midpoint_velocity = 0.5 * (before_velocity + after_velocity);
 
-                    let max_midpoint_velocity = self.get_max_velocity_from_velocity(midpoint);
+                    let max_midpoint_velocity = self.max_velocity_at(midpoint, Limit::Velocity);
 
                     if midpoint_velocity > max_midpoint_velocity
-                        && self.get_min_max_phase_slope(
+                        && self.get_phase_slope(
                             &TrajectoryStep::new(
                                 before,
-                                self.get_max_velocity_from_velocity(before),
+                                self.max_velocity_at(before, Limit::Velocity),
                             ),
                             MinMax::Min,
-                        ) <= self.get_max_velocity_from_velocity_derivative(before)
+                        ) <= self.max_velocity_derivative_at(before, Limit::Velocity)
                     {
                         midpoint_velocity = max_midpoint_velocity;
                     }
 
-                    if midpoint_velocity > self.get_max_velocity_from_acceleration(midpoint)
+                    if midpoint_velocity > self.max_velocity_at(midpoint, Limit::Acceleration)
                         || midpoint_velocity > max_midpoint_velocity
                     {
                         after = midpoint;
@@ -298,21 +300,21 @@ where
                 let new_point = TrajectoryStep::new(before, before_velocity);
                 new_points.push(new_point.clone());
 
-                if self.get_max_velocity_from_acceleration(after)
-                    < self.get_max_velocity_from_velocity(after)
+                if self.max_velocity_at(after, Limit::Acceleration)
+                    < self.max_velocity_at(after, Limit::Velocity)
                 {
                     if next_discontinuity.is_some() && after > next_discontinuity.unwrap().position
                     {
                         break (new_points, PathPosition::NotEnd);
                     }
 
-                    if self.get_min_max_phase_slope(&new_point, MinMax::Max)
-                        > self.get_max_velocity_from_acceleration_derivative(new_point.position)
+                    if self.get_phase_slope(&new_point, MinMax::Max)
+                        > self.max_velocity_derivative_at(new_point.position, Limit::Acceleration)
                     {
                         break (new_points, PathPosition::NotEnd);
                     }
-                } else if self.get_min_max_phase_slope(&new_point, MinMax::Min)
-                    > self.get_max_velocity_from_velocity_derivative(new_point.position)
+                } else if self.get_phase_slope(&new_point, MinMax::Min)
+                    > self.max_velocity_derivative_at(new_point.position, Limit::Velocity)
                 {
                     break (new_points, PathPosition::NotEnd);
                 }
@@ -350,10 +352,8 @@ where
 
                 velocity -= self.timestep * before_acceleration;
                 position -= self.timestep * 0.5 * (velocity + new_point.velocity);
-                before_acceleration = self.get_min_max_path_acceleration(
-                    &TrajectoryStep::new(position, velocity),
-                    MinMax::Min,
-                );
+                before_acceleration =
+                    self.get_acceleration_at(&TrajectoryStep::new(position, velocity), MinMax::Min);
                 slope = (new_point.velocity - velocity) / (new_point.position - position);
 
                 new_trajectory.push(new_point);
@@ -428,7 +428,7 @@ where
         ) {
             acceleration_switching_point = Some(point.clone());
 
-            if point.pos.velocity <= self.get_max_velocity_from_velocity(point.pos.position) {
+            if point.pos.velocity <= self.max_velocity_at(point.pos.position, Limit::Velocity) {
                 break;
             }
         }
@@ -472,7 +472,7 @@ where
     }
 
     /// Find minimum or maximum acceleration at a point along path
-    fn get_min_max_path_acceleration(&self, pos_vel: &TrajectoryStep, min_max: MinMax) -> f64 {
+    fn get_acceleration_at(&self, pos_vel: &TrajectoryStep, min_max: MinMax) -> f64 {
         let &TrajectoryStep {
             position, velocity, ..
         } = pos_vel;
@@ -507,10 +507,15 @@ where
         res * factor
     }
 
-    /// Find the maximum allowable scalar velocity given a position along the path
-    ///
-    /// This method calculates the velocity limit as the smallest component of the tangent
-    /// (derivative of position, i.e velocity) at the given point.
+    /// Find the maximum allowable velocity at a point, limited by either max acceleration or max
+    /// velocity.
+    fn max_velocity_at(&self, position_along_path: f64, limit: Limit) -> f64 {
+        match limit {
+            Limit::Velocity => self.get_max_velocity_from_velocity(position_along_path),
+            Limit::Acceleration => self.get_max_velocity_from_acceleration(position_along_path),
+        }
+    }
+
     fn get_max_velocity_from_velocity(&self, position_along_path: f64) -> f64 {
         let tangent = self.path.get_tangent(position_along_path);
 
@@ -520,28 +525,6 @@ where
                 acc.min(component_max / tangent_component.abs())
             },
         )
-    }
-
-    /// Get the derivative of the max acceleration-bounded velocity at a point along the path
-    fn get_max_velocity_from_velocity_derivative(&self, position_along_path: f64) -> f64 {
-        let tangent = self.path.get_tangent(position_along_path);
-        let mut max_velocity = std::f64::MAX;
-        let mut constraint_axis = 0;
-
-        // TODO: Use iterators
-        // TODO: Get length of input vector using na::dimension::<V>() (from https://www.nalgebra.org/generic_programming/)
-        for i in 0..self.velocity_limit.len() {
-            let component_velocity = self.velocity_limit[i] / tangent[i].abs();
-
-            if component_velocity < max_velocity {
-                max_velocity = component_velocity;
-                constraint_axis = i;
-            }
-        }
-
-        -(self.velocity_limit[constraint_axis]
-            * self.path.get_curvature(position_along_path)[constraint_axis]
-            / (tangent[constraint_axis].powi(2)))
     }
 
     /// Find maximum allowable velocity as limited by the acceleration at a point on the path
@@ -581,20 +564,51 @@ where
         max_path_velocity
     }
 
+    fn max_velocity_derivative_at(&self, position_along_path: f64, limit: Limit) -> f64 {
+        match limit {
+            Limit::Velocity => self.get_max_velocity_from_velocity_derivative(position_along_path),
+            Limit::Acceleration => {
+                self.get_max_velocity_from_acceleration_derivative(position_along_path)
+            }
+        }
+    }
+
+    /// Get the derivative of the max acceleration-bounded velocity at a point along the path
+    fn get_max_velocity_from_velocity_derivative(&self, position_along_path: f64) -> f64 {
+        let tangent = self.path.get_tangent(position_along_path);
+        let mut max_velocity = std::f64::MAX;
+        let mut constraint_axis = 0;
+
+        // TODO: Use iterators
+        // TODO: Get length of input vector using na::dimension::<V>() (from https://www.nalgebra.org/generic_programming/)
+        for i in 0..self.velocity_limit.len() {
+            let component_velocity = self.velocity_limit[i] / tangent[i].abs();
+
+            if component_velocity < max_velocity {
+                max_velocity = component_velocity;
+                constraint_axis = i;
+            }
+        }
+
+        -(self.velocity_limit[constraint_axis]
+            * self.path.get_curvature(position_along_path)[constraint_axis]
+            / (tangent[constraint_axis].powi(2)))
+    }
+
     /// Get the derivative of the max velocity at a point along the path
     ///
     /// The max velocity in this case is bounded by the acceleration limits at the point
     fn get_max_velocity_from_acceleration_derivative(&self, position_along_path: f64) -> f64 {
-        (self.get_max_velocity_from_acceleration(position_along_path + self.epsilon)
-            - self.get_max_velocity_from_acceleration(position_along_path - self.epsilon))
+        (self.max_velocity_at(position_along_path + self.epsilon, Limit::Acceleration)
+            - self.max_velocity_at(position_along_path - self.epsilon, Limit::Acceleration))
             / (2.0 * self.epsilon)
     }
 
     /// Get the minimum or maximum phase slope for a position along the path
     ///
     /// TODO: Figure out what phase slope means in this context and give it a better name
-    fn get_min_max_phase_slope(&self, pos_vel: &TrajectoryStep, min_max: MinMax) -> f64 {
-        self.get_min_max_path_acceleration(&pos_vel, min_max) / pos_vel.position
+    fn get_phase_slope(&self, pos_vel: &TrajectoryStep, min_max: MinMax) -> f64 {
+        self.get_acceleration_at(&pos_vel, min_max) / pos_vel.position
     }
 
     /// Get the next acceleration-bounded switching point after the current position
@@ -610,10 +624,14 @@ where
 
             match current_point.continuity {
                 Continuity::Discontinuous => {
-                    let before_velocity = self
-                        .get_max_velocity_from_acceleration(current_point.position - self.epsilon);
-                    let after_velocity = self
-                        .get_max_velocity_from_acceleration(current_point.position + self.epsilon);
+                    let before_velocity = self.max_velocity_at(
+                        current_point.position - self.epsilon,
+                        Limit::Acceleration,
+                    );
+                    let after_velocity = self.max_velocity_at(
+                        current_point.position + self.epsilon,
+                        Limit::Acceleration,
+                    );
 
                     velocity = before_velocity.min(after_velocity);
 
@@ -622,28 +640,20 @@ where
                     let after_point =
                         TrajectoryStep::new(current_point.position + self.epsilon, velocity);
 
-                    let before_acceleration =
-                        self.get_min_max_path_acceleration(&before_point, MinMax::Min);
-                    let after_acceleration =
-                        self.get_min_max_path_acceleration(&after_point, MinMax::Max);
+                    let before_acceleration = self.get_acceleration_at(&before_point, MinMax::Min);
+                    let after_acceleration = self.get_acceleration_at(&after_point, MinMax::Max);
 
-                    let before_phase_slope = self.get_min_max_phase_slope(
-                        &TrajectoryStep::new(current_point.position - self.epsilon, velocity),
-                        MinMax::Min,
-                    );
-                    let after_phase_slope = self.get_min_max_phase_slope(
-                        &TrajectoryStep::new(current_point.position + self.epsilon, velocity),
-                        MinMax::Max,
-                    );
+                    let before_phase_slope = self.get_phase_slope(&before_point, MinMax::Min);
+                    let after_phase_slope = self.get_phase_slope(&after_point, MinMax::Max);
 
-                    let before_max_velocity_deriv = self
-                        .get_max_velocity_from_acceleration_derivative(
-                            current_point.position - 2.0 * self.epsilon,
-                        );
-                    let after_max_velocity_deriv = self
-                        .get_max_velocity_from_acceleration_derivative(
-                            current_point.position + 2.0 * self.epsilon,
-                        );
+                    let before_max_velocity_deriv = self.max_velocity_derivative_at(
+                        current_point.position - 2.0 * self.epsilon,
+                        Limit::Acceleration,
+                    );
+                    let after_max_velocity_deriv = self.max_velocity_derivative_at(
+                        current_point.position + 2.0 * self.epsilon,
+                        Limit::Acceleration,
+                    );
 
                     if (before_velocity > after_velocity
                         || before_phase_slope > before_max_velocity_deriv)
@@ -658,13 +668,16 @@ where
                     }
                 }
                 Continuity::Continuous => {
-                    let velocity = self.get_max_velocity_from_acceleration(current_point.position);
+                    let velocity =
+                        self.max_velocity_at(current_point.position, Limit::Acceleration);
 
-                    let low_deriv = self.get_max_velocity_from_acceleration_derivative(
+                    let low_deriv = self.max_velocity_derivative_at(
                         current_point.position - self.epsilon,
+                        Limit::Acceleration,
                     );
-                    let high_deriv = self.get_max_velocity_from_acceleration_derivative(
+                    let high_deriv = self.max_velocity_derivative_at(
                         current_point.position + self.epsilon,
+                        Limit::Acceleration,
                     );
 
                     if low_deriv < 0.0 && high_deriv > 0.0 {
@@ -700,11 +713,11 @@ where
         // TODO: Refactor `start = true` weirdness whilst maintaining speed. For some reason, moving
         // the first condition into the second massively slows down the algo.
         while {
-            let slope = self.get_min_max_phase_slope(
-                &TrajectoryStep::new(position, self.get_max_velocity_from_velocity(position)),
+            let slope = self.get_phase_slope(
+                &TrajectoryStep::new(position, self.max_velocity_at(position, Limit::Velocity)),
                 MinMax::Min,
             );
-            let deriv = self.get_max_velocity_from_velocity_derivative(position);
+            let deriv = self.max_velocity_derivative_at(position, Limit::Velocity);
 
             if slope >= deriv {
                 start = false;
@@ -727,10 +740,10 @@ where
         while after_position - prev_position > self.epsilon {
             position = (prev_position + after_position) / 2.0;
 
-            if self.get_min_max_phase_slope(
-                &TrajectoryStep::new(position, self.get_max_velocity_from_velocity(position)),
+            if self.get_phase_slope(
+                &TrajectoryStep::new(position, self.max_velocity_at(position, Limit::Velocity)),
                 MinMax::Min,
-            ) > self.get_max_velocity_from_velocity_derivative(position)
+            ) > self.max_velocity_derivative_at(position, Limit::Velocity)
             {
                 prev_position = position
             } else {
@@ -740,17 +753,17 @@ where
 
         let after_position = TrajectoryStep::new(
             after_position,
-            self.get_max_velocity_from_velocity(after_position),
+            self.max_velocity_at(after_position, Limit::Velocity),
         );
 
-        let before_acceleration = self.get_min_max_path_acceleration(
+        let before_acceleration = self.get_acceleration_at(
             &TrajectoryStep::new(
                 prev_position,
-                self.get_max_velocity_from_velocity(prev_position),
+                self.max_velocity_at(prev_position, Limit::Velocity),
             ),
             MinMax::Min,
         );
-        let after_acceleration = self.get_min_max_path_acceleration(&after_position, MinMax::Max);
+        let after_acceleration = self.get_acceleration_at(&after_position, MinMax::Max);
 
         Some(TrajectorySwitchingPoint {
             before_acceleration,
