@@ -533,8 +533,7 @@ where
         let velocity = segment.get_tangent(position_along_path);
         let acceleration = segment.get_curvature(position_along_path);
 
-        // TODO: Get length of input vector using na::dimension::<V>() (from https://www.nalgebra.org/generic_programming/)
-        let n = velocity.len();
+        let n = nalgebra::dimension::<Coord<N>>();
 
         let mut max_path_velocity = std::f64::INFINITY;
 
@@ -580,8 +579,7 @@ where
         let mut constraint_axis = 0;
 
         // TODO: Use iterators
-        // TODO: Get length of input vector using na::dimension::<V>() (from https://www.nalgebra.org/generic_programming/)
-        for i in 0..self.velocity_limit.len() {
+        for i in 0..nalgebra::dimension::<Coord<N>>() {
             let component_velocity = self.velocity_limit[i] / tangent[i].abs();
 
             if component_velocity < max_velocity {
