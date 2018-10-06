@@ -88,85 +88,94 @@ where
         let mut start_offset = 0.0;
         let mut switching_points = Vec::with_capacity((waypoints.len() as f32 * 2.5) as usize);
 
-        let segments = waypoints.windows(3).fold(
-            Vec::with_capacity(waypoints.len() * 3),
-            |mut segments, parts| {
-                if let &[ref prev, ref curr, ref next] = parts {
-                    let blend_segment =
-                        CircularPathSegment::from_waypoints(&prev, &curr, &next, max_deviation);
+        let segments = match waypoints.len() {
+            0 | 1 => panic!("Path must contain at least two waypoints"),
+            2 => vec![PathSegment::Linear(LinearPathSegment::from_waypoints(
+                waypoints.get(0).unwrap().clone(),
+                waypoints.get(1).unwrap().clone(),
+            ))],
+            _ => waypoints.windows(3).fold(
+                Vec::with_capacity(waypoints.len() * 3),
+                |mut segments, parts| {
+                    if let &[ref prev, ref curr, ref next] = parts {
+                        let blend_segment =
+                            CircularPathSegment::from_waypoints(&prev, &curr, &next, max_deviation);
 
-                    let blend_start = blend_segment.get_position(0.0);
-                    let blend_end = blend_segment.get_position(blend_segment.get_length());
+                        let blend_start = blend_segment.get_position(0.0);
+                        let blend_end = blend_segment.get_position(blend_segment.get_length());
 
-                    // Update previous segment with new end point, or create a new one if we're
-                    // at the beginning of the path
-                    let prev_segment = segments
-                        .pop()
-                        .map(|segment| match segment {
-                            PathSegment::Linear(s) => {
-                                LinearPathSegment::from_waypoints(s.start, blend_start.clone())
-                                    .with_start_offset(s.start_offset)
-                            }
-                            _ => panic!("Invalid path: expected last segment to be linear"),
-                        })
-                        .unwrap_or(
-                            LinearPathSegment::from_waypoints(prev.clone(), blend_start)
-                                .with_start_offset(start_offset),
+                        // Update previous segment with new end point, or create a new one if we're
+                        // at the beginning of the path
+                        let prev_segment = segments
+                            .pop()
+                            .map(|segment| match segment {
+                                PathSegment::Linear(s) => {
+                                    LinearPathSegment::from_waypoints(s.start, blend_start.clone())
+                                        .with_start_offset(s.start_offset)
+                                }
+                                _ => panic!("Invalid path: expected last segment to be linear"),
+                            })
+                            .unwrap_or(
+                                LinearPathSegment::from_waypoints(prev.clone(), blend_start)
+                                    .with_start_offset(start_offset),
+                            );
+
+                        start_offset += prev_segment.get_length();
+
+                        // Switching point where linear segment touches blend (discontinuous)
+                        // TODO: Get actual list of switching points when support for non-linear
+                        // path segments (that aren't blends) is added.
+                        switching_points
+                            .push(SwitchingPoint::new(start_offset, Continuity::Discontinuous));
+
+                        let blend_segment = blend_segment.with_start_offset(start_offset);
+                        let blend_switching_points = blend_segment.get_switching_points();
+                        let blend_end_offset =
+                            blend_segment.start_offset + blend_segment.get_length();
+
+                        // Get switching points over the duration of the blend segment
+                        switching_points.append(
+                            &mut blend_switching_points
+                                .iter()
+                                .filter_map(|p| {
+                                    let p_offset = p + blend_segment.start_offset;
+
+                                    if p_offset < blend_end_offset {
+                                        Some(SwitchingPoint::new(p_offset, Continuity::Continuous))
+                                    } else {
+                                        None
+                                    }
+                                })
+                                .collect(),
                         );
 
-                    start_offset += prev_segment.get_length();
+                        // Add blend segment length to path length total
+                        start_offset = blend_end_offset;
 
-                    // Switching point where linear segment touches blend (discontinuous)
-                    // TODO: Get actual list of switching points when support for non-linear
-                    // path segments (that aren't blends) is added.
-                    switching_points
-                        .push(SwitchingPoint::new(start_offset, Continuity::Discontinuous));
+                        let next_segment =
+                            LinearPathSegment::from_waypoints(blend_end, next.clone())
+                                .with_start_offset(start_offset);
 
-                    let blend_segment = blend_segment.with_start_offset(start_offset);
-                    let blend_switching_points = blend_segment.get_switching_points();
-                    let blend_end_offset = blend_segment.start_offset + blend_segment.get_length();
+                        // Switching point where linear segment touches blend
+                        // TODO: Get actual list of switching points when support for non-linear
+                        // path segments (that aren't blends) is added.
+                        switching_points
+                            .push(SwitchingPoint::new(start_offset, Continuity::Discontinuous));
 
-                    // Get switching points over the duration of the blend segment
-                    switching_points.append(
-                        &mut blend_switching_points
-                            .iter()
-                            .filter_map(|p| {
-                                let p_offset = p + blend_segment.start_offset;
+                        // Add both linear segments with blend in between to overall path
+                        segments.append(&mut vec![
+                            PathSegment::Linear(prev_segment),
+                            PathSegment::Circular(blend_segment),
+                            PathSegment::Linear(next_segment),
+                        ]);
 
-                                if p_offset < blend_end_offset {
-                                    Some(SwitchingPoint::new(p_offset, Continuity::Continuous))
-                                } else {
-                                    None
-                                }
-                            })
-                            .collect(),
-                    );
-
-                    // Add blend segment length to path length total
-                    start_offset = blend_end_offset;
-
-                    let next_segment = LinearPathSegment::from_waypoints(blend_end, next.clone())
-                        .with_start_offset(start_offset);
-
-                    // Switching point where linear segment touches blend
-                    // TODO: Get actual list of switching points when support for non-linear
-                    // path segments (that aren't blends) is added.
-                    switching_points
-                        .push(SwitchingPoint::new(start_offset, Continuity::Discontinuous));
-
-                    // Add both linear segments with blend in between to overall path
-                    segments.append(&mut vec![
-                        PathSegment::Linear(prev_segment),
-                        PathSegment::Circular(blend_segment),
-                        PathSegment::Linear(next_segment),
-                    ]);
-
-                    segments
-                } else {
-                    panic!("Linear segments");
-                }
-            },
-        );
+                        segments
+                    } else {
+                        panic!("Linear segments");
+                    }
+                },
+            ),
+        };
 
         let length = start_offset + segments
             .last()
@@ -243,6 +252,25 @@ where
 mod tests {
     use super::*;
     use crate::test_helpers::*;
+
+    #[test]
+    fn path_with_two_waypoints() {
+        let waypoints = vec![
+            TestCoord3::new(1.0, 0.0, 0.0),
+            TestCoord3::new(2.0, 0.0, 0.0),
+        ];
+
+        let _path = Path::from_waypoints(&waypoints, 0.01);
+    }
+
+    #[test]
+    #[should_panic]
+    fn path_too_short() {
+        let waypoints = vec![TestCoord3::new(1.0, 0.0, 0.0)];
+
+        let _p1 = Path::from_waypoints(&waypoints, 0.01);
+        let _p2 = Path::from_waypoints(&Vec::<TestCoord3>::new(), 0.01);
+    }
 
     #[test]
     fn get_segment_at_position() {
