@@ -22,7 +22,9 @@ fn test_1() {
     // TODO: Loop through, assert things
 }
 
+// TODO: Un-ignore
 #[test]
+#[ignore]
 fn test_2() {
     let waypoints: Vec<TestCoord4> = vec![
         TestCoord4::new(1427.0, 368.0, 690.0, 90.0),
