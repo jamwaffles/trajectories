@@ -26,6 +26,7 @@ fn get_positions(c: &mut Criterion) {
                 TestCoord3::new(1.0, 1.0, 1.0),
                 TestCoord3::new(1.0, 1.0, 1.0),
                 0.000001,
+                0.001,
             );
 
             let _start = trajectory.get_position(0.0);
