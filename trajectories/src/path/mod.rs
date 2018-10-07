@@ -190,14 +190,15 @@ where
     }
 
     /// Get a path segment for a position along the entire path
+    ///
+    /// It will return the last segment in the path if a position greater than the total path length
+    /// is given.
     pub fn get_segment_at_position(&self, position_along_path: f64) -> &PathSegment<N> {
-        let clamped = position_along_path.min(self.length);
-
         self.segments
             .iter()
             .rev()
-            .find(|segment| segment.get_start_offset() <= clamped)
-            .expect("Could not find segment")
+            .find(|segment| segment.get_start_offset() <= position_along_path)
+            .unwrap_or(&self.segments.last().unwrap())
     }
 
     /// Get all switching points along this path
@@ -212,7 +213,7 @@ where
         self.switching_points
             .iter()
             .cloned()
-            .skip_while(|sp| sp.position < position_along_path)
+            .skip_while(|sp| sp.position <= position_along_path)
             .next()
             .unwrap_or(SwitchingPoint::new(self.length, Continuity::Discontinuous))
     }
