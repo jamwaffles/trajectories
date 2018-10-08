@@ -54,7 +54,7 @@ fn rust_native(c: &mut Criterion) {
 }
 
 fn compare(c: &mut Criterion) {
-    let comp_native = Fun::new("c++ bindings", |b, _| {
+    let comp_native = Fun::new("rust native", |b, _| {
         b.iter(|| {
             let waypoints: Vec<TestCoord3> = vec![
                 TestCoord3::new(0.0, 0.0, 0.0),
@@ -77,7 +77,7 @@ fn compare(c: &mut Criterion) {
             );
         })
     });
-    let comp_bindings = Fun::new("rust native", |b, _| {
+    let comp_bindings = Fun::new("c++ bindings", |b, _| {
         b.iter(|| {
             let max_velocity = [1.0, 1.0, 1.0];
             let max_acceleration = [1.0, 1.0, 1.0];
