@@ -498,9 +498,9 @@ where
                 .pos
                 .position
                 || (point.pos.velocity
-                    <= self.get_max_velocity_from_acceleration(point.pos.position - self.epsilon)
+                    <= self.max_velocity_at(point.pos.position - self.epsilon, Limit::Acceleration)
                     && point.pos.velocity <= self
-                        .get_max_velocity_from_acceleration(point.pos.position + self.epsilon))
+                        .max_velocity_at(point.pos.position + self.epsilon, Limit::Acceleration))
             {
                 break;
             }
