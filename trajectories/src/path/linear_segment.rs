@@ -25,6 +25,9 @@ where
 
     /// Path start offset
     pub start_offset: f64,
+
+    /// Start offset plus length
+    pub end_offset: f64,
 }
 
 impl<N> LinearPathSegment<N>
@@ -40,6 +43,7 @@ where
             end,
             length,
             start_offset: 0.0,
+            end_offset: length,
         }
     }
 
@@ -47,6 +51,7 @@ where
     pub fn with_start_offset(self, start_offset: f64) -> Self {
         Self {
             start_offset,
+            end_offset: start_offset + self.length,
             ..self
         }
     }
@@ -58,6 +63,11 @@ where
     // TODO: Trait
     pub fn get_switching_points(&self) -> Vec<f64> {
         Vec::new()
+    }
+
+    /// Get end offset
+    pub fn get_end_offset(&self) -> f64 {
+        self.end_offset
     }
 }
 

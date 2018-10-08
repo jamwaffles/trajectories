@@ -196,8 +196,7 @@ where
     pub fn get_segment_at_position(&self, position_along_path: f64) -> &PathSegment<N> {
         self.segments
             .iter()
-            .rev()
-            .find(|segment| segment.get_start_offset() <= position_along_path)
+            .find(|segment| segment.get_end_offset() > position_along_path)
             .unwrap_or(&self.segments.last().unwrap())
     }
 
@@ -308,6 +307,7 @@ mod tests {
                 start: TestCoord3::new(2.0, 0.0, 0.0),
                 end: TestCoord3::new(5.0, 0.0, 0.0),
                 start_offset: 1.0,
+                end_offset: 4.0,
                 length: 3.0,
             })
         );
@@ -317,6 +317,7 @@ mod tests {
                 start: TestCoord3::new(2.0, 0.0, 0.0),
                 end: TestCoord3::new(5.0, 0.0, 0.0),
                 start_offset: 1.0,
+                end_offset: 4.0,
                 length: 3.0,
             })
         );
@@ -327,6 +328,7 @@ mod tests {
                 start: TestCoord3::new(2.0, 0.0, 0.0),
                 end: TestCoord3::new(5.0, 0.0, 0.0),
                 start_offset: 1.0,
+                end_offset: 4.0,
                 length: 3.0,
             })
         );

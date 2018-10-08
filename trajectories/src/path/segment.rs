@@ -75,6 +75,14 @@ where
         }
     }
 
+    /// Get end offset of this segment
+    pub fn get_end_offset(&self) -> f64 {
+        match self {
+            PathSegment::Linear(s) => s.get_end_offset(),
+            PathSegment::Circular(s) => s.get_end_offset(),
+        }
+    }
+
     /// Get the switching points for this path segment
     // TODO: Trait?
     pub fn get_switching_points(&self) -> Vec<f64> {

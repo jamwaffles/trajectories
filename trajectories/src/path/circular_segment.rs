@@ -33,6 +33,9 @@ where
 
     /// Path start offset
     pub start_offset: f64,
+
+    /// Start offset plus arc length
+    pub end_offset: f64,
 }
 
 impl<N> Default for CircularPathSegment<N>
@@ -46,6 +49,7 @@ where
             center: Coord::zeros(),
             radius: 1.0,
             start_offset: 0.0,
+            end_offset: 0.0,
             x: Coord::zeros(),
             y: Coord::zeros(),
         }
@@ -122,6 +126,7 @@ where
             y,
             arc_length,
             start_offset: 0.0,
+            end_offset: arc_length,
         }
     }
 
@@ -129,6 +134,7 @@ where
     pub fn with_start_offset(self, start_offset: f64) -> Self {
         Self {
             start_offset,
+            end_offset: start_offset + self.arc_length,
             ..self
         }
     }
@@ -165,6 +171,11 @@ where
             .sort_unstable_by(|a, b| a.partial_cmp(b).expect("Could not sort switching points"));
 
         switching_points
+    }
+
+    /// Get end offset
+    pub fn get_end_offset(&self) -> f64 {
+        self.end_offset
     }
 }
 
