@@ -573,24 +573,24 @@ where
     /// Find maximum allowable velocity as limited by the acceleration at a point on the path
     fn get_max_velocity_from_acceleration(&self, position_along_path: f64) -> f64 {
         let segment = self.path.get_segment_at_position(position_along_path);
-        let velocity = segment.get_tangent(position_along_path);
+        let vel_abs = segment.get_tangent(position_along_path).abs();
         let acceleration = segment.get_curvature(position_along_path);
 
         let n = nalgebra::dimension::<Coord<N>>();
 
-        let mut max_path_velocity = std::f64::INFINITY;
+        let mut max_path_velocity = std::f64::MAX;
 
         for i in 0..n {
-            if velocity[i] != 0.0 {
+            if vel_abs[i] != 0.0 {
                 for j in (i + 1)..n {
-                    if velocity[j] != 0.0 {
+                    if vel_abs[j] != 0.0 {
                         // TODO: Come up with a less mathsy name
-                        let a_ij = acceleration[i] / velocity[i] - acceleration[j] / velocity[j];
+                        let a_ij = acceleration[i] / vel_abs[i] - acceleration[j] / vel_abs[j];
 
                         if a_ij != 0.0 {
                             max_path_velocity = max_path_velocity.min(
-                                ((self.acceleration_limit[i] / velocity[i].abs()
-                                    + self.acceleration_limit[j] / velocity[j].abs())
+                                ((self.acceleration_limit[i] / vel_abs[i]
+                                    + self.acceleration_limit[j] / vel_abs[j])
                                     / a_ij.abs())
                                 .sqrt(),
                             );
@@ -617,23 +617,18 @@ where
 
     /// Get the derivative of the max acceleration-bounded velocity at a point along the path
     fn get_max_velocity_from_velocity_derivative(&self, position_along_path: f64) -> f64 {
-        let tangent = self.path.get_tangent(position_along_path);
-        let mut max_velocity = std::f64::MAX;
-        let mut constraint_axis = 0;
+        let tangent_abs = self.path.get_tangent(position_along_path).abs();
+        let velocity = self.velocity_limit.component_div(&tangent_abs);
 
-        // TODO: Use iterators
-        for i in 0..nalgebra::dimension::<Coord<N>>() {
-            let component_velocity = self.velocity_limit[i] / tangent[i].abs();
-
-            if component_velocity < max_velocity {
-                max_velocity = component_velocity;
-                constraint_axis = i;
-            }
-        }
+        let (constraint_axis, _) = velocity
+            .iter()
+            .enumerate()
+            .min_by(|a, b| a.1.partial_cmp(b.1).unwrap())
+            .unwrap_or((0, &std::f64::MAX));
 
         -(self.velocity_limit[constraint_axis]
             * self.path.get_curvature(position_along_path)[constraint_axis]
-            / (tangent[constraint_axis].powi(2)))
+            / (tangent_abs[constraint_axis].powi(2)))
     }
 
     /// Get the derivative of the max velocity at a point along the path

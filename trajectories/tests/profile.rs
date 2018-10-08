@@ -35,7 +35,7 @@ fn profile_native() {
     let _point4 = trajectory.get_position(14.00001);
 
     // assert_eq!(trajectory.trajectory.len(), 14814);
-    assert_eq!(trajectory.get_duration(), 14.80283284731994);
+    assert_eq!(trajectory.get_duration(), 14.802832847319943);
 
     // end_profile();
 }
