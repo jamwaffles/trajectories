@@ -565,14 +565,9 @@ where
     }
 
     fn get_max_velocity_from_velocity(&self, position_along_path: f64) -> f64 {
-        let tangent = self.path.get_tangent(position_along_path);
-
-        tangent.iter().zip(self.velocity_limit.iter()).fold(
-            std::f64::MAX,
-            |acc, (tangent_component, component_max)| {
-                acc.min(component_max / tangent_component.abs())
-            },
-        )
+        self.velocity_limit
+            .component_div(&self.path.get_tangent(position_along_path))
+            .amin()
     }
 
     /// Find maximum allowable velocity as limited by the acceleration at a point on the path
