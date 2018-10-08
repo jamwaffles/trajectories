@@ -212,8 +212,7 @@ where
         self.switching_points
             .iter()
             .cloned()
-            .skip_while(|sp| sp.position <= position_along_path)
-            .next()
+            .find(|sp| sp.position > position_along_path)
             .unwrap_or(SwitchingPoint::new(self.length, Continuity::Discontinuous))
     }
 }
