@@ -7,6 +7,11 @@ rust:
   - stable
   - beta
   - nightly
+matrix:
+  allow_failures:
+    # TODO: Remove when edition 2018 is stabilised
+    - rust: stable
+  fast_finish: true
 sudo: false
 addons:
   apt:
