@@ -84,20 +84,20 @@ where
     /// Create a blended path from a set of waypoints
     ///
     /// The path must be differentiable, so small blends are added between linear segments
-    pub fn from_waypoints(waypoints: &Vec<Coord<N>>, max_deviation: f64) -> Self {
+    pub fn from_waypoints(waypoints: &[Coord<N>], max_deviation: f64) -> Self {
         let mut start_offset = 0.0;
         let mut switching_points = Vec::with_capacity((waypoints.len() as f32 * 2.5) as usize);
 
         let segments = match waypoints.len() {
             0 | 1 => panic!("Path must contain at least two waypoints"),
             2 => vec![PathSegment::Linear(LinearPathSegment::from_waypoints(
-                waypoints.get(0).unwrap().clone(),
-                waypoints.get(1).unwrap().clone(),
+                waypoints[0].clone(),
+                waypoints[1].clone(),
             ))],
             _ => waypoints.windows(3).fold(
                 Vec::with_capacity(waypoints.len() * 3),
                 |mut segments, parts| {
-                    if let &[ref prev, ref curr, ref next] = parts {
+                    if let [prev, curr, next] = parts {
                         let blend_segment =
                             CircularPathSegment::from_waypoints(&prev, &curr, &next, max_deviation);
 
@@ -115,10 +115,10 @@ where
                                 }
                                 _ => panic!("Invalid path: expected last segment to be linear"),
                             })
-                            .unwrap_or(
+                            .unwrap_or_else(|| {
                                 LinearPathSegment::from_waypoints(prev.clone(), blend_start)
-                                    .with_start_offset(start_offset),
-                            );
+                                    .with_start_offset(start_offset)
+                            });
 
                         start_offset += prev_segment.get_length();
 
@@ -177,10 +177,11 @@ where
             ),
         };
 
-        let length = start_offset + segments
-            .last()
-            .expect("Cannot get length of empty path")
-            .get_length();
+        let length = start_offset
+            + segments
+                .last()
+                .expect("Cannot get length of empty path")
+                .get_length();
 
         Self {
             switching_points,
@@ -213,7 +214,7 @@ where
             .iter()
             .cloned()
             .find(|sp| sp.position > position_along_path)
-            .unwrap_or(SwitchingPoint::new(self.length, Continuity::Discontinuous))
+            .unwrap_or_else(|| SwitchingPoint::new(self.length, Continuity::Discontinuous))
     }
 }
 

@@ -100,7 +100,7 @@ where
     }
 
     /// Get the (previous_segment, segment) of the trajectory that the given time lies on
-    fn get_trajectory_segment<'a>(&'a self, time: f64) -> (&'a TrajectoryStep, &'a TrajectoryStep) {
+    fn get_trajectory_segment(&self, time: f64) -> (&TrajectoryStep, &TrajectoryStep) {
         let traj_len = self.trajectory.len();
 
         let pos = self
@@ -113,11 +113,11 @@ where
             .expect("Get segment position")
             .max(1);
 
-        let prev = self.trajectory.get(pos - 1).unwrap_or(
+        let prev = self.trajectory.get(pos - 1).unwrap_or_else(|| {
             self.trajectory
                 .first()
-                .expect("Cannot get segment of empty trajectory"),
-        );
+                .expect("Cannot get segment of empty trajectory")
+        });
         let current = self
             .trajectory
             .get(pos)
@@ -191,7 +191,7 @@ where
         // Set times on segments
         let timed = std::iter::once(TrajectoryStep::new(0.0, 0.0).with_time(0.0))
             .chain(trajectory.windows(2).scan(0.0, |t, parts| {
-                if let &[ref previous, ref current] = parts {
+                if let [previous, current] = parts {
                     *t += (current.position - previous.position)
                         / ((current.velocity + previous.velocity) / 2.0);
 
@@ -207,7 +207,7 @@ where
 
     fn integrate_forward(
         &self,
-        trajectory: &Vec<TrajectoryStep>,
+        trajectory: &[TrajectoryStep],
         start_acceleration: f64,
     ) -> (Vec<TrajectoryStep>, PathPosition) {
         let mut new_points = Vec::new();
@@ -274,7 +274,7 @@ where
 
             let new_point = TrajectoryStep::new(position, velocity);
 
-            new_points.push(new_point.clone());
+            new_points.push(new_point);
 
             acceleration = self.get_acceleration_at(&new_point, MinMax::Max);
 
@@ -282,14 +282,11 @@ where
                 || velocity > max_velocity_at_position
             {
                 let overshoot = new_points.pop().expect("No overshoot available");
-                let last_point = new_points
-                    .last()
-                    .unwrap_or(
-                        trajectory
-                            .last()
-                            .expect("Could not get last point of empty trajectory"),
-                    )
-                    .clone();
+                let last_point = new_points.last().unwrap_or_else(|| {
+                    trajectory
+                        .last()
+                        .expect("Could not get last point of empty trajectory")
+                });
 
                 let mut before = last_point.position;
                 let mut before_velocity = last_point.velocity;
@@ -333,7 +330,7 @@ where
                 }
 
                 let new_point = TrajectoryStep::new(before, before_velocity);
-                new_points.push(new_point.clone());
+                new_points.push(new_point);
 
                 if self.max_velocity_at(after, Limit::Acceleration)
                     < self.max_velocity_at(after, Limit::Velocity)
@@ -360,7 +357,7 @@ where
 
     fn integrate_backward(
         &self,
-        start_trajectory: &Vec<TrajectoryStep>,
+        start_trajectory: &[TrajectoryStep],
         start_switching_point: &TrajectorySwitchingPoint,
     ) -> Option<Vec<TrajectoryStep>> {
         let TrajectorySwitchingPoint {
@@ -492,15 +489,19 @@ where
             trace!("Get vel point pos {}", point.pos.position);
             velocity_switching_point = Some(point.clone());
 
-            if point.pos.position > acceleration_switching_point
-                .clone()
-                .expect("Accel switching point")
-                .pos
-                .position
+            if point.pos.position
+                > acceleration_switching_point
+                    .clone()
+                    .expect("Accel switching point")
+                    .pos
+                    .position
                 || (point.pos.velocity
                     <= self.max_velocity_at(point.pos.position - self.epsilon, Limit::Acceleration)
-                    && point.pos.velocity <= self
-                        .max_velocity_at(point.pos.position + self.epsilon, Limit::Acceleration))
+                    && point.pos.velocity
+                        <= self.max_velocity_at(
+                            point.pos.position + self.epsilon,
+                            Limit::Acceleration,
+                        ))
             {
                 break;
             }
@@ -745,7 +746,8 @@ where
         let mut position = position_along_path;
         let mut start = true;
 
-        // Broad phase - find two adjacent points that exceed velocity limits
+        // Broad phase - find two adjacent points where a sign change occurs. This could be from
+        // some tiny negative number to 0.0 or something like that.
         // TODO: Refactor `start = true` weirdness whilst maintaining speed. For some reason, moving
         // the first condition into the second massively slows down the algo.
         while {
@@ -759,10 +761,16 @@ where
                 start = false;
             }
 
-            (start == true || slope >= deriv) && position < self.path.get_length()
+            if position > 860.0 {
+                info!("POS {}, SLOPE {}, DERIV {}", position, slope, deriv);
+            }
+
+            (start || slope > deriv) && position < self.path.get_length()
         } {
             position += step_size;
         }
+
+        info!("END CONDITION {} LEN {}", position, self.path.get_length());
 
         if position >= self.path.get_length() {
             return None;

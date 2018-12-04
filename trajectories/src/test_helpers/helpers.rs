@@ -133,7 +133,7 @@ where
     Group::new().add(circle).add(xi).add(yi)
 }
 
-fn calc_bbox<N>(coords: &Vec<Coord<N>>) -> (Coord<N>, Coord<N>)
+fn calc_bbox<N>(coords: &[Coord<N>]) -> (Coord<N>, Coord<N>)
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
@@ -219,7 +219,7 @@ where
 }
 
 /// Debug an entire path
-pub fn debug_path<N>(file_path: &'static str, path: &TrajPath<N>, waypoints: &Vec<Coord<N>>)
+pub fn debug_path<N>(file_path: &'static str, path: &TrajPath<N>, waypoints: &[Coord<N>])
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
@@ -285,7 +285,7 @@ where
 pub fn debug_path_switching_points<N>(
     file_path: &'static str,
     path: &TrajPath<N>,
-    waypoints: &Vec<Coord<N>>,
+    waypoints: &[Coord<N>],
 ) where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
@@ -325,7 +325,7 @@ pub fn debug_path_switching_points<N>(
 pub fn debug_path_point<N>(
     file_path: &'static str,
     path: &TrajPath<N>,
-    waypoints: &Vec<Coord<N>>,
+    waypoints: &[Coord<N>],
     point: &Coord<N>,
 ) where
     N: DimName + Copy,
@@ -451,7 +451,7 @@ impl TrajectoryStepRow {
 }
 
 /// Write a bunch of debug info to a CSV file
-pub fn write_debug_csv(path: String, rows: &Vec<TrajectoryStepRow>) {
+pub fn write_debug_csv(path: String, rows: &[TrajectoryStepRow]) {
     let mut wtr = csv::Writer::from_writer(File::create(path).unwrap());
 
     for row in rows {

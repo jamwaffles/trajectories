@@ -19,8 +19,6 @@
     patterns_in_fns_without_body,
     plugin_as_library,
     private_in_public,
-    private_no_mangle_fns,
-    private_no_mangle_statics,
     safe_extern_statics,
     unconditional_recursion,
     unions_with_drop_fields,
