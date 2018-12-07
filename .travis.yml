@@ -33,7 +33,6 @@ addons:
 #   - cargo install cargo-travis || true
 
 script:
-  - cargo build --release
   - cargo test --release
 
 # after_success:
