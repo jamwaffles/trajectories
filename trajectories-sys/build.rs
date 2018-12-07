@@ -25,6 +25,7 @@ fn main() {
         .clang_arg("-I/usr/include/eigen3")
         // .clang_arg("-I/usr/include/c++/7")
         // .clang_arg("-stdlib=libc++")
+        .clang_arg("-std=c++14")
         // .enable_cxx_namespaces()
         .whitelist_type("CircularPathSegment")
         .whitelist_type("LinearPathSegment")
