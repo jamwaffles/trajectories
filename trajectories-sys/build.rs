@@ -22,10 +22,12 @@ fn main() {
         .clang_arg("-I/usr/local/Cellar/eigen/3.3.4/include/eigen3")
         // Linux
         .clang_arg("-I/usr/lib/clang/6.0/include")
+        // Travis Xenial
+        .clang_arg("-I/usr/lib/clang/7.0/include")
         .clang_arg("-I/usr/include/eigen3")
         // .clang_arg("-I/usr/include/c++/7")
         // .clang_arg("-stdlib=libc++")
-        .clang_arg("-std=c++14")
+        .clang_arg("-std=c++11")
         // .enable_cxx_namespaces()
         .whitelist_type("CircularPathSegment")
         .whitelist_type("LinearPathSegment")

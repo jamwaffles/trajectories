@@ -1,7 +1,4 @@
-# Based on the "trust" template v0.1.2
-# https://github.com/japaric/trust/tree/v0.1.2
-
-dist: trusty
+dist: xenial
 language: rust
 rust:
   - stable
@@ -9,49 +6,22 @@ rust:
   - nightly
 matrix:
   fast_finish: true
+
 sudo: false
 addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
+      - llvm-toolchain-xenial-7
+
     packages:
       - libeigen3-dev
-      - gcc-5
-      - g++-5
       - build-essential
-      - libstdc++-5-dev
-
-# before_install:
-#   - apt-get update
-#   - wget http://de.archive.ubuntu.com/ubuntu/pool/universe/e/eigen3/libeigen3-dev_3.3~beta1-2_all.deb
-#   - dpkg -i libeigen3-dev_3.3~beta1-2_all.deb
-#   - apt-get upgrade -y
-#   - set -e
-#   - rustup self update
-
-# install:
-#   - cargo install cargo-travis || true
+      - libclang-7-dev
+      - llvm-7-dev
 
 script:
   - cargo test --release
-
-# after_success:
-#   - cargo doc --release
-#   - cargo doc-upload || true
-
-# after_success: |
-#   if [[ "$TRAVIS_RUST_VERSION" == stable ]]; then
-#     `RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin`
-#     # Uncomment the following line for coveralls.io
-#     # cargo tarpaulin --ciserver travis-ci --coveralls $TRAVIS_JOB_ID
-
-#     # Uncomment the following two lines create and upload a report for codecov.io
-#     cargo tarpaulin --out Xml
-#     bash <(curl -s https://codecov.io/bash)
-
-#     cargo doc
-#     cargo doc-upload
-#   fi
 
 cache: cargo
 before_cache:
