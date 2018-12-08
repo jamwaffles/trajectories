@@ -2,7 +2,7 @@
 extern crate criterion;
 extern crate trajectories;
 
-use criterion::Criterion;
+use criterion::*;
 use trajectories::prelude::*;
 use trajectories::{test_helpers::TestCoord3, Path};
 
@@ -10,74 +10,86 @@ const DEVIATION: f64 = 0.01;
 const NUM_POINTS: usize = 100;
 
 fn create_path(c: &mut Criterion) {
-    c.bench_function(&format!("create path with {} waypoints", 7), |b| {
-        let waypoints: Vec<TestCoord3> = vec![
-            TestCoord3::new(0.0, 0.0, 0.0),
-            TestCoord3::new(1.0, 2.0, 0.0),
-            TestCoord3::new(1.5, 1.5, 0.0),
-            TestCoord3::new(3.0, 5.0, 0.0),
-            TestCoord3::new(4.0, 6.0, 0.0),
-            TestCoord3::new(5.0, 5.0, 0.0),
-            TestCoord3::new(4.0, 4.0, 0.0),
-        ];
+    let waypoints: Vec<TestCoord3> = vec![
+        TestCoord3::new(0.0, 0.0, 0.0),
+        TestCoord3::new(1.0, 2.0, 0.0),
+        TestCoord3::new(1.5, 1.5, 0.0),
+        TestCoord3::new(3.0, 5.0, 0.0),
+        TestCoord3::new(4.0, 6.0, 0.0),
+        TestCoord3::new(5.0, 5.0, 0.0),
+        TestCoord3::new(4.0, 4.0, 0.0),
+    ];
 
-        b.iter(|| Path::from_waypoints(&waypoints, DEVIATION))
-    });
+    let len = waypoints.len();
+
+    c.bench(
+        "path",
+        Benchmark::new(format!("create path with {} waypoints", 7), move |b| {
+            b.iter(|| Path::from_waypoints(&waypoints, DEVIATION))
+        })
+        .throughput(Throughput::Elements(len as u32)),
+    );
 }
 
 fn create_path_and_iterate(c: &mut Criterion) {
+    let waypoints: Vec<TestCoord3> = vec![
+        TestCoord3::new(0.0, 0.0, 0.0),
+        TestCoord3::new(1.0, 2.0, 0.0),
+        TestCoord3::new(1.5, 1.5, 0.0),
+        TestCoord3::new(3.0, 5.0, 0.0),
+        TestCoord3::new(4.0, 6.0, 0.0),
+        TestCoord3::new(5.0, 5.0, 0.0),
+        TestCoord3::new(4.0, 4.0, 0.0),
+    ];
+
     c.bench_function(
         &format!(
             "create path with {} waypoints and get {} positions",
             7, NUM_POINTS
         ),
-        |b| {
-            let waypoints: Vec<TestCoord3> = vec![
-                TestCoord3::new(0.0, 0.0, 0.0),
-                TestCoord3::new(1.0, 2.0, 0.0),
-                TestCoord3::new(1.5, 1.5, 0.0),
-                TestCoord3::new(3.0, 5.0, 0.0),
-                TestCoord3::new(4.0, 6.0, 0.0),
-                TestCoord3::new(5.0, 5.0, 0.0),
-                TestCoord3::new(4.0, 4.0, 0.0),
-            ];
+        move |b| {
+            b.iter_with_setup(
+                || Path::from_waypoints(&waypoints, DEVIATION),
+                |p| {
+                    let len = p.get_length();
+                    let step = len / NUM_POINTS as f64;
 
-            let p = Path::from_waypoints(&waypoints, DEVIATION);
+                    let mut i = 0.0;
 
-            b.iter(|| {
-                let len = p.get_length();
-                let step = len / NUM_POINTS as f64;
+                    while i < len {
+                        let _pos = p.get_position(i);
 
-                let mut i = 0.0;
-
-                while i < len {
-                    let _pos = p.get_position(i);
-
-                    i += step;
-                }
-            })
+                        i += step;
+                    }
+                },
+            )
         },
     );
 }
 
 fn get_position(c: &mut Criterion) {
-    c.bench_function("get position at point along path", |b| {
-        let waypoints: Vec<TestCoord3> = vec![
-            TestCoord3::new(0.0, 0.0, 0.0),
-            TestCoord3::new(1.0, 2.0, 0.0),
-            TestCoord3::new(1.5, 1.5, 0.0),
-            TestCoord3::new(3.0, 5.0, 0.0),
-            TestCoord3::new(4.0, 6.0, 0.0),
-            TestCoord3::new(5.0, 5.0, 0.0),
-            TestCoord3::new(4.0, 4.0, 0.0),
-        ];
+    let waypoints: Vec<TestCoord3> = vec![
+        TestCoord3::new(0.0, 0.0, 0.0),
+        TestCoord3::new(1.0, 2.0, 0.0),
+        TestCoord3::new(1.5, 1.5, 0.0),
+        TestCoord3::new(3.0, 5.0, 0.0),
+        TestCoord3::new(4.0, 6.0, 0.0),
+        TestCoord3::new(5.0, 5.0, 0.0),
+        TestCoord3::new(4.0, 4.0, 0.0),
+    ];
 
-        let p = Path::from_waypoints(&waypoints, DEVIATION);
+    let len = waypoints.len();
 
-        b.iter(|| {
-            p.get_tangent(5.6789);
+    c.bench(
+        "path",
+        Benchmark::new("get position at point along path", move |b| {
+            b.iter_with_setup(
+                || Path::from_waypoints(&waypoints, DEVIATION),
+                |p| p.get_position(5.6789),
+            )
         })
-    });
+        .throughput(Throughput::Elements(len as u32)),
+    );
 }
 
 fn get_tangent(c: &mut Criterion) {
