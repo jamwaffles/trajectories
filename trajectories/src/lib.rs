@@ -49,6 +49,7 @@ extern crate log;
 mod macros;
 mod path;
 pub mod prelude;
+#[doc(hidden)]
 pub mod test_helpers;
 mod trajectory;
 
