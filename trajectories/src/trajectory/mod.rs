@@ -746,11 +746,10 @@ where
         let mut position = position_along_path;
         let mut start = true;
 
-        // Broad phase - find two adjacent points where a sign change occurs. This could be from
-        // some tiny negative number to 0.0 or something like that.
-        // TODO: Refactor `start = true` weirdness whilst maintaining speed. For some reason, moving
-        // the first condition into the second massively slows down the algo.
-        while {
+        // Move along path until a sign change is detected. This defines an interval within which a
+        // velocity switching point occurs. Bisection is used after this broad phase to more
+        // accurately determine its position.
+        while position < self.path.get_length() {
             let slope = self.get_phase_slope(
                 &TrajectoryStep::new(position, self.max_velocity_at(position, Limit::Velocity)),
                 MinMax::Min,
@@ -761,12 +760,10 @@ where
                 start = false;
             }
 
-            if position > 860.0 {
-                info!("POS {}, SLOPE {}, DERIV {}", position, slope, deriv);
+            if !start && slope <= deriv {
+                break;
             }
 
-            (start || slope > deriv) && position < self.path.get_length()
-        } {
             position += step_size;
         }
 
