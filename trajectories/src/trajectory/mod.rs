@@ -100,30 +100,30 @@ where
     }
 
     /// Get the (previous_segment, segment) of the trajectory that the given time lies on
+    ///
+    /// This gets an interval of the trajectory along which `time` lies. Other methods interpolate
+    /// along this interval and do things like find the exact position at the given time.
     fn get_trajectory_segment(&self, time: f64) -> (&TrajectoryStep, &TrajectoryStep) {
-        let traj_len = self.trajectory.len();
+        // If there is only one segment, create a "window" over just itself
+        // TODO: Gracefully handle case where trajectory is empty
+        if self.trajectory.len() < 2 {
+            return (&self.trajectory[0], &self.trajectory[0]);
+        }
 
-        let pos = self
-            .trajectory
-            .iter()
-            .rev()
-            .position(|segment| segment.time <= time)
-            // Iter is reversed, so munge index-from-end to index-from-start
-            .map(|pos| traj_len - pos - 1)
-            .expect("Get segment position")
-            .max(1);
-
-        let prev = self.trajectory.get(pos - 1).unwrap_or_else(|| {
-            self.trajectory
-                .first()
-                .expect("Cannot get segment of empty trajectory")
-        });
-        let current = self
-            .trajectory
-            .get(pos)
-            .expect("Segment position is invalid");
-
-        (prev, current)
+        self.trajectory
+            .windows(2)
+            .find_map(|window| {
+                if let [ref prev, ref curr] = window {
+                    if curr.time >= time {
+                        Some((prev, curr))
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            })
+            .unwrap()
     }
 
     /// Compute complete trajectory
