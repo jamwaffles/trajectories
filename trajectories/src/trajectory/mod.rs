@@ -744,27 +744,31 @@ where
         // Broad phase search step
         let step_size = 0.001;
         let mut position = position_along_path;
-        let mut start = true;
+        let mut prev_slope = self.get_phase_slope(
+            &TrajectoryStep::new(position, self.max_velocity_at(position, Limit::Velocity)),
+            MinMax::Min,
+        );
+        let mut prev_deriv = self.max_velocity_derivative_at(position, Limit::Velocity);;
 
         // Move along path until a sign change is detected. This defines an interval within which a
-        // velocity switching point occurs. Bisection is used after this broad phase to more
-        // accurately determine its position.
+        // velocity switching point occurs. Think of the peak or trough of a sawtooth wave.
+        // Bisection is used after this broad phase to more accurately determine its position.
         while position < self.path.get_length() {
+            position += step_size;
+
             let slope = self.get_phase_slope(
                 &TrajectoryStep::new(position, self.max_velocity_at(position, Limit::Velocity)),
                 MinMax::Min,
             );
+
             let deriv = self.max_velocity_derivative_at(position, Limit::Velocity);
 
-            if slope >= deriv {
-                start = false;
-            }
-
-            if !start && slope <= deriv {
+            if prev_slope >= prev_deriv && slope <= deriv {
                 break;
             }
 
-            position += step_size;
+            prev_slope = slope;
+            prev_deriv = deriv;
         }
 
         info!("END CONDITION {} LEN {}", position, self.path.get_length());
