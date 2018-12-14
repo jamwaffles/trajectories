@@ -1,6 +1,5 @@
 use super::PathItem;
 use crate::Coord;
-use alga::linear::FiniteDimInnerSpace;
 use nalgebra::allocator::SameShapeVectorAllocator;
 use nalgebra::DefaultAllocator;
 use nalgebra::DimName;
@@ -12,13 +11,14 @@ use nalgebra::DimName;
 #[derive(Clone, Debug, PartialEq)]
 pub struct LinearPathSegment<N>
 where
-    N: FiniteDimInnerSpace,
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
 {
     /// Start coordinate
-    pub start: N,
+    pub start: Coord<N>,
 
     /// End coordinate
-    pub end: N,
+    pub end: Coord<N>,
 
     /// Length of this segment
     pub length: f64,
@@ -32,9 +32,10 @@ where
 
 impl<N> LinearPathSegment<N>
 where
-    N: FiniteDimInnerSpace,
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
 {
-    pub fn from_waypoints(start: N, end: N) -> Self {
+    pub fn from_waypoints(start: Coord<N>, end: Coord<N>) -> Self {
         let length = (&end - &start).norm();
 
         Self {
@@ -72,24 +73,25 @@ where
 
 impl<N> PathItem<N> for LinearPathSegment<N>
 where
-    N: FiniteDimInnerSpace,
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
 {
     /// Get position ("robot configuration" in paper parlance) along path from normalised distance
     /// along it (`s`)
-    fn get_position(&self, distance_along_line: f64) -> N {
+    fn get_position(&self, distance_along_line: f64) -> Coord<N> {
         &self.start
             + ((&self.end - &self.start) * (distance_along_line - self.start_offset) / self.length)
     }
 
     /// Get derivative (tangent) of point along path
-    fn get_tangent(&self, _distance_along_line: f64) -> N {
+    fn get_tangent(&self, _distance_along_line: f64) -> Coord<N> {
         (&self.end - &self.start) / self.length
     }
 
     /// Get second derivative (rate of change of tangent, aka curvature) of point along path
     ///
     /// The curvature of a linear path is 0
-    fn get_curvature(&self, _distance_along_line: f64) -> N {
+    fn get_curvature(&self, _distance_along_line: f64) -> Coord<N> {
         Coord::repeat(0.0)
     }
 

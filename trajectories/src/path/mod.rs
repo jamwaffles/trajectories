@@ -6,7 +6,6 @@ pub use self::circular_segment::CircularPathSegment;
 pub use self::linear_segment::LinearPathSegment;
 pub use self::segment::PathSegment;
 use crate::Coord;
-use alga::linear::FiniteDimInnerSpace;
 use nalgebra::allocator::SameShapeVectorAllocator;
 use nalgebra::DefaultAllocator;
 use nalgebra::DimName;
@@ -14,19 +13,20 @@ use nalgebra::DimName;
 /// Helpful methods to get information about a path
 pub trait PathItem<N>: PartialEq
 where
-    N: FiniteDimInnerSpace,
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
 {
     /// Get length of path
     fn get_length(&self) -> f64;
 
     /// Get position at a point along path
-    fn get_position(&self, distance_along_line: f64) -> N;
+    fn get_position(&self, distance_along_line: f64) -> Coord<N>;
 
     /// Get first derivative (tangent) at a point
-    fn get_tangent(&self, distance_along_line: f64) -> N;
+    fn get_tangent(&self, distance_along_line: f64) -> Coord<N>;
 
     /// Get second derivative (curvature) at a point
-    fn get_curvature(&self, distance_along_line: f64) -> N;
+    fn get_curvature(&self, distance_along_line: f64) -> Coord<N>;
 }
 
 /// A switching point
@@ -63,7 +63,8 @@ pub enum Continuity {
 #[derive(Debug, PartialEq)]
 pub struct Path<N>
 where
-    N: FiniteDimInnerSpace,
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
 {
     /// Linear path segments and circular blends
     pub segments: Vec<PathSegment<N>>,
@@ -77,12 +78,13 @@ where
 
 impl<N> Path<N>
 where
-    N: FiniteDimInnerSpace,
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
 {
     /// Create a blended path from a set of waypoints
     ///
     /// The path must be differentiable, so small blends are added between linear segments
-    pub fn from_waypoints(waypoints: &[N], max_deviation: f64) -> Self {
+    pub fn from_waypoints(waypoints: &[Coord<N>], max_deviation: f64) -> Self {
         let mut start_offset = 0.0;
         let mut switching_points = Vec::with_capacity((waypoints.len() as f32 * 2.5) as usize);
 
@@ -218,7 +220,8 @@ where
 
 impl<N> PathItem<N> for Path<N>
 where
-    N: FiniteDimInnerSpace,
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
 {
     /// Get the length of the complete path
     #[inline(always)]
@@ -227,19 +230,19 @@ where
     }
 
     /// Get position at a point along path
-    fn get_position(&self, distance_along_line: f64) -> N {
+    fn get_position(&self, distance_along_line: f64) -> Coord<N> {
         self.get_segment_at_position(distance_along_line)
             .get_position(distance_along_line)
     }
 
     /// Get first derivative (tangent) at a point
-    fn get_tangent(&self, distance_along_line: f64) -> N {
+    fn get_tangent(&self, distance_along_line: f64) -> Coord<N> {
         self.get_segment_at_position(distance_along_line)
             .get_tangent(distance_along_line)
     }
 
     /// Get second derivative (curvature) at a point
-    fn get_curvature(&self, distance_along_line: f64) -> N {
+    fn get_curvature(&self, distance_along_line: f64) -> Coord<N> {
         self.get_segment_at_position(distance_along_line)
             .get_curvature(distance_along_line)
     }
