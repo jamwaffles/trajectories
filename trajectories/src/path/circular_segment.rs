@@ -1,6 +1,7 @@
 use super::PathItem;
 use crate::Coord;
 use crate::TRAJ_EPSILON;
+use alga::linear::FiniteDimInnerSpace;
 use nalgebra::allocator::SameShapeVectorAllocator;
 use nalgebra::DefaultAllocator;
 use nalgebra::DimName;
@@ -13,20 +14,19 @@ use std::f64;
 #[derive(Clone, Debug, PartialEq)]
 pub struct CircularPathSegment<N>
 where
-    N: DimName + Copy,
-    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    N: FiniteDimInnerSpace,
 {
     /// Center point of circle
-    pub center: Coord<N>,
+    pub center: N,
 
     /// Radius of circle
     pub radius: f64,
 
     /// First vector along which the blend circle lies
-    pub x: Coord<N>,
+    pub x: N,
 
     /// Second vector along which the blend circle lies
-    pub y: Coord<N>,
+    pub y: N,
 
     /// Length of the arc in radians to use in calculating the blend
     pub arc_length: f64,
@@ -40,8 +40,7 @@ where
 
 impl<N> Default for CircularPathSegment<N>
 where
-    N: DimName + Copy,
-    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    N: FiniteDimInnerSpace,
 {
     fn default() -> Self {
         Self {
@@ -58,16 +57,10 @@ where
 
 impl<N> CircularPathSegment<N>
 where
-    N: DimName + Copy,
-    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    N: FiniteDimInnerSpace,
 {
     /// Create a blend segment for two line segments comprised of three points
-    pub fn from_waypoints(
-        previous: &Coord<N>,
-        current: &Coord<N>,
-        next: &Coord<N>,
-        max_deviation: f64,
-    ) -> Self {
+    pub fn from_waypoints(previous: &N, current: &N, next: &N, max_deviation: f64) -> Self {
         // If either segment is of negligible length, we don't need to blend it, however a blend
         // is still required to make the path differentiable.
         if (current - previous).norm() < TRAJ_EPSILON || (next - current).norm() < TRAJ_EPSILON {
@@ -181,8 +174,7 @@ where
 
 impl<N> PathItem<N> for CircularPathSegment<N>
 where
-    N: DimName + Copy,
-    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    N: FiniteDimInnerSpace,
 {
     /// Get the arc length of this segment
     fn get_length(&self) -> f64 {
@@ -191,21 +183,21 @@ where
 
     /// Get position ("robot configuration" in paper parlance) along arc from normalised distance
     /// along it (`s`)
-    fn get_position(&self, distance_along_arc: f64) -> Coord<N> {
+    fn get_position(&self, distance_along_arc: f64) -> N {
         let angle = (distance_along_arc - self.start_offset) / self.radius;
 
         &self.center + self.radius * ((&self.x * angle.cos()) + (&self.y * angle.sin()))
     }
 
     /// Get derivative (tangent) of point along curve
-    fn get_tangent(&self, distance_along_arc: f64) -> Coord<N> {
+    fn get_tangent(&self, distance_along_arc: f64) -> N {
         let angle = (distance_along_arc - self.start_offset) / self.radius;
 
         -&self.x * angle.sin() + &self.y * angle.cos()
     }
 
     /// Get second derivative (rate of change of tangent, aka curvature) of point along curve
-    fn get_curvature(&self, distance_along_arc: f64) -> Coord<N> {
+    fn get_curvature(&self, distance_along_arc: f64) -> N {
         let angle = (distance_along_arc - self.start_offset) / self.radius;
 
         -1.0 / self.radius * (&self.x * angle.cos() + &self.y * angle.sin())

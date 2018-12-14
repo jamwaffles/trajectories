@@ -1,5 +1,6 @@
 use crate::path::{CircularPathSegment, LinearPathSegment, PathItem};
 use crate::Coord;
+use alga::linear::FiniteDimInnerSpace;
 use nalgebra::allocator::SameShapeVectorAllocator;
 use nalgebra::DefaultAllocator;
 use nalgebra::DimName;
@@ -7,8 +8,7 @@ use nalgebra::DimName;
 #[derive(Debug, Clone, PartialEq)]
 pub enum PathSegment<N>
 where
-    N: DimName + Copy,
-    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    N: FiniteDimInnerSpace,
 {
     Linear(LinearPathSegment<N>),
     Circular(CircularPathSegment<N>),
@@ -16,8 +16,7 @@ where
 
 impl<N> PathItem<N> for PathSegment<N>
 where
-    N: DimName + Copy,
-    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    N: FiniteDimInnerSpace,
 {
     /// Get length of path
     fn get_length(&self) -> f64 {
@@ -28,7 +27,7 @@ where
     }
 
     /// Get position at a point along path
-    fn get_position(&self, distance_along_line: f64) -> Coord<N> {
+    fn get_position(&self, distance_along_line: f64) -> N {
         match self {
             PathSegment::Linear(s) => s.get_position(distance_along_line),
             PathSegment::Circular(s) => s.get_position(distance_along_line),
@@ -36,7 +35,7 @@ where
     }
 
     /// Get first derivative (tangent) at a point
-    fn get_tangent(&self, distance_along_line: f64) -> Coord<N> {
+    fn get_tangent(&self, distance_along_line: f64) -> N {
         match self {
             PathSegment::Linear(s) => s.get_tangent(distance_along_line),
             PathSegment::Circular(s) => s.get_tangent(distance_along_line),
@@ -44,7 +43,7 @@ where
     }
 
     /// Get second derivative (curvature) at a point
-    fn get_curvature(&self, distance_along_line: f64) -> Coord<N> {
+    fn get_curvature(&self, distance_along_line: f64) -> N {
         match self {
             PathSegment::Linear(s) => s.get_curvature(distance_along_line),
             PathSegment::Circular(s) => s.get_curvature(distance_along_line),
@@ -54,8 +53,7 @@ where
 
 impl<N> PathSegment<N>
 where
-    N: DimName + Copy,
-    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    N: FiniteDimInnerSpace,
 {
     /// Clone segment and give it a start offset
     // TODO: Trait

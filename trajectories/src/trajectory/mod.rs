@@ -11,6 +11,7 @@ use self::switching_point::SwitchingPoint as TrajectorySwitchingPoint;
 use self::trajectory_step::TrajectoryStep;
 use crate::path::{Continuity, Path, PathItem, SwitchingPoint};
 use crate::Coord;
+use alga::linear::FiniteDimInnerSpace;
 use nalgebra::allocator::SameShapeVectorAllocator;
 use nalgebra::DefaultAllocator;
 use nalgebra::DimName;
@@ -20,12 +21,11 @@ use std;
 #[derive(Debug)]
 pub struct Trajectory<N>
 where
-    N: DimName + Copy,
-    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    N: FiniteDimInnerSpace,
 {
     path: Path<N>,
-    velocity_limit: Coord<N>,
-    acceleration_limit: Coord<N>,
+    velocity_limit: N,
+    acceleration_limit: N,
     timestep: f64,
     trajectory: Vec<TrajectoryStep>,
     epsilon: f64,
@@ -33,14 +33,13 @@ where
 
 impl<N> Trajectory<N>
 where
-    N: DimName + Copy,
-    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    N: FiniteDimInnerSpace,
 {
     /// Create a new trajectory from a given path and max velocity and acceleration
     pub fn new(
         path: Path<N>,
-        velocity_limit: Coord<N>,
-        acceleration_limit: Coord<N>,
+        velocity_limit: N,
+        acceleration_limit: N,
         epsilon: f64,
         timestep: f64,
     ) -> Self {
@@ -67,7 +66,7 @@ where
     }
 
     /// Get a position in n-dimensional space given a time along the trajectory
-    pub fn get_position(&self, time: f64) -> Coord<N> {
+    pub fn get_position(&self, time: f64) -> N {
         let (previous, current) = self.get_trajectory_segment(time);
 
         let mut segment_len = current.time - previous.time;
@@ -84,7 +83,7 @@ where
     }
 
     /// Get velocity for each joint at a time along the path
-    pub fn get_velocity(&self, time: f64) -> Coord<N> {
+    pub fn get_velocity(&self, time: f64) -> N {
         let (previous, current) = self.get_trajectory_segment(time);
 
         let segment_len = current.time - previous.time;
@@ -577,7 +576,7 @@ where
         let vel_abs = segment.get_tangent(position_along_path).abs();
         let acceleration = segment.get_curvature(position_along_path);
 
-        let n = nalgebra::dimension::<Coord<N>>();
+        let n = nalgebra::dimension::<N>();
 
         let mut max_path_velocity = std::f64::MAX;
 

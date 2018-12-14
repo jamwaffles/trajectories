@@ -856,6 +856,7 @@ dependencies = [
 name = "trajectories"
 version = "0.1.0"
 dependencies = [
+ "alga 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "approx 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cpuprofiler 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "criterion 0.2.5 (registry+https://github.com/rust-lang/crates.io-index)",
