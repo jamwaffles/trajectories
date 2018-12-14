@@ -10,7 +10,7 @@ use self::path_position::PathPosition;
 use self::switching_point::SwitchingPoint as TrajectorySwitchingPoint;
 use self::trajectory_step::TrajectoryStep;
 use crate::path::{Continuity, Path, PathItem, SwitchingPoint};
-use alga::general::Real;
+use crate::Coord;
 use alga::linear::FiniteDimInnerSpace;
 use nalgebra::allocator::SameShapeVectorAllocator;
 use nalgebra::DefaultAllocator;
@@ -19,31 +19,29 @@ use std;
 
 /// Motion trajectory
 #[derive(Debug)]
-pub struct Trajectory<N, V>
+pub struct Trajectory<N>
 where
-    N: FiniteDimInnerSpace + Copy,
-    V: Real,
+    N: FiniteDimInnerSpace,
 {
-    path: Path<N, V>,
+    path: Path<N>,
     velocity_limit: N,
     acceleration_limit: N,
-    timestep: V,
-    trajectory: Vec<TrajectoryStep<V>>,
-    epsilon: V,
+    timestep: f64,
+    trajectory: Vec<TrajectoryStep>,
+    epsilon: f64,
 }
 
-impl<N, V> Trajectory<N, V>
+impl<N> Trajectory<N>
 where
-    N: FiniteDimInnerSpace + Copy,
-    V: Real,
+    N: FiniteDimInnerSpace,
 {
     /// Create a new trajectory from a given path and max velocity and acceleration
     pub fn new(
-        path: Path<N, V>,
+        path: Path<N>,
         velocity_limit: N,
         acceleration_limit: N,
-        epsilon: V,
-        timestep: V,
+        epsilon: f64,
+        timestep: f64,
     ) -> Self {
         let mut traj = Self {
             path,
@@ -60,7 +58,7 @@ where
     }
 
     /// Get duration of complete trajectory
-    pub fn get_duration(&self) -> V {
+    pub fn get_duration(&self) -> f64 {
         self.trajectory
             .last()
             .expect("Could not get duration of empty trajectory")
@@ -68,7 +66,7 @@ where
     }
 
     /// Get a position in n-dimensional space given a time along the trajectory
-    pub fn get_position(&self, time: V) -> N {
+    pub fn get_position(&self, time: f64) -> N {
         let (previous, current) = self.get_trajectory_segment(time);
 
         let mut segment_len = current.time - previous.time;
@@ -85,7 +83,7 @@ where
     }
 
     /// Get velocity for each joint at a time along the path
-    pub fn get_velocity(&self, time: V) -> N {
+    pub fn get_velocity(&self, time: f64) -> N {
         let (previous, current) = self.get_trajectory_segment(time);
 
         let segment_len = current.time - previous.time;
@@ -104,7 +102,7 @@ where
     ///
     /// This gets an interval of the trajectory along which `time` lies. Other methods interpolate
     /// along this interval and do things like find the exact position at the given time.
-    fn get_trajectory_segment(&self, time: V) -> (&TrajectoryStep<V>, &TrajectoryStep<V>) {
+    fn get_trajectory_segment(&self, time: f64) -> (&TrajectoryStep, &TrajectoryStep) {
         // If there is only one segment, create a "window" over just itself
         // TODO: Gracefully handle case where trajectory is empty
         if self.trajectory.len() < 2 {
@@ -208,9 +206,9 @@ where
 
     fn integrate_forward(
         &self,
-        trajectory: &[TrajectoryStep<V>],
-        start_acceleration: V,
-    ) -> (Vec<TrajectoryStep<V>>, PathPosition) {
+        trajectory: &[TrajectoryStep],
+        start_acceleration: f64,
+    ) -> (Vec<TrajectoryStep>, PathPosition) {
         let mut new_points = Vec::new();
         let TrajectoryStep {
             mut position,
@@ -358,9 +356,9 @@ where
 
     fn integrate_backward(
         &self,
-        start_trajectory: &[TrajectoryStep<V>],
-        start_switching_point: &TrajectorySwitchingPoint<V>,
-    ) -> Option<Vec<TrajectoryStep<V>>> {
+        start_trajectory: &[TrajectoryStep],
+        start_switching_point: &TrajectorySwitchingPoint,
+    ) -> Option<Vec<TrajectoryStep>> {
         let TrajectorySwitchingPoint {
             pos:
                 TrajectoryStep {
@@ -449,8 +447,8 @@ where
     /// Get next switching point along the path, bounded by velocity or acceleration
     fn get_next_switching_point(
         &self,
-        position_along_path: V,
-    ) -> Option<TrajectorySwitchingPoint<V>> {
+        position_along_path: f64,
+    ) -> Option<TrajectorySwitchingPoint> {
         let mut acceleration_switching_point: Option<TrajectorySwitchingPoint> =
             Some(TrajectorySwitchingPoint {
                 pos: TrajectoryStep::new(position_along_path, 0.0),
@@ -522,7 +520,7 @@ where
     }
 
     /// Find minimum or maximum acceleration at a point along path
-    fn get_acceleration_at(&self, pos_vel: &TrajectoryStep<V>, min_max: MinMax) -> V {
+    fn get_acceleration_at(&self, pos_vel: &TrajectoryStep, min_max: MinMax) -> f64 {
         let &TrajectoryStep {
             position, velocity, ..
         } = pos_vel;
@@ -536,7 +534,7 @@ where
             .iter()
             .zip(derivative.iter().zip(second_derivative.iter()))
             .fold(
-                std::f64::MAX as V,
+                std::f64::MAX,
                 |acc,
                  (
                     acceleration_limit_component,
@@ -559,28 +557,28 @@ where
 
     /// Find the maximum allowable velocity at a point, limited by either max acceleration or max
     /// velocity.
-    fn max_velocity_at(&self, position_along_path: V, limit: Limit) -> V {
+    fn max_velocity_at(&self, position_along_path: f64, limit: Limit) -> f64 {
         match limit {
             Limit::Velocity => self.get_max_velocity_from_velocity(position_along_path),
             Limit::Acceleration => self.get_max_velocity_from_acceleration(position_along_path),
         }
     }
 
-    fn get_max_velocity_from_velocity(&self, position_along_path: V) -> V {
+    fn get_max_velocity_from_velocity(&self, position_along_path: f64) -> f64 {
         self.velocity_limit
             .component_div(&self.path.get_tangent(position_along_path))
             .amin()
     }
 
     /// Find maximum allowable velocity as limited by the acceleration at a point on the path
-    fn get_max_velocity_from_acceleration(&self, position_along_path: V) -> V {
+    fn get_max_velocity_from_acceleration(&self, position_along_path: f64) -> f64 {
         let segment = self.path.get_segment_at_position(position_along_path);
         let vel_abs = segment.get_tangent(position_along_path).abs();
         let acceleration = segment.get_curvature(position_along_path);
 
         let n = nalgebra::dimension::<N>();
 
-        let mut max_path_velocity = std::f64::MAX as V;
+        let mut max_path_velocity = std::f64::MAX;
 
         for i in 0..n {
             if vel_abs[i] != 0.0 {
@@ -608,7 +606,7 @@ where
         max_path_velocity
     }
 
-    fn max_velocity_derivative_at(&self, position_along_path: V, limit: Limit) -> V {
+    fn max_velocity_derivative_at(&self, position_along_path: f64, limit: Limit) -> f64 {
         match limit {
             Limit::Velocity => self.get_max_velocity_from_velocity_derivative(position_along_path),
             Limit::Acceleration => {
@@ -618,7 +616,7 @@ where
     }
 
     /// Get the derivative of the max acceleration-bounded velocity at a point along the path
-    fn get_max_velocity_from_velocity_derivative(&self, position_along_path: V) -> V {
+    fn get_max_velocity_from_velocity_derivative(&self, position_along_path: f64) -> f64 {
         let tangent_abs = self.path.get_tangent(position_along_path).abs();
         let velocity = self.velocity_limit.component_div(&tangent_abs);
 
@@ -626,7 +624,7 @@ where
             .iter()
             .enumerate()
             .min_by(|a, b| a.1.partial_cmp(b.1).unwrap())
-            .unwrap_or((0, &std::f64::MAX as V));
+            .unwrap_or((0, &std::f64::MAX));
 
         -(self.velocity_limit[constraint_axis]
             * self.path.get_curvature(position_along_path)[constraint_axis]
@@ -636,7 +634,7 @@ where
     /// Get the derivative of the max velocity at a point along the path
     ///
     /// The max velocity in this case is bounded by the acceleration limits at the point
-    fn get_max_velocity_from_acceleration_derivative(&self, position_along_path: V) -> V {
+    fn get_max_velocity_from_acceleration_derivative(&self, position_along_path: f64) -> f64 {
         (self.max_velocity_at(position_along_path + self.epsilon, Limit::Acceleration)
             - self.max_velocity_at(position_along_path - self.epsilon, Limit::Acceleration))
             / (2.0 * self.epsilon)
@@ -645,15 +643,15 @@ where
     /// Get the minimum or maximum phase slope for a position along the path
     ///
     /// TODO: Figure out what phase slope means in this context and give it a better name
-    fn get_phase_slope(&self, pos_vel: &TrajectoryStep<V>, min_max: MinMax) -> V {
+    fn get_phase_slope(&self, pos_vel: &TrajectoryStep, min_max: MinMax) -> f64 {
         self.get_acceleration_at(&pos_vel, min_max) / pos_vel.position
     }
 
     /// Get the next acceleration-bounded switching point after the current position
     fn get_next_acceleration_switching_point(
         &self,
-        position_along_path: V,
-    ) -> Option<TrajectorySwitchingPoint<V>> {
+        position_along_path: f64,
+    ) -> Option<TrajectorySwitchingPoint> {
         let mut velocity;
         let mut current_point = SwitchingPoint::new(position_along_path, Continuity::Continuous);
 
@@ -740,8 +738,8 @@ where
     /// to find the specific switching point to within a more accurate epsilon.
     fn get_next_velocity_switching_point(
         &self,
-        position_along_path: V,
-    ) -> Option<TrajectorySwitchingPoint<V>> {
+        position_along_path: f64,
+    ) -> Option<TrajectorySwitchingPoint> {
         // Broad phase search step
         let step_size = 0.001;
         let mut position = position_along_path;

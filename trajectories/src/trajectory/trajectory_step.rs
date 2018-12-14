@@ -1,45 +1,37 @@
 //! A discrete step along a complete trajectory
 
-use alga::general::Real;
-
 /// Trajectory step
 #[derive(Debug, PartialEq, Copy, Clone)]
-pub(crate) struct TrajectoryStep<V> {
+pub(crate) struct TrajectoryStep {
     /// Position
-    pub(crate) position: V,
+    pub(crate) position: f64,
     /// Velocity
-    pub(crate) velocity: V,
+    pub(crate) velocity: f64,
     /// Time
-    pub(crate) time: V,
+    pub(crate) time: f64,
 }
 
-impl<V> TrajectoryStep<V>
-where
-    V: Real,
-{
+impl TrajectoryStep {
     #[inline(always)]
-    pub fn new(position: V, velocity: V) -> Self {
+    pub fn new(position: f64, velocity: f64) -> Self {
         Self {
             position,
             velocity,
-            time: nalgebra::convert(0.0),
+            time: 0.0,
         }
     }
 
-    pub fn with_time(self, time: V) -> Self {
+    pub fn with_time(self, time: f64) -> Self {
         Self { time, ..self }
     }
 }
 
-impl<V> Default for TrajectoryStep<V>
-where
-    V: Real,
-{
+impl Default for TrajectoryStep {
     fn default() -> Self {
         Self {
-            position: nalgebra::convert(0.0),
-            velocity: nalgebra::convert(0.0),
-            time: nalgebra::convert(0.0),
+            position: 0.0,
+            velocity: 0.0,
+            time: 0.0,
         }
     }
 }

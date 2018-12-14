@@ -3,7 +3,7 @@
 pub use crate::path::CircularPathSegment;
 use crate::path::PathItem;
 use crate::path::{Continuity, Path as TrajPath, PathSegment};
-use alga::general::Real;
+use crate::Coord;
 use alga::linear::FiniteDimInnerSpace;
 use csv;
 use nalgebra::allocator::SameShapeVectorAllocator;
@@ -19,10 +19,9 @@ use svg::Document;
 
 const PADDING: f64 = 1.0;
 
-fn single_line<N, V>(from: &N, to: &N, stroke: &str, stroke_width: u32) -> SvgPath
+fn single_line<N>(from: &N, to: &N, stroke: &str, stroke_width: u32) -> SvgPath
 where
-    N: FiniteDimInnerSpace + Copy,
-    V: Real,
+    N: FiniteDimInnerSpace,
 {
     SvgPath::new()
         .set("fill", "none")
@@ -37,10 +36,9 @@ where
         )
 }
 
-fn cross_centered_at<N, V>(center: &N, stroke: &str, stroke_width: f32) -> SvgPath
+fn cross_centered_at<N>(center: &N, stroke: &str, stroke_width: f32) -> SvgPath
 where
-    N: FiniteDimInnerSpace + Copy,
-    V: Real,
+    N: FiniteDimInnerSpace,
 {
     let size = 0.1;
 
@@ -59,10 +57,9 @@ where
         )
 }
 
-fn border<N, V>(top_left: &N, bottom_right: &N) -> Rectangle
+fn border<N>(top_left: &N, bottom_right: &N) -> Rectangle
 where
-    N: FiniteDimInnerSpace + Copy,
-    V: Real,
+    N: FiniteDimInnerSpace,
 {
     Rectangle::new()
         .set("fill", "none")
@@ -75,10 +72,9 @@ where
         .set("height", bottom_right[1])
 }
 
-fn create_document<N, V>(top_left: &N, bottom_right: &N) -> Document
+fn create_document<N>(top_left: &N, bottom_right: &N) -> Document
 where
-    N: FiniteDimInnerSpace + Copy,
-    V: Real,
+    N: FiniteDimInnerSpace,
 {
     let aspect = (bottom_right[0] - top_left[0]) / (bottom_right[1] - top_left[1]);
     let width = 1024;
@@ -98,10 +94,9 @@ fn save_document(suite_name: &str, doc: &Document) {
     svg::save(format!("../target/{}.svg", suite_name), doc).unwrap();
 }
 
-fn draw_blend_circle<N, V>(blend: &CircularPathSegment<N, V>) -> Group
+fn draw_blend_circle<N>(blend: &CircularPathSegment<N>) -> Group
 where
-    N: FiniteDimInnerSpace + Copy,
-    V: Real,
+    N: FiniteDimInnerSpace,
 {
     let line_scale = 0.25;
 
@@ -134,35 +129,28 @@ where
     Group::new().add(circle).add(xi).add(yi)
 }
 
-fn calc_bbox<N, V>(coords: &[N]) -> (N, N)
+fn calc_bbox<N>(coords: &[N]) -> (N, N)
 where
-    N: FiniteDimInnerSpace + Copy,
-    V: Real,
+    N: FiniteDimInnerSpace,
 {
     (
         coords
             .iter()
             .min_by_key(|item| ((item[0] + item[1] + item[2]) * 100.0) as u32)
             .unwrap()
-            - V::repeat(PADDING),
+            - Coord::repeat(PADDING),
         coords
             .iter()
             .max_by_key(|item| ((item[0] + item[1] + item[2]) * 100.0) as u32)
             .unwrap()
-            + V::repeat(PADDING * 2.0),
+            + Coord::repeat(PADDING * 2.0),
     )
 }
 
 /// Produce an image of the blend between two path segments
-pub fn debug_blend<N, V>(
-    p: &str,
-    before: &N,
-    current: &N,
-    after: &N,
-    blend: &CircularPathSegment<N, V>,
-) where
-    N: FiniteDimInnerSpace + Copy,
-    V: Real,
+pub fn debug_blend<N>(p: &str, before: &N, current: &N, after: &N, blend: &CircularPathSegment<N>)
+where
+    N: FiniteDimInnerSpace,
 {
     let path_before = single_line(&before, &current, "red", 1);
     let path_after = single_line(&current, &after, "red", 1);
@@ -179,10 +167,9 @@ pub fn debug_blend<N, V>(
 }
 
 /// Draw points along a blend curve
-pub fn debug_blend_position<N, V>(p: &str, blend: &CircularPathSegment<N, V>)
+pub fn debug_blend_position<N>(p: &str, blend: &CircularPathSegment<N>)
 where
-    N: FiniteDimInnerSpace + Copy,
-    V: Real,
+    N: FiniteDimInnerSpace,
 {
     let top_left = blend.center.clone().add_scalar(-(blend.radius + PADDING));
     let bottom_right = blend
@@ -220,10 +207,9 @@ where
 }
 
 /// Debug an entire path
-pub fn debug_path<N, V>(file_path: &'static str, path: &TrajPath<N, V>, waypoints: &[N])
+pub fn debug_path<N>(file_path: &'static str, path: &TrajPath<N>, waypoints: &[N])
 where
-    N: FiniteDimInnerSpace + Copy,
-    V: Real,
+    N: FiniteDimInnerSpace,
 {
     let (top_left, bottom_right) = calc_bbox(waypoints);
 
@@ -283,13 +269,9 @@ where
 }
 
 /// Draw switching points on a path
-pub fn debug_path_switching_points<N, V>(
-    file_path: &'static str,
-    path: &TrajPath<N, V>,
-    waypoints: &[N],
-) where
-    N: FiniteDimInnerSpace + Copy,
-    V: Real,
+pub fn debug_path_switching_points<N>(file_path: &'static str, path: &TrajPath<N>, waypoints: &[N])
+where
+    N: FiniteDimInnerSpace,
 {
     let (top_left, bottom_right) = calc_bbox(waypoints);
 
@@ -323,14 +305,9 @@ pub fn debug_path_switching_points<N, V>(
 }
 
 /// Draw a complete path with a given point marked on it
-pub fn debug_path_point<N, V>(
-    file_path: &'static str,
-    path: &TrajPath<N, V>,
-    waypoints: &[N],
-    point: &N,
-) where
-    N: FiniteDimInnerSpace + Copy,
-    V: Real,
+pub fn debug_path_point<N>(file_path: &'static str, path: &TrajPath<N>, waypoints: &[N], point: &N)
+where
+    N: FiniteDimInnerSpace,
 {
     let (top_left, bottom_right) = calc_bbox(&waypoints);
 
@@ -434,7 +411,7 @@ impl TrajectoryStepRow {
     }
 
     /// Create a row from a time and position and velocity vectors
-    pub fn from_coords<N, V>(time: f64, pos: &N, vel: &N) -> Self
+    pub fn from_coords<N>(time: f64, pos: &N, vel: &N) -> Self
     where
         N: DimName + Copy,
         DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,

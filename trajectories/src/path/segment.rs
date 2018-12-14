@@ -1,27 +1,25 @@
 use crate::path::{CircularPathSegment, LinearPathSegment, PathItem};
-use alga::general::Real;
+use crate::Coord;
 use alga::linear::FiniteDimInnerSpace;
 use nalgebra::allocator::SameShapeVectorAllocator;
 use nalgebra::DefaultAllocator;
 use nalgebra::DimName;
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum PathSegment<N, V>
+pub enum PathSegment<N>
 where
-    N: FiniteDimInnerSpace + Copy,
-    V: Real,
+    N: FiniteDimInnerSpace,
 {
-    Linear(LinearPathSegment<N, V>),
-    Circular(CircularPathSegment<N, V>),
+    Linear(LinearPathSegment<N>),
+    Circular(CircularPathSegment<N>),
 }
 
-impl<N, V> PathItem<N, V> for PathSegment<N, V>
+impl<N> PathItem<N> for PathSegment<N>
 where
-    N: FiniteDimInnerSpace + Copy,
-    V: Real,
+    N: FiniteDimInnerSpace,
 {
     /// Get length of path
-    fn get_length(&self) -> V {
+    fn get_length(&self) -> f64 {
         match self {
             PathSegment::Linear(s) => s.get_length(),
             PathSegment::Circular(s) => s.get_length(),
@@ -29,7 +27,7 @@ where
     }
 
     /// Get position at a point along path
-    fn get_position(&self, distance_along_line: V) -> N {
+    fn get_position(&self, distance_along_line: f64) -> N {
         match self {
             PathSegment::Linear(s) => s.get_position(distance_along_line),
             PathSegment::Circular(s) => s.get_position(distance_along_line),
@@ -37,7 +35,7 @@ where
     }
 
     /// Get first derivative (tangent) at a point
-    fn get_tangent(&self, distance_along_line: V) -> N {
+    fn get_tangent(&self, distance_along_line: f64) -> N {
         match self {
             PathSegment::Linear(s) => s.get_tangent(distance_along_line),
             PathSegment::Circular(s) => s.get_tangent(distance_along_line),
@@ -45,7 +43,7 @@ where
     }
 
     /// Get second derivative (curvature) at a point
-    fn get_curvature(&self, distance_along_line: V) -> N {
+    fn get_curvature(&self, distance_along_line: f64) -> N {
         match self {
             PathSegment::Linear(s) => s.get_curvature(distance_along_line),
             PathSegment::Circular(s) => s.get_curvature(distance_along_line),
@@ -53,14 +51,13 @@ where
     }
 }
 
-impl<N, V> PathSegment<N, V>
+impl<N> PathSegment<N>
 where
-    N: FiniteDimInnerSpace + Copy,
-    V: Real,
+    N: FiniteDimInnerSpace,
 {
     /// Clone segment and give it a start offset
     // TODO: Trait
-    pub fn with_start_offset(self, offset: V) -> Self {
+    pub fn with_start_offset(self, offset: f64) -> Self {
         match self {
             PathSegment::Linear(s) => PathSegment::Linear(s.with_start_offset(offset)),
             PathSegment::Circular(s) => PathSegment::Circular(s.with_start_offset(offset)),
@@ -69,7 +66,7 @@ where
 
     /// Get start offset of this segment
     // TODO: Trait
-    pub fn get_start_offset(&self) -> V {
+    pub fn get_start_offset(&self) -> f64 {
         match self {
             PathSegment::Linear(s) => s.start_offset,
             PathSegment::Circular(s) => s.start_offset,
@@ -77,7 +74,7 @@ where
     }
 
     /// Get end offset of this segment
-    pub fn get_end_offset(&self) -> V {
+    pub fn get_end_offset(&self) -> f64 {
         match self {
             PathSegment::Linear(s) => s.get_end_offset(),
             PathSegment::Circular(s) => s.get_end_offset(),
@@ -86,7 +83,7 @@ where
 
     /// Get the switching points for this path segment
     // TODO: Trait?
-    pub fn get_switching_points(&self) -> Vec<V> {
+    pub fn get_switching_points(&self) -> Vec<f64> {
         match self {
             PathSegment::Linear(s) => s.get_switching_points(),
             PathSegment::Circular(s) => s.get_switching_points(),
