@@ -1,5 +1,7 @@
 //! Whether to get the minimum or maximum from a function
 
+use alga::general::Real;
+
 /// Minimum or maximum
 #[derive(Debug)]
 pub enum MinMax {
@@ -8,10 +10,13 @@ pub enum MinMax {
 }
 
 impl MinMax {
-    pub fn as_multiplier(&self) -> f64 {
+    pub fn as_multiplier<V>(&self) -> V
+    where
+        V: Real,
+    {
         match self {
-            MinMax::Min => -1.0,
-            MinMax::Max => 1.0,
+            MinMax::Min => nalgebra::convert(-1.0),
+            MinMax::Max => nalgebra::convert(1.0),
         }
     }
 }
