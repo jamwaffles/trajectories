@@ -7,6 +7,8 @@ use trajectories::*;
 
 #[test]
 fn test_1() {
+    pretty_env_logger::init();
+
     let waypoints: Vec<TestCoord4> = vec![
         TestCoord4::new(1424.0, 984.999694824219, 2126.0, 0.0),
         TestCoord4::new(1423.0, 985.000244140625, 2126.0, 0.0),
@@ -27,8 +29,6 @@ fn test_1() {
 
 #[test]
 fn test_2() {
-    pretty_env_logger::init_custom_env("LOG_LEVEL");
-
     let waypoints: Vec<TestCoord4> = vec![
         TestCoord4::new(1427.0, 368.0, 690.0, 90.0),
         TestCoord4::new(1427.0, 368.0, 790.0, 90.0),

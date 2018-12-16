@@ -9,6 +9,8 @@ use trajectories_sys::*;
 #[test]
 #[ignore]
 fn it_works() {
+    pretty_env_logger::init();
+
     let waypoints: Vec<f64> = vec![
         0.0, 0.0, 0.0, 0.0, 0.2, 1.0, 0.0, 3.0, 0.5, 1.1, 2.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0,
         0.0, 0.0, 1.0,

@@ -7,6 +7,8 @@ use trajectories::*;
 
 #[test]
 fn profile_native() {
+    pretty_env_logger::init();
+
     let waypoints: Vec<TestCoord3> = vec![
         TestCoord3::new(0.0, 0.0, 0.0),
         TestCoord3::new(0.0, 0.2, 1.0),
