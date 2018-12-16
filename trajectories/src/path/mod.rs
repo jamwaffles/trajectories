@@ -198,7 +198,7 @@ where
         self.segments
             .iter()
             .find(|segment| segment.get_end_offset() > position_along_path)
-            .unwrap_or(&self.segments.last().unwrap())
+            .unwrap_or_else(|| &self.segments.last().unwrap())
     }
 
     /// Get all switching points along this path
