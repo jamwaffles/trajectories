@@ -433,7 +433,8 @@ where
                         .cloned()
                         // Remove items in current trajectory after intersection point
                         .filter(|step| step.position < start2.position)
-                        // Append new items
+                        // Append new items. This generated trajectory part has been calculated
+                        // backwards, so is reversed here to append it in forward direction.
                         .chain(new_trajectory.into_iter().rev())
                         .collect::<Vec<TrajectoryStep>>();
 
