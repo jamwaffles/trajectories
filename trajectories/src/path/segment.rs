@@ -1,5 +1,6 @@
 use crate::path::{CircularPathSegment, LinearPathSegment, PathItem};
 use crate::Coord;
+use core::cmp::Ordering;
 use nalgebra::allocator::SameShapeVectorAllocator;
 use nalgebra::DefaultAllocator;
 use nalgebra::DimName;
@@ -12,6 +13,23 @@ where
 {
     Linear(LinearPathSegment<N>),
     Circular(CircularPathSegment<N>),
+}
+
+impl<N> PartialOrd for PathSegment<N>
+where
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+{
+    fn partial_cmp(&self, other: &PathSegment<N>) -> Option<Ordering> {
+        Some(
+            self.get_start_offset()
+                .partial_cmp(&other.get_start_offset())
+                .expect(&format!(
+                    "Could not compare path offsets between {:?} and {:?}",
+                    self, other
+                )),
+        )
+    }
 }
 
 impl<N> PathItem<N> for PathSegment<N>
