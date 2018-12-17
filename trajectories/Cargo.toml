@@ -23,6 +23,10 @@ name = "trajectory"
 harness = false
 name = "large_coords"
 
+[[bench]]
+harness = false
+name = "long_path"
+
 [dependencies]
 approx = "0.3.0"
 criterion = "0.2.5"
