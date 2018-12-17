@@ -16,7 +16,7 @@ fn test_1() {
 
     let p = Path::from_waypoints(&waypoints, 100.0);
 
-    let trajectory = Trajectory::new(
+    let _trajectory = Trajectory::new(
         p,
         TestCoord4::new(1.3, 0.67, 0.67, 0.5),
         TestCoord4::new(0.00249, 0.00249, 0.00249, 0.00249),
@@ -39,7 +39,7 @@ fn test_2() {
 
     let p = Path::from_waypoints(&waypoints, 100.0);
 
-    let trajectory = Trajectory::new(
+    let _trajectory = Trajectory::new(
         p,
         TestCoord4::new(1.3, 0.67, 0.67, 0.5),
         TestCoord4::new(0.002, 0.002, 0.002, 0.002),
