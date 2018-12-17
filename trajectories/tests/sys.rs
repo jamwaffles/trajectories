@@ -7,7 +7,6 @@ use trajectories::test_helpers::*;
 use trajectories_sys::*;
 
 #[test]
-#[ignore]
 fn it_works() {
     pretty_env_logger::init();
 
