@@ -142,23 +142,18 @@ where
         loop {
             trace!("Setup loop");
 
-            let (fwd, pos) =
+            let (fwd, is_end, stop_position) =
                 self.integrate_forward(&trajectory, switching_point.after_acceleration);
 
             trajectory.extend(fwd);
 
             trace!("Setup loop 2");
 
-            if pos == PathPosition::End {
+            if is_end == PathPosition::End {
                 break;
             }
 
-            if let Some(new_switching_point) = self.get_next_switching_point(
-                trajectory
-                    .last()
-                    .expect("Setup has empty trajectory")
-                    .position,
-            ) {
+            if let Some(new_switching_point) = self.get_next_switching_point(stop_position) {
                 switching_point = new_switching_point;
             } else {
                 // Break if we've reached the end of the path
@@ -212,7 +207,7 @@ where
         &self,
         trajectory: &[TrajectoryStep],
         start_acceleration: f64,
-    ) -> (Vec<TrajectoryStep>, PathPosition) {
+    ) -> (Vec<TrajectoryStep>, PathPosition, f64) {
         let mut new_points = Vec::new();
         let TrajectoryStep {
             mut position,
@@ -244,6 +239,8 @@ where
             velocity += self.timestep * acceleration;
             position += self.timestep * 0.5 * (old_velocity + velocity);
 
+            // If we've overstepped the next found discontinuity, move backwards to the position of
+            // the discontinuity and calculate its velocity at that point
             if let Some(next_disc) = next_discontinuity {
                 if position > next_disc.position {
                     velocity = old_velocity
@@ -256,7 +253,7 @@ where
             if position > self.path.get_length() {
                 new_points.push(TrajectoryStep::new(position, velocity));
 
-                break (new_points, PathPosition::End);
+                break (new_points, PathPosition::End, position);
             } else if velocity < 0.0 {
                 panic!("Integrate forward velocity cannot be 0");
             }
@@ -298,6 +295,8 @@ where
                 let mut midpoint;
                 let mut midpoint_velocity;
 
+                // Bisect (binary search) within step to find where overshoot occurred to within an
+                // epsilon
                 while after - before > self.epsilon {
                     trace!(
                         "Integrate forward bisection, before {} after {}",
@@ -333,26 +332,27 @@ where
                 }
 
                 let new_point = TrajectoryStep::new(before, before_velocity);
+                let position = new_point.position;
                 new_points.push(new_point);
 
                 if self.max_velocity_at(after, Limit::Acceleration)
                     < self.max_velocity_at(after, Limit::Velocity)
                 {
-                    if next_discontinuity.is_some()
-                        && after > next_discontinuity.expect("No next discontinuity").position
-                    {
-                        break (new_points, PathPosition::NotEnd);
+                    if let Some(next) = next_discontinuity {
+                        if after > next.position {
+                            break (new_points, PathPosition::NotEnd, position);
+                        }
                     }
 
                     if self.get_phase_slope(&new_point, MinMax::Max)
                         > self.max_velocity_derivative_at(new_point.position, Limit::Acceleration)
                     {
-                        break (new_points, PathPosition::NotEnd);
+                        break (new_points, PathPosition::NotEnd, position);
                     }
                 } else if self.get_phase_slope(&new_point, MinMax::Min)
                     > self.max_velocity_derivative_at(new_point.position, Limit::Velocity)
                 {
-                    break (new_points, PathPosition::NotEnd);
+                    break (new_points, PathPosition::NotEnd, position);
                 }
             }
         }
@@ -756,7 +756,8 @@ where
 
         // Move along path until a sign change is detected. This defines an interval within which a
         // velocity switching point occurs. Think of the peak or trough of a sawtooth wave.
-        // Bisection is used after this broad phase to more accurately determine its position.
+        // Bisection is used after this broad phase to more accurately determine the position of the
+        // local minimum
         while position < self.path.get_length() {
             position += step_size;
 
