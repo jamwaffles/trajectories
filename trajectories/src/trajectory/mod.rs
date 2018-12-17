@@ -11,6 +11,7 @@ use self::switching_point::SwitchingPoint as TrajectorySwitchingPoint;
 use self::trajectory_step::TrajectoryStep;
 use crate::path::{Continuity, Path, PathItem, SwitchingPoint};
 use crate::Coord;
+use nalgebra::allocator::Allocator;
 use nalgebra::allocator::SameShapeVectorAllocator;
 use nalgebra::DefaultAllocator;
 use nalgebra::DimName;
@@ -22,6 +23,7 @@ pub struct Trajectory<N>
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     path: Path<N>,
     velocity_limit: Coord<N>,
@@ -35,6 +37,7 @@ impl<N> Trajectory<N>
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     /// Create a new trajectory from a given path and max velocity and acceleration
     pub fn new(

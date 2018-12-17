@@ -6,6 +6,7 @@ pub use self::circular_segment::CircularPathSegment;
 pub use self::linear_segment::LinearPathSegment;
 pub use self::segment::PathSegment;
 use crate::Coord;
+use nalgebra::allocator::Allocator;
 use nalgebra::allocator::SameShapeVectorAllocator;
 use nalgebra::DefaultAllocator;
 use nalgebra::DimName;
@@ -15,6 +16,7 @@ pub trait PathItem<N>: PartialEq
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     /// Get length of path
     fn get_length(&self) -> f64;
@@ -65,6 +67,7 @@ pub struct Path<N>
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     /// Linear path segments and circular blends
     pub segments: Vec<PathSegment<N>>,
@@ -80,6 +83,7 @@ impl<N> Path<N>
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     /// Create a blended path from a set of waypoints
     ///
@@ -222,6 +226,7 @@ impl<N> PathItem<N> for Path<N>
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     /// Get the length of the complete path
     #[inline(always)]

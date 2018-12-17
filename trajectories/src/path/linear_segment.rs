@@ -1,5 +1,6 @@
 use super::PathItem;
 use crate::Coord;
+use nalgebra::allocator::Allocator;
 use nalgebra::allocator::SameShapeVectorAllocator;
 use nalgebra::DefaultAllocator;
 use nalgebra::DimName;
@@ -13,6 +14,7 @@ pub struct LinearPathSegment<N>
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     /// Start coordinate
     pub start: Coord<N>,
@@ -34,6 +36,7 @@ impl<N> LinearPathSegment<N>
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     pub fn from_waypoints(start: Coord<N>, end: Coord<N>) -> Self {
         let length = (&end - &start).norm();
@@ -75,6 +78,7 @@ impl<N> PathItem<N> for LinearPathSegment<N>
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     /// Get position ("robot configuration" in paper parlance) along path from normalised distance
     /// along it (`s`)

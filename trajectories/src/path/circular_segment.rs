@@ -1,6 +1,7 @@
 use super::PathItem;
 use crate::Coord;
 use crate::TRAJ_EPSILON;
+use nalgebra::allocator::Allocator;
 use nalgebra::allocator::SameShapeVectorAllocator;
 use nalgebra::DefaultAllocator;
 use nalgebra::DimName;
@@ -15,6 +16,7 @@ pub struct CircularPathSegment<N>
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     /// Center point of circle
     pub center: Coord<N>,
@@ -42,6 +44,7 @@ impl<N> Default for CircularPathSegment<N>
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     fn default() -> Self {
         Self {
@@ -60,6 +63,7 @@ impl<N> CircularPathSegment<N>
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     /// Create a blend segment for two line segments comprised of three points
     pub fn from_waypoints(
@@ -183,6 +187,7 @@ impl<N> PathItem<N> for CircularPathSegment<N>
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     /// Get the arc length of this segment
     fn get_length(&self) -> f64 {

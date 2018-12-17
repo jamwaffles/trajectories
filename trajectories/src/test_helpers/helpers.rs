@@ -5,6 +5,7 @@ use crate::path::PathItem;
 use crate::path::{Continuity, Path as TrajPath, PathSegment};
 use crate::Coord;
 use csv;
+use nalgebra::allocator::Allocator;
 use nalgebra::allocator::SameShapeVectorAllocator;
 use nalgebra::DefaultAllocator;
 use nalgebra::DimName;
@@ -22,6 +23,7 @@ fn single_line<N>(from: &Coord<N>, to: &Coord<N>, stroke: &str, stroke_width: u3
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     SvgPath::new()
         .set("fill", "none")
@@ -40,6 +42,7 @@ fn cross_centered_at<N>(center: &Coord<N>, stroke: &str, stroke_width: f32) -> S
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     let size = 0.1;
 
@@ -62,6 +65,7 @@ fn border<N>(top_left: &Coord<N>, bottom_right: &Coord<N>) -> Rectangle
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     Rectangle::new()
         .set("fill", "none")
@@ -78,6 +82,7 @@ fn create_document<N>(top_left: &Coord<N>, bottom_right: &Coord<N>) -> Document
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     let aspect = (bottom_right[0] - top_left[0]) / (bottom_right[1] - top_left[1]);
     let width = 1024;
@@ -101,6 +106,7 @@ fn draw_blend_circle<N>(blend: &CircularPathSegment<N>) -> Group
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     let line_scale = 0.25;
 
@@ -137,6 +143,7 @@ fn calc_bbox<N>(coords: &[Coord<N>]) -> (Coord<N>, Coord<N>)
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     (
         coords
@@ -162,6 +169,7 @@ pub fn debug_blend<N>(
 ) where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     let path_before = single_line(&before, &current, "red", 1);
     let path_after = single_line(&current, &after, "red", 1);
@@ -182,6 +190,7 @@ pub fn debug_blend_position<N>(p: &str, blend: &CircularPathSegment<N>)
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     let top_left = blend.center.clone().add_scalar(-(blend.radius + PADDING));
     let bottom_right = blend
@@ -223,6 +232,7 @@ pub fn debug_path<N>(file_path: &'static str, path: &TrajPath<N>, waypoints: &[C
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     let (top_left, bottom_right) = calc_bbox(waypoints);
 
@@ -289,6 +299,7 @@ pub fn debug_path_switching_points<N>(
 ) where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     let (top_left, bottom_right) = calc_bbox(waypoints);
 
@@ -330,6 +341,7 @@ pub fn debug_path_point<N>(
 ) where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     let (top_left, bottom_right) = calc_bbox(&waypoints);
 

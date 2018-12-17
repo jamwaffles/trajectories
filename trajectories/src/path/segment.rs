@@ -1,6 +1,7 @@
 use crate::path::{CircularPathSegment, LinearPathSegment, PathItem};
 use crate::Coord;
 use core::cmp::Ordering;
+use nalgebra::allocator::Allocator;
 use nalgebra::allocator::SameShapeVectorAllocator;
 use nalgebra::DefaultAllocator;
 use nalgebra::DimName;
@@ -10,6 +11,7 @@ pub enum PathSegment<N>
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     Linear(LinearPathSegment<N>),
     Circular(CircularPathSegment<N>),
@@ -19,6 +21,7 @@ impl<N> PartialOrd for PathSegment<N>
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     fn partial_cmp(&self, other: &PathSegment<N>) -> Option<Ordering> {
         Some(
@@ -36,6 +39,7 @@ impl<N> PathItem<N> for PathSegment<N>
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     /// Get length of path
     fn get_length(&self) -> f64 {
@@ -74,6 +78,7 @@ impl<N> PathSegment<N>
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     /// Clone segment and give it a start offset
     // TODO: Trait
