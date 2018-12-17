@@ -28,9 +28,9 @@ harness = false
 name = "long_path"
 
 [dependencies]
-approx = "0.3.0"
+approx = "0.3.1"
 criterion = "0.2.5"
-csv = "1.0.2"
+csv = "1.0.5"
 log = "0.4.6"
 nalgebra = "0.16.12"
 pretty_env_logger = "0.3.0"

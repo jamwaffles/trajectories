@@ -3,7 +3,7 @@ authors = ["James Waples <jamwaffles@gmail.com>"]
 name = "trajectories-sys"
 version = "0.1.0"
 [build-dependencies]
-bindgen = "0.44.0"
+bindgen = "0.45.0"
 
 [build-dependencies.cc]
 features = ["parallel"]
