@@ -39,6 +39,7 @@ where
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
+    // TODO: Stop panicking all over the place and actually use the error arm of this `Result`
     /// Create a new trajectory from a given path and max velocity and acceleration
     pub fn new(
         path: Path<N>,
@@ -46,7 +47,7 @@ where
         acceleration_limit: Coord<N>,
         epsilon: f64,
         timestep: f64,
-    ) -> Self {
+    ) -> Result<Self, String> {
         let mut traj = Self {
             path,
             velocity_limit,
@@ -58,7 +59,7 @@ where
 
         traj.setup();
 
-        traj
+        Ok(traj)
     }
 
     /// Get duration of complete trajectory
@@ -861,7 +862,8 @@ mod tests {
             TestCoord3::repeat(1.0),
             0.000001,
             0.001,
-        );
+        )
+        .unwrap();
 
         for (pos, next_point) in expected_points {
             assert_eq!(
@@ -905,7 +907,8 @@ mod tests {
             TestCoord3::repeat(1.0),
             0.000001,
             0.001,
-        );
+        )
+        .unwrap();
 
         for (pos, next_point) in expected_points {
             assert_eq!(
@@ -938,7 +941,8 @@ mod tests {
             TestCoord3::repeat(1.0),
             0.000001,
             0.001,
-        );
+        )
+        .unwrap();
 
         let mut t = 0.0;
         let duration = traj.get_duration();

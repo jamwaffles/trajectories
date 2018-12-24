@@ -29,7 +29,8 @@ fn profile_native() {
         TestCoord3::new(1.0, 1.0, 1.0),
         0.000001,
         0.001,
-    );
+    )
+    .unwrap();
 
     let _point1 = trajectory.get_position(0.01);
     let _point2 = trajectory.get_position(5.678);
