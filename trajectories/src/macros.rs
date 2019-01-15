@@ -1,3 +1,4 @@
+/// Assert that two floats are near each other within an epsilon
 #[cfg(test)]
 #[macro_export]
 macro_rules! assert_near {
