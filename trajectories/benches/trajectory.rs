@@ -27,7 +27,8 @@ fn get_positions(c: &mut Criterion) {
                 TestCoord3::new(1.0, 1.0, 1.0),
                 0.000001,
                 0.001,
-            );
+            )
+            .expect("Failed to create trajectory");
 
             let _start = trajectory.get_position(0.0);
             let _mid = trajectory.get_position(5.1234);
