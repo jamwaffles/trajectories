@@ -426,7 +426,7 @@ where
                     ));
 
                     let ret = start_trajectory
-                        .into_iter()
+                        .iter()
                         .cloned()
                         // Remove items in current trajectory after intersection point
                         .filter(|step| step.position < start2.position)

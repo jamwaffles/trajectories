@@ -175,7 +175,7 @@ pub fn debug_blend<N>(
     let path_after = single_line(&current, &after, "red", 1);
     let blend = draw_blend_circle(blend);
 
-    let (top_left, bottom_right) = calc_bbox(&vec![before.clone(), current.clone(), after.clone()]);
+    let (top_left, bottom_right) = calc_bbox(&[before.clone(), current.clone(), after.clone()]);
 
     let document = create_document(&top_left, &bottom_right)
         .add(blend)
@@ -240,7 +240,7 @@ where
 
     // Original waypoints in background to compare
     for parts in waypoints.windows(2) {
-        if let &[ref curr, ref next] = parts {
+        if let [ref curr, ref next] = *parts {
             document = document.add(single_line(&curr, &next, "black", 1));
         } else {
             panic!("Debug blend path failed");

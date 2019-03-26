@@ -63,7 +63,7 @@ pub type Coord<N> = VectorN<f64, N>;
 /// Custom defined epsilon for "near enough" float comparisons and accuracy checks. This is set to
 /// `(std::f64::EPSILON).sqrt()` on a Linux x64 machine with Rust 1.29 as per the
 /// [answers on this StackExchange question](https://scicomp.stackexchange.com/questions/14355/choosing-epsilons)
-pub const TRAJ_EPSILON: f64 = 0.000000014901161193847656;
+pub const TRAJ_EPSILON: f64 = 0.000_000_014_901_161_193_847_656;
 
 /// Maximum deviation from true path
 pub const MAX_DEVIATION: f64 = 0.001;

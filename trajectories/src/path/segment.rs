@@ -27,10 +27,12 @@ where
         Some(
             self.start_offset()
                 .partial_cmp(&other.start_offset())
-                .expect(&format!(
-                    "Could not compare path offsets between {:?} and {:?}",
-                    self, other
-                )),
+                .unwrap_or_else(|| {
+                    panic!(
+                        "Could not compare path offsets between {:?} and {:?}",
+                        self, other
+                    )
+                }),
         )
     }
 }
