@@ -25,8 +25,8 @@ where
 {
     fn partial_cmp(&self, other: &PathSegment<N>) -> Option<Ordering> {
         Some(
-            self.get_start_offset()
-                .partial_cmp(&other.get_start_offset())
+            self.start_offset()
+                .partial_cmp(&other.start_offset())
                 .expect(&format!(
                     "Could not compare path offsets between {:?} and {:?}",
                     self, other
@@ -42,34 +42,34 @@ where
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     /// Get length of path
-    fn get_length(&self) -> f64 {
+    fn len(&self) -> f64 {
         match self {
-            PathSegment::Linear(s) => s.get_length(),
-            PathSegment::Circular(s) => s.get_length(),
+            PathSegment::Linear(s) => s.len(),
+            PathSegment::Circular(s) => s.len(),
         }
     }
 
     /// Get position at a point along path
-    fn get_position(&self, distance_along_line: f64) -> Coord<N> {
+    fn position(&self, distance_along_line: f64) -> Coord<N> {
         match self {
-            PathSegment::Linear(s) => s.get_position(distance_along_line),
-            PathSegment::Circular(s) => s.get_position(distance_along_line),
+            PathSegment::Linear(s) => s.position(distance_along_line),
+            PathSegment::Circular(s) => s.position(distance_along_line),
         }
     }
 
     /// Get first derivative (tangent) at a point
-    fn get_tangent(&self, distance_along_line: f64) -> Coord<N> {
+    fn tangent(&self, distance_along_line: f64) -> Coord<N> {
         match self {
-            PathSegment::Linear(s) => s.get_tangent(distance_along_line),
-            PathSegment::Circular(s) => s.get_tangent(distance_along_line),
+            PathSegment::Linear(s) => s.tangent(distance_along_line),
+            PathSegment::Circular(s) => s.tangent(distance_along_line),
         }
     }
 
     /// Get second derivative (curvature) at a point
-    fn get_curvature(&self, distance_along_line: f64) -> Coord<N> {
+    fn curvature(&self, distance_along_line: f64) -> Coord<N> {
         match self {
-            PathSegment::Linear(s) => s.get_curvature(distance_along_line),
-            PathSegment::Circular(s) => s.get_curvature(distance_along_line),
+            PathSegment::Linear(s) => s.curvature(distance_along_line),
+            PathSegment::Circular(s) => s.curvature(distance_along_line),
         }
     }
 }
@@ -91,7 +91,7 @@ where
 
     /// Get start offset of this segment
     // TODO: Trait
-    pub fn get_start_offset(&self) -> f64 {
+    pub fn start_offset(&self) -> f64 {
         match self {
             PathSegment::Linear(s) => s.start_offset,
             PathSegment::Circular(s) => s.start_offset,
@@ -99,19 +99,19 @@ where
     }
 
     /// Get end offset of this segment
-    pub fn get_end_offset(&self) -> f64 {
+    pub fn end_offset(&self) -> f64 {
         match self {
-            PathSegment::Linear(s) => s.get_end_offset(),
-            PathSegment::Circular(s) => s.get_end_offset(),
+            PathSegment::Linear(s) => s.end_offset(),
+            PathSegment::Circular(s) => s.end_offset(),
         }
     }
 
     /// Get the switching points for this path segment
     // TODO: Trait?
-    pub fn get_switching_points(&self) -> Vec<f64> {
+    pub fn switching_points(&self) -> Vec<f64> {
         match self {
-            PathSegment::Linear(s) => s.get_switching_points(),
-            PathSegment::Circular(s) => s.get_switching_points(),
+            PathSegment::Linear(s) => s.switching_points(),
+            PathSegment::Circular(s) => s.switching_points(),
         }
     }
 }

@@ -200,15 +200,15 @@ where
 
     let circle = draw_blend_circle(&blend);
 
-    let start = blend.get_position(0.0);
+    let start = blend.position(0.0);
 
     let mut i = 0.0;
     let mut data = Data::new().move_to((start[0], start[1]));
 
-    while i <= blend.get_length() {
+    while i <= blend.len() {
         i += 0.1;
 
-        let pos = blend.get_position(i);
+        let pos = blend.position(i);
 
         data = data.line_to((pos[0], pos[1]));
     }
@@ -272,7 +272,7 @@ where
                     .add(draw_blend_circle(&circ))
                     // Print start offset for arc
                     .add({
-                        let start = circ.get_position(0.0);
+                        let start = circ.position(0.0);
 
                         Text::new()
                             .set("x", start[0])
@@ -318,8 +318,8 @@ pub fn debug_path_switching_points<N>(
     }
 
     // Switching points
-    for point in path.get_switching_points() {
-        let pos = path.get_position(point.position);
+    for point in path.switching_points() {
+        let pos = path.position(point.position);
 
         let col = match point.continuity {
             Continuity::Continuous => "green",
@@ -372,7 +372,7 @@ pub fn debug_path_point<N>(
                     .add(draw_blend_circle(&circ))
                     // Print start offset for arc
                     .add({
-                        let start = circ.get_position(0.0);
+                        let start = circ.position(0.0);
 
                         Text::new()
                             .set("x", start[0])

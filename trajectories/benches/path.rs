@@ -51,13 +51,13 @@ fn create_path_and_iterate(c: &mut Criterion) {
             b.iter_with_setup(
                 || Path::from_waypoints(&waypoints, DEVIATION),
                 |p| {
-                    let len = p.get_length();
+                    let len = p.len();
                     let step = len / NUM_POINTS as f64;
 
                     let mut i = 0.0;
 
                     while i < len {
-                        let _pos = p.get_position(i);
+                        let _pos = p.position(i);
 
                         i += step;
                     }
@@ -85,7 +85,7 @@ fn get_position(c: &mut Criterion) {
         Benchmark::new("get position at point along path", move |b| {
             b.iter_with_setup(
                 || Path::from_waypoints(&waypoints, DEVIATION),
-                |p| p.get_position(5.6789),
+                |p| p.position(5.6789),
             )
         })
         .throughput(Throughput::Elements(len as u32)),
@@ -107,7 +107,7 @@ fn get_tangent(c: &mut Criterion) {
         let p = Path::from_waypoints(&waypoints, DEVIATION);
 
         b.iter(|| {
-            p.get_tangent(5.6789);
+            p.tangent(5.6789);
         })
     });
 }
@@ -127,7 +127,7 @@ fn get_curvature(c: &mut Criterion) {
         let p = Path::from_waypoints(&waypoints, DEVIATION);
 
         b.iter(|| {
-            p.get_tangent(5.6789);
+            p.tangent(5.6789);
         })
     });
 }
@@ -147,7 +147,7 @@ fn get_segment_at_position(c: &mut Criterion) {
         let p = Path::from_waypoints(&waypoints, DEVIATION);
 
         b.iter(|| {
-            p.get_segment_at_position(5.6789);
+            p.segment_at_position(5.6789);
         })
     });
 }

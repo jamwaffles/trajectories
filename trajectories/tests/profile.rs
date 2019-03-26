@@ -32,13 +32,13 @@ fn profile_native() {
     )
     .unwrap();
 
-    let _point1 = trajectory.get_position(0.01);
-    let _point2 = trajectory.get_position(5.678);
-    let _point3 = trajectory.get_position(7.89);
-    let _point4 = trajectory.get_position(14.00001);
+    let _point1 = trajectory.position(0.01);
+    let _point2 = trajectory.position(5.678);
+    let _point3 = trajectory.position(7.89);
+    let _point4 = trajectory.position(14.00001);
 
     // assert_eq!(trajectory.trajectory.len(), 14814);
-    assert_eq!(trajectory.get_duration(), 14.802832847319943);
+    assert_eq!(trajectory.duration(), 14.802832847319943);
 
     // end_profile();
 }

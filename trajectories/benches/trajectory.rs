@@ -30,9 +30,9 @@ fn get_positions(c: &mut Criterion) {
             )
             .expect("Failed to create trajectory");
 
-            let _start = trajectory.get_position(0.0);
-            let _mid = trajectory.get_position(5.1234);
-            let _end = trajectory.get_position(trajectory.get_duration());
+            let _start = trajectory.position(0.0);
+            let _mid = trajectory.position(5.1234);
+            let _end = trajectory.position(trajectory.duration());
         })
     });
 }

@@ -63,7 +63,7 @@ where
     }
 
     /// Get duration of complete trajectory
-    pub fn get_duration(&self) -> f64 {
+    pub fn duration(&self) -> f64 {
         self.trajectory
             .last()
             .expect("Could not get duration of empty trajectory")
@@ -71,8 +71,8 @@ where
     }
 
     /// Get a position in n-dimensional space given a time along the trajectory
-    pub fn get_position(&self, time: f64) -> Coord<N> {
-        let (previous, current) = self.get_trajectory_segment(time);
+    pub fn position(&self, time: f64) -> Coord<N> {
+        let (previous, current) = self.trajectory_segment(time);
 
         let mut segment_len = current.time - previous.time;
         let acceleration = 2.0
@@ -84,12 +84,12 @@ where
         let position = previous.position
             + segment_len * previous.velocity * 0.5 * segment_len.powi(2) * acceleration;
 
-        self.path.get_position(position)
+        self.path.position(position)
     }
 
     /// Get velocity for each joint at a time along the path
-    pub fn get_velocity(&self, time: f64) -> Coord<N> {
-        let (previous, current) = self.get_trajectory_segment(time);
+    pub fn velocity(&self, time: f64) -> Coord<N> {
+        let (previous, current) = self.trajectory_segment(time);
 
         let segment_len = current.time - previous.time;
         let acceleration = 2.0
@@ -100,14 +100,14 @@ where
             + segment_len * previous.velocity * 0.5 * segment_len.powi(2) * acceleration;
         let velocity = previous.velocity + segment_len * acceleration;
 
-        self.path.get_tangent(position) * velocity
+        self.path.tangent(position) * velocity
     }
 
     /// Get the (previous_segment, segment) of the trajectory that the given time lies on
     ///
     /// This gets an interval of the trajectory along which `time` lies. Other methods interpolate
     /// along this interval and do things like find the exact position at the given time.
-    fn get_trajectory_segment(&self, time: f64) -> (&TrajectoryStep, &TrajectoryStep) {
+    fn trajectory_segment(&self, time: f64) -> (&TrajectoryStep, &TrajectoryStep) {
         // If there is only one segment, create a "window" over just itself
         // TODO: Gracefully handle case where trajectory is empty
         if self.trajectory.len() < 2 {
@@ -135,8 +135,7 @@ where
         let mut trajectory = vec![TrajectoryStep::new(0.0, 0.0)];
         let mut switching_point = TrajectorySwitchingPoint {
             before_acceleration: 0.0,
-            after_acceleration: self
-                .get_acceleration_at(&TrajectoryStep::new(0.0, 0.0), MinMax::Max),
+            after_acceleration: self.acceleration_at(&TrajectoryStep::new(0.0, 0.0), MinMax::Max),
             pos: TrajectoryStep::new(0.0, 0.0),
         };
 
@@ -154,7 +153,7 @@ where
                 break;
             }
 
-            if let Some(new_switching_point) = self.get_next_switching_point(stop_position) {
+            if let Some(new_switching_point) = self.next_switching_point(stop_position) {
                 switching_point = new_switching_point;
             } else {
                 // Break if we've reached the end of the path
@@ -174,11 +173,9 @@ where
         if let Some(updated_traj) = self.integrate_backward(
             &trajectory,
             &TrajectorySwitchingPoint {
-                pos: TrajectoryStep::new(self.path.get_length(), 0.0),
-                before_acceleration: self.get_acceleration_at(
-                    &TrajectoryStep::new(self.path.get_length(), 0.0),
-                    MinMax::Min,
-                ),
+                pos: TrajectoryStep::new(self.path.len(), 0.0),
+                before_acceleration: self
+                    .acceleration_at(&TrajectoryStep::new(self.path.len(), 0.0), MinMax::Min),
                 after_acceleration: 0.0,
             },
         ) {
@@ -222,17 +219,13 @@ where
                 "Integrate forward loop, by {}, position {} out of {}",
                 self.timestep,
                 position,
-                self.path.get_length()
+                self.path.len()
             );
 
-            let next_discontinuity =
-                self.path
-                    .get_switching_points()
-                    .iter()
-                    .find(|switching_point| {
-                        switching_point.position > position
-                            && switching_point.continuity == Continuity::Discontinuous
-                    });
+            let next_discontinuity = self.path.switching_points().iter().find(|switching_point| {
+                switching_point.position > position
+                    && switching_point.continuity == Continuity::Discontinuous
+            });
 
             let old_position = position;
             let old_velocity = velocity;
@@ -251,7 +244,7 @@ where
                 }
             }
 
-            if position > self.path.get_length() {
+            if position > self.path.len() {
                 new_points.push(TrajectoryStep::new(position, velocity));
 
                 break (new_points, PathPosition::End, position);
@@ -262,7 +255,7 @@ where
             let max_velocity_at_position = self.max_velocity_at(position, Limit::Velocity);
 
             if velocity > max_velocity_at_position
-                && self.get_phase_slope(
+                && self.phase_slope(
                     &TrajectoryStep::new(
                         old_position,
                         self.max_velocity_at(old_position, Limit::Velocity),
@@ -277,7 +270,7 @@ where
 
             new_points.push(new_point);
 
-            acceleration = self.get_acceleration_at(&new_point, MinMax::Max);
+            acceleration = self.acceleration_at(&new_point, MinMax::Max);
 
             if velocity > self.max_velocity_at(position, Limit::Acceleration)
                 || velocity > max_velocity_at_position
@@ -310,7 +303,7 @@ where
                     let max_midpoint_velocity = self.max_velocity_at(midpoint, Limit::Velocity);
 
                     if midpoint_velocity > max_midpoint_velocity
-                        && self.get_phase_slope(
+                        && self.phase_slope(
                             &TrajectoryStep::new(
                                 before,
                                 self.max_velocity_at(before, Limit::Velocity),
@@ -345,12 +338,12 @@ where
                         }
                     }
 
-                    if self.get_phase_slope(&new_point, MinMax::Max)
+                    if self.phase_slope(&new_point, MinMax::Max)
                         > self.max_velocity_derivative_at(new_point.position, Limit::Acceleration)
                     {
                         break (new_points, PathPosition::NotEnd, position);
                     }
-                } else if self.get_phase_slope(&new_point, MinMax::Min)
+                } else if self.phase_slope(&new_point, MinMax::Min)
                     > self.max_velocity_derivative_at(new_point.position, Limit::Velocity)
                 {
                     break (new_points, PathPosition::NotEnd, position);
@@ -392,7 +385,7 @@ where
                 velocity -= self.timestep * before_acceleration;
                 position -= self.timestep * 0.5 * (velocity + new_point.velocity);
                 before_acceleration =
-                    self.get_acceleration_at(&TrajectoryStep::new(position, velocity), MinMax::Min);
+                    self.acceleration_at(&TrajectoryStep::new(position, velocity), MinMax::Min);
                 slope = (new_point.velocity - velocity) / (new_point.position - position);
 
                 new_trajectory.push(new_point);
@@ -451,10 +444,7 @@ where
     }
 
     /// Get next switching point along the path, bounded by velocity or acceleration
-    fn get_next_switching_point(
-        &self,
-        position_along_path: f64,
-    ) -> Option<TrajectorySwitchingPoint> {
+    fn next_switching_point(&self, position_along_path: f64) -> Option<TrajectorySwitchingPoint> {
         let mut acceleration_switching_point: Option<TrajectorySwitchingPoint> =
             Some(TrajectorySwitchingPoint {
                 pos: TrajectoryStep::new(position_along_path, 0.0),
@@ -462,7 +452,7 @@ where
             });
 
         // Find the next acceleration switching point
-        while let Some(point) = self.get_next_acceleration_switching_point(
+        while let Some(point) = self.next_acceleration_switching_point(
             acceleration_switching_point
                 .clone()
                 .map(|p| p.pos.position)
@@ -472,7 +462,7 @@ where
                 "Get accel point pos {} vel {} from len {}, max_vel {}",
                 point.pos.position,
                 point.pos.velocity,
-                self.path.get_length(),
+                self.path.len(),
                 self.max_velocity_at(point.pos.position, Limit::Velocity)
             );
             acceleration_switching_point = Some(point.clone());
@@ -485,7 +475,7 @@ where
         let mut velocity_switching_point: Option<TrajectorySwitchingPoint> = None;
 
         // Find the next velocity switching point
-        while let Some(point) = self.get_next_velocity_switching_point(
+        while let Some(point) = self.next_velocity_switching_point(
             velocity_switching_point
                 .clone()
                 .map(|p| p.pos.position)
@@ -526,13 +516,13 @@ where
     }
 
     /// Find minimum or maximum acceleration at a point along path
-    fn get_acceleration_at(&self, pos_vel: &TrajectoryStep, min_max: MinMax) -> f64 {
+    fn acceleration_at(&self, pos_vel: &TrajectoryStep, min_max: MinMax) -> f64 {
         let &TrajectoryStep {
             position, velocity, ..
         } = pos_vel;
 
-        let derivative = self.path.get_tangent(position);
-        let second_derivative = self.path.get_curvature(position);
+        let derivative = self.path.tangent(position);
+        let second_derivative = self.path.curvature(position);
         let factor = min_max.as_multiplier();
 
         let res = self
@@ -565,22 +555,22 @@ where
     /// velocity.
     fn max_velocity_at(&self, position_along_path: f64, limit: Limit) -> f64 {
         match limit {
-            Limit::Velocity => self.get_max_velocity_from_velocity(position_along_path),
-            Limit::Acceleration => self.get_max_velocity_from_acceleration(position_along_path),
+            Limit::Velocity => self.max_velocity_from_velocity(position_along_path),
+            Limit::Acceleration => self.max_velocity_from_acceleration(position_along_path),
         }
     }
 
-    fn get_max_velocity_from_velocity(&self, position_along_path: f64) -> f64 {
+    fn max_velocity_from_velocity(&self, position_along_path: f64) -> f64 {
         self.velocity_limit
-            .component_div(&self.path.get_tangent(position_along_path))
+            .component_div(&self.path.tangent(position_along_path))
             .amin()
     }
 
     /// Find maximum allowable velocity as limited by the acceleration at a point on the path
-    fn get_max_velocity_from_acceleration(&self, position_along_path: f64) -> f64 {
-        let segment = self.path.get_segment_at_position(position_along_path);
-        let vel_abs = segment.get_tangent(position_along_path).abs();
-        let acceleration = segment.get_curvature(position_along_path);
+    fn max_velocity_from_acceleration(&self, position_along_path: f64) -> f64 {
+        let segment = self.path.segment_at_position(position_along_path);
+        let vel_abs = segment.tangent(position_along_path).abs();
+        let acceleration = segment.curvature(position_along_path);
 
         let n = nalgebra::dimension::<Coord<N>>();
 
@@ -614,16 +604,16 @@ where
 
     fn max_velocity_derivative_at(&self, position_along_path: f64, limit: Limit) -> f64 {
         match limit {
-            Limit::Velocity => self.get_max_velocity_from_velocity_derivative(position_along_path),
+            Limit::Velocity => self.max_velocity_from_velocity_derivative(position_along_path),
             Limit::Acceleration => {
-                self.get_max_velocity_from_acceleration_derivative(position_along_path)
+                self.max_velocity_from_acceleration_derivative(position_along_path)
             }
         }
     }
 
     /// Get the derivative of the max acceleration-bounded velocity at a point along the path
-    fn get_max_velocity_from_velocity_derivative(&self, position_along_path: f64) -> f64 {
-        let tangent_abs = self.path.get_tangent(position_along_path).abs();
+    fn max_velocity_from_velocity_derivative(&self, position_along_path: f64) -> f64 {
+        let tangent_abs = self.path.tangent(position_along_path).abs();
         let velocity = self.velocity_limit.component_div(&tangent_abs);
 
         let (constraint_axis, _) = velocity
@@ -633,14 +623,14 @@ where
             .unwrap_or((0, &std::f64::MAX));
 
         -(self.velocity_limit[constraint_axis]
-            * self.path.get_curvature(position_along_path)[constraint_axis]
+            * self.path.curvature(position_along_path)[constraint_axis]
             / (tangent_abs[constraint_axis].powi(2)))
     }
 
     /// Get the derivative of the max velocity at a point along the path
     ///
     /// The max velocity in this case is bounded by the acceleration limits at the point
-    fn get_max_velocity_from_acceleration_derivative(&self, position_along_path: f64) -> f64 {
+    fn max_velocity_from_acceleration_derivative(&self, position_along_path: f64) -> f64 {
         (self.max_velocity_at(position_along_path + self.epsilon, Limit::Acceleration)
             - self.max_velocity_at(position_along_path - self.epsilon, Limit::Acceleration))
             / (2.0 * self.epsilon)
@@ -649,20 +639,20 @@ where
     /// Get the minimum or maximum phase slope for a position along the path
     ///
     /// TODO: Figure out what phase slope means in this context and give it a better name
-    fn get_phase_slope(&self, pos_vel: &TrajectoryStep, min_max: MinMax) -> f64 {
-        self.get_acceleration_at(&pos_vel, min_max) / pos_vel.position
+    fn phase_slope(&self, pos_vel: &TrajectoryStep, min_max: MinMax) -> f64 {
+        self.acceleration_at(&pos_vel, min_max) / pos_vel.position
     }
 
     /// Get the next acceleration-bounded switching point after the current position
-    fn get_next_acceleration_switching_point(
+    fn next_acceleration_switching_point(
         &self,
         position_along_path: f64,
     ) -> Option<TrajectorySwitchingPoint> {
         let mut velocity;
         let mut current_point = SwitchingPoint::new(position_along_path, Continuity::Continuous);
 
-        while current_point.position <= self.path.get_length() - self.epsilon {
-            current_point = self.path.get_next_switching_point(current_point.position);
+        while current_point.position <= self.path.len() - self.epsilon {
+            current_point = self.path.next_switching_point(current_point.position);
 
             match current_point.continuity {
                 Continuity::Discontinuous => {
@@ -682,11 +672,11 @@ where
                     let after_point =
                         TrajectoryStep::new(current_point.position + self.epsilon, velocity);
 
-                    let before_acceleration = self.get_acceleration_at(&before_point, MinMax::Min);
-                    let after_acceleration = self.get_acceleration_at(&after_point, MinMax::Max);
+                    let before_acceleration = self.acceleration_at(&before_point, MinMax::Min);
+                    let after_acceleration = self.acceleration_at(&after_point, MinMax::Max);
 
-                    let before_phase_slope = self.get_phase_slope(&before_point, MinMax::Min);
-                    let after_phase_slope = self.get_phase_slope(&after_point, MinMax::Max);
+                    let before_phase_slope = self.phase_slope(&before_point, MinMax::Min);
+                    let after_phase_slope = self.phase_slope(&after_point, MinMax::Max);
 
                     let before_max_velocity_deriv = self.max_velocity_derivative_at(
                         current_point.position - 2.0 * self.epsilon,
@@ -742,14 +732,14 @@ where
     /// This method performs a broad search first, stepping along the path from the current position
     /// in coarse increments. It then binary searches through the interval between two coarse steps
     /// to find the specific switching point to within a more accurate epsilon.
-    fn get_next_velocity_switching_point(
+    fn next_velocity_switching_point(
         &self,
         position_along_path: f64,
     ) -> Option<TrajectorySwitchingPoint> {
         // Broad phase search step
         let step_size = 0.001;
         let mut position = position_along_path;
-        let mut prev_slope = self.get_phase_slope(
+        let mut prev_slope = self.phase_slope(
             &TrajectoryStep::new(position, self.max_velocity_at(position, Limit::Velocity)),
             MinMax::Min,
         );
@@ -759,10 +749,10 @@ where
         // velocity switching point occurs. Think of the peak or trough of a sawtooth wave.
         // Bisection is used after this broad phase to more accurately determine the position of the
         // local minimum
-        while position < self.path.get_length() {
+        while position < self.path.len() {
             position += step_size;
 
-            let slope = self.get_phase_slope(
+            let slope = self.phase_slope(
                 &TrajectoryStep::new(position, self.max_velocity_at(position, Limit::Velocity)),
                 MinMax::Min,
             );
@@ -777,9 +767,9 @@ where
             prev_deriv = deriv;
         }
 
-        info!("END CONDITION {} LEN {}", position, self.path.get_length());
+        info!("END CONDITION {} LEN {}", position, self.path.len());
 
-        if position >= self.path.get_length() {
+        if position >= self.path.len() {
             return None;
         }
 
@@ -791,7 +781,7 @@ where
         while after_position - prev_position > self.epsilon {
             position = (prev_position + after_position) / 2.0;
 
-            if self.get_phase_slope(
+            if self.phase_slope(
                 &TrajectoryStep::new(position, self.max_velocity_at(position, Limit::Velocity)),
                 MinMax::Min,
             ) > self.max_velocity_derivative_at(position, Limit::Velocity)
@@ -807,14 +797,14 @@ where
             self.max_velocity_at(after_position, Limit::Velocity),
         );
 
-        let before_acceleration = self.get_acceleration_at(
+        let before_acceleration = self.acceleration_at(
             &TrajectoryStep::new(
                 prev_position,
                 self.max_velocity_at(prev_position, Limit::Velocity),
             ),
             MinMax::Min,
         );
-        let after_acceleration = self.get_acceleration_at(&after_position, MinMax::Max);
+        let after_acceleration = self.acceleration_at(&after_position, MinMax::Max);
 
         Some(TrajectorySwitchingPoint {
             before_acceleration,
@@ -867,7 +857,7 @@ mod tests {
 
         for (pos, next_point) in expected_points {
             assert_eq!(
-                traj.get_next_velocity_switching_point(pos)
+                traj.next_velocity_switching_point(pos)
                     .map(|p| p.pos.position),
                 Some(next_point)
             );
@@ -912,7 +902,7 @@ mod tests {
 
         for (pos, next_point) in expected_points {
             assert_eq!(
-                traj.get_next_acceleration_switching_point(pos)
+                traj.next_acceleration_switching_point(pos)
                     .map(|p| p.pos.position),
                 Some(next_point)
             );
@@ -945,19 +935,19 @@ mod tests {
         .unwrap();
 
         let mut t = 0.0;
-        let duration = traj.get_duration();
+        let duration = traj.duration();
 
         while t < duration {
-            let p = traj.get_position(t);
-            let v = traj.get_velocity(t);
+            let p = traj.position(t);
+            let v = traj.velocity(t);
 
             rows.push(TrajectoryStepRow::from_coords(t, &p, &v));
 
             t += 0.1;
         }
 
-        let p_final = traj.get_position(duration);
-        let v_final = traj.get_velocity(duration);
+        let p_final = traj.position(duration);
+        let v_final = traj.velocity(duration);
 
         rows.push(TrajectoryStepRow::from_coords(duration, &p_final, &v_final));
 

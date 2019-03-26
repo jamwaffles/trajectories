@@ -19,7 +19,7 @@ fn get_circular_segment_switching_points(c: &mut Criterion) {
         let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
 
         b.iter(|| {
-            let _thing = blend_circle.get_switching_points();
+            let _thing = blend_circle.switching_points();
         })
     });
 }
@@ -39,8 +39,8 @@ fn get_next_switching_point(c: &mut Criterion) {
         let path = Path::from_waypoints(&waypoints, DEVIATION);
 
         b.iter(|| {
-            let _next_waypoint = path.get_next_switching_point(4.0);
-            let _next_waypoint = path.get_next_switching_point(13.0);
+            let _next_waypoint = path.next_switching_point(4.0);
+            let _next_waypoint = path.next_switching_point(13.0);
         })
     });
 }

@@ -148,7 +148,7 @@ where
     /// A segment can have a switching point for each dimension at various points along its path.
     /// Takes into account the path's start offset
     // TODO: Trait
-    pub fn get_switching_points(&self) -> Vec<f64> {
+    pub fn switching_points(&self) -> Vec<f64> {
         // Loop through each _component_ of unit vectors X and Y
         let mut switching_points = self
             .x
@@ -178,7 +178,7 @@ where
     }
 
     /// Get end offset
-    pub fn get_end_offset(&self) -> f64 {
+    pub fn end_offset(&self) -> f64 {
         self.end_offset
     }
 }
@@ -190,27 +190,27 @@ where
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     /// Get the arc length of this segment
-    fn get_length(&self) -> f64 {
+    fn len(&self) -> f64 {
         self.arc_length
     }
 
     /// Get position ("robot configuration" in paper parlance) along arc from normalised distance
     /// along it (`s`)
-    fn get_position(&self, distance_along_arc: f64) -> Coord<N> {
+    fn position(&self, distance_along_arc: f64) -> Coord<N> {
         let angle = (distance_along_arc - self.start_offset) / self.radius;
 
         &self.center + self.radius * ((&self.x * angle.cos()) + (&self.y * angle.sin()))
     }
 
     /// Get derivative (tangent) of point along curve
-    fn get_tangent(&self, distance_along_arc: f64) -> Coord<N> {
+    fn tangent(&self, distance_along_arc: f64) -> Coord<N> {
         let angle = (distance_along_arc - self.start_offset) / self.radius;
 
         -&self.x * angle.sin() + &self.y * angle.cos()
     }
 
     /// Get second derivative (rate of change of tangent, aka curvature) of point along curve
-    fn get_curvature(&self, distance_along_arc: f64) -> Coord<N> {
+    fn curvature(&self, distance_along_arc: f64) -> Coord<N> {
         let angle = (distance_along_arc - self.start_offset) / self.radius;
 
         -1.0 / self.radius * (&self.x * angle.cos() + &self.y * angle.sin())
@@ -230,7 +230,7 @@ mod tests {
 
         let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
 
-        let _thing = blend_circle.get_switching_points();
+        let _thing = blend_circle.switching_points();
 
         debug_blend(
             "it_gets_switching_points",

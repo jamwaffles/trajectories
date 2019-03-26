@@ -19,16 +19,16 @@ where
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     /// Get length of path
-    fn get_length(&self) -> f64;
+    fn len(&self) -> f64;
 
     /// Get position at a point along path
-    fn get_position(&self, distance_along_line: f64) -> Coord<N>;
+    fn position(&self, distance_along_line: f64) -> Coord<N>;
 
     /// Get first derivative (tangent) at a point
-    fn get_tangent(&self, distance_along_line: f64) -> Coord<N>;
+    fn tangent(&self, distance_along_line: f64) -> Coord<N>;
 
     /// Get second derivative (curvature) at a point
-    fn get_curvature(&self, distance_along_line: f64) -> Coord<N>;
+    fn curvature(&self, distance_along_line: f64) -> Coord<N>;
 }
 
 /// A switching point
@@ -105,8 +105,8 @@ where
                         let blend_segment =
                             CircularPathSegment::from_waypoints(&prev, &curr, &next, max_deviation);
 
-                        let blend_start = blend_segment.get_position(0.0);
-                        let blend_end = blend_segment.get_position(blend_segment.get_length());
+                        let blend_start = blend_segment.position(0.0);
+                        let blend_end = blend_segment.position(blend_segment.len());
 
                         // Update previous segment with new end point, or create a new one if we're
                         // at the beginning of the path
@@ -124,7 +124,7 @@ where
                                     .with_start_offset(start_offset)
                             });
 
-                        start_offset += prev_segment.get_length();
+                        start_offset += prev_segment.len();
 
                         // Switching point where linear segment touches blend (discontinuous)
                         // TODO: Get actual list of switching points when support for non-linear
@@ -133,9 +133,8 @@ where
                             .push(SwitchingPoint::new(start_offset, Continuity::Discontinuous));
 
                         let blend_segment = blend_segment.with_start_offset(start_offset);
-                        let blend_switching_points = blend_segment.get_switching_points();
-                        let blend_end_offset =
-                            blend_segment.start_offset + blend_segment.get_length();
+                        let blend_switching_points = blend_segment.switching_points();
+                        let blend_end_offset = blend_segment.start_offset + blend_segment.len();
 
                         // Get switching points over the duration of the blend segment
                         switching_points.append(
@@ -185,7 +184,7 @@ where
             + segments
                 .last()
                 .expect("Cannot get length of empty path")
-                .get_length();
+                .len();
 
         Self {
             switching_points,
@@ -198,22 +197,22 @@ where
     ///
     /// It will return the last segment in the path if a position greater than the total path length
     /// is given.
-    pub fn get_segment_at_position(&self, position_along_path: f64) -> &PathSegment<N> {
+    pub fn segment_at_position(&self, position_along_path: f64) -> &PathSegment<N> {
         self.segments
             .iter()
-            .find(|segment| segment.get_end_offset() > position_along_path)
+            .find(|segment| segment.end_offset() > position_along_path)
             .unwrap_or_else(|| &self.segments.last().unwrap())
     }
 
     /// Get all switching points along this path
-    pub fn get_switching_points(&self) -> &Vec<SwitchingPoint> {
+    pub fn switching_points(&self) -> &Vec<SwitchingPoint> {
         &self.switching_points
     }
 
     /// Get position of next switching point after a position along the path
     ///
     /// Returns the end of the path as position if no switching point could be found
-    pub fn get_next_switching_point(&self, position_along_path: f64) -> SwitchingPoint {
+    pub fn next_switching_point(&self, position_along_path: f64) -> SwitchingPoint {
         self.switching_points
             .iter()
             .cloned()
@@ -230,26 +229,26 @@ where
 {
     /// Get the length of the complete path
     #[inline(always)]
-    fn get_length(&self) -> f64 {
+    fn len(&self) -> f64 {
         self.length
     }
 
     /// Get position at a point along path
-    fn get_position(&self, distance_along_line: f64) -> Coord<N> {
-        self.get_segment_at_position(distance_along_line)
-            .get_position(distance_along_line)
+    fn position(&self, distance_along_line: f64) -> Coord<N> {
+        self.segment_at_position(distance_along_line)
+            .position(distance_along_line)
     }
 
     /// Get first derivative (tangent) at a point
-    fn get_tangent(&self, distance_along_line: f64) -> Coord<N> {
-        self.get_segment_at_position(distance_along_line)
-            .get_tangent(distance_along_line)
+    fn tangent(&self, distance_along_line: f64) -> Coord<N> {
+        self.segment_at_position(distance_along_line)
+            .tangent(distance_along_line)
     }
 
     /// Get second derivative (curvature) at a point
-    fn get_curvature(&self, distance_along_line: f64) -> Coord<N> {
-        self.get_segment_at_position(distance_along_line)
-            .get_curvature(distance_along_line)
+    fn curvature(&self, distance_along_line: f64) -> Coord<N> {
+        self.segment_at_position(distance_along_line)
+            .curvature(distance_along_line)
     }
 }
 
@@ -288,7 +287,7 @@ mod tests {
         let path = Path::from_waypoints(&waypoints, 0.01);
 
         assert_eq!(
-            path.get_segment_at_position(0.0),
+            path.segment_at_position(0.0),
             &PathSegment::Linear(LinearPathSegment::from_waypoints(
                 TestCoord3::new(1.0, 0.0, 0.0),
                 TestCoord3::new(2.0, 0.0, 0.0)
@@ -296,7 +295,7 @@ mod tests {
         );
 
         assert_eq!(
-            path.get_segment_at_position(3.0),
+            path.segment_at_position(3.0),
             &PathSegment::Linear(
                 LinearPathSegment::from_waypoints(
                     TestCoord3::new(2.0, 0.0, 0.0),
@@ -307,7 +306,7 @@ mod tests {
         );
 
         assert_eq!(
-            path.get_segment_at_position(1.0),
+            path.segment_at_position(1.0),
             &PathSegment::Linear(LinearPathSegment {
                 start: TestCoord3::new(2.0, 0.0, 0.0),
                 end: TestCoord3::new(5.0, 0.0, 0.0),
@@ -317,7 +316,7 @@ mod tests {
             })
         );
         assert_eq!(
-            path.get_segment_at_position(1.01),
+            path.segment_at_position(1.01),
             &PathSegment::Linear(LinearPathSegment {
                 start: TestCoord3::new(2.0, 0.0, 0.0),
                 end: TestCoord3::new(5.0, 0.0, 0.0),
@@ -328,7 +327,7 @@ mod tests {
         );
 
         assert_eq!(
-            path.get_segment_at_position(5.0),
+            path.segment_at_position(5.0),
             &PathSegment::Linear(LinearPathSegment {
                 start: TestCoord3::new(2.0, 0.0, 0.0),
                 end: TestCoord3::new(5.0, 0.0, 0.0),
@@ -439,8 +438,8 @@ mod tests {
         expected
             .into_iter()
             .for_each(|(pos, expected_deriv, expected_second_deriv)| {
-                let deriv = path.get_tangent(pos);
-                let second_deriv = path.get_curvature(pos);
+                let deriv = path.tangent(pos);
+                let second_deriv = path.curvature(pos);
 
                 assert_near!(deriv, expected_deriv);
                 assert_near!(second_deriv, expected_second_deriv);
@@ -466,16 +465,16 @@ mod tests {
         let path = Path::from_waypoints(&waypoints, accuracy);
 
         assert_eq!(
-            path.get_next_switching_point(0.0),
+            path.next_switching_point(0.0),
             SwitchingPoint::new(1.0173539279271488, Continuity::Discontinuous)
         );
         assert_eq!(
-            path.get_next_switching_point(5.425844),
+            path.next_switching_point(5.425844),
             SwitchingPoint::new(5.43325752688998, Continuity::Continuous)
         );
         assert_eq!(
-            path.get_next_switching_point(path.get_length() - 0.01),
-            SwitchingPoint::new(path.get_length(), Continuity::Discontinuous),
+            path.next_switching_point(path.len() - 0.01),
+            SwitchingPoint::new(path.len(), Continuity::Discontinuous),
             "Expected last switching point to be end of path"
         );
     }
@@ -495,7 +494,7 @@ mod tests {
 
         // TODO: Better assertion than overall length. This test is "tested" by looking at the
         // rendered output. This should be fixed.
-        assert_near!(path.get_length(), 2.5707963267948974);
+        assert_near!(path.len(), 2.5707963267948974);
     }
 
     #[test]
@@ -540,7 +539,7 @@ mod tests {
         debug_path("correct_path_switching_points", &path, &waypoints);
 
         for (i, (point, expected)) in path
-            .get_switching_points()
+            .switching_points()
             .iter()
             .zip(expected_switching_points.iter())
             .enumerate()
@@ -610,13 +609,13 @@ mod tests {
         {
             match segment {
                 PathSegment::Circular(s) => {
-                    let switching_points = s.get_switching_points();
+                    let switching_points = s.switching_points();
 
                     for (point, expected) in switching_points.iter().zip(expected_points.iter()) {
                         assert_near!(*point, *expected);
                     }
                 }
-                PathSegment::Linear(s) => assert_eq!(s.get_switching_points(), Vec::new()),
+                PathSegment::Linear(s) => assert_eq!(s.switching_points(), Vec::new()),
             }
         }
     }
@@ -650,11 +649,11 @@ mod tests {
         ];
 
         let path = Path::from_waypoints(&waypoints, 0.1);
-        let pos = path.get_position(0.5);
+        let pos = path.position(0.5);
 
         debug_path_point("get_pos_in_first_segment", &path, &waypoints, &pos);
 
-        assert_near!(path.get_length(), 3.2586540784544042);
+        assert_near!(path.len(), 3.2586540784544042);
         assert_near!(pos, TestCoord3::new(0.0, 0.5, 0.0));
     }
 
@@ -668,11 +667,11 @@ mod tests {
         ];
 
         let path = Path::from_waypoints(&waypoints, 0.1);
-        let pos = path.get_position(path.get_length() - 0.70710678118);
+        let pos = path.position(path.len() - 0.70710678118);
 
         debug_path_point("get_pos_in_last_segment", &path, &waypoints, &pos);
 
-        assert_near!(path.get_length(), 3.2586540784544042);
+        assert_near!(path.len(), 3.2586540784544042);
         assert_near!(pos, TestCoord3::new(1.5, 1.5, 0.0));
     }
 
@@ -686,11 +685,11 @@ mod tests {
         ];
 
         let path = Path::from_waypoints(&waypoints, 0.1);
-        let pos = path.get_position(path.get_length() - 0.2);
+        let pos = path.position(path.len() - 0.2);
 
         debug_path_point("get_pos_in_last_segment_other", &path, &waypoints, &pos);
 
-        assert_near!(path.get_length(), 3.4688780239495878);
+        assert_near!(path.len(), 3.4688780239495878);
         assert_near!(
             pos,
             TestCoord3::new(2.310263340389897, 0.5632455532033677, 0.0)
@@ -707,11 +706,11 @@ mod tests {
         ];
 
         let path = Path::from_waypoints(&waypoints, 0.1);
-        let pos = path.get_position(path.get_length());
+        let pos = path.position(path.len());
 
         debug_path_point("get_pos_in_last_segment", &path, &waypoints, &pos);
 
-        assert_near!(path.get_length(), 3.2586540784544042);
+        assert_near!(path.len(), 3.2586540784544042);
         assert_near!(pos, TestCoord3::new(2.0, 2.0, 0.0));
     }
 }

@@ -143,13 +143,13 @@ fn long_path_bench(c: &mut Criterion) {
         b.iter_with_setup(
             || Path::from_waypoints(&waypoints, DEVIATION),
             |p| {
-                let len = p.get_length();
+                let len = p.len();
                 let step = len / NUM_POINTS as f64;
 
                 let mut i = 0.0;
 
                 while i < len {
-                    let _pos = p.get_position(i);
+                    let _pos = p.position(i);
 
                     i += step;
                 }

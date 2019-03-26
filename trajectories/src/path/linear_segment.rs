@@ -64,12 +64,12 @@ where
     /// There are no switching points for a linear segment, so this method will always return an
     /// empty list.
     // TODO: Trait
-    pub fn get_switching_points(&self) -> Vec<f64> {
+    pub fn switching_points(&self) -> Vec<f64> {
         Vec::new()
     }
 
     /// Get end offset
-    pub fn get_end_offset(&self) -> f64 {
+    pub fn end_offset(&self) -> f64 {
         self.end_offset
     }
 }
@@ -82,25 +82,25 @@ where
 {
     /// Get position ("robot configuration" in paper parlance) along path from normalised distance
     /// along it (`s`)
-    fn get_position(&self, distance_along_line: f64) -> Coord<N> {
+    fn position(&self, distance_along_line: f64) -> Coord<N> {
         &self.start
             + ((&self.end - &self.start) * (distance_along_line - self.start_offset) / self.length)
     }
 
     /// Get derivative (tangent) of point along path
-    fn get_tangent(&self, _distance_along_line: f64) -> Coord<N> {
+    fn tangent(&self, _distance_along_line: f64) -> Coord<N> {
         (&self.end - &self.start) / self.length
     }
 
     /// Get second derivative (rate of change of tangent, aka curvature) of point along path
     ///
     /// The curvature of a linear path is 0
-    fn get_curvature(&self, _distance_along_line: f64) -> Coord<N> {
+    fn curvature(&self, _distance_along_line: f64) -> Coord<N> {
         Coord::repeat(0.0)
     }
 
     /// Get the length of this line
-    fn get_length(&self) -> f64 {
+    fn len(&self) -> f64 {
         self.length
     }
 }
@@ -117,7 +117,7 @@ mod tests {
             TestCoord3::new(1.0, 0.0, 0.0),
         );
 
-        assert_eq!(line.get_switching_points(), Vec::new());
+        assert_eq!(line.switching_points(), Vec::new());
     }
 
     #[test]
@@ -126,10 +126,10 @@ mod tests {
             TestCoord3::repeat(0.0),
             TestCoord3::new(1.0, 0.0, 0.0),
         );
-        let pos_start = line.get_position(0.0);
-        let pos_quarter = line.get_position(0.25);
-        let pos_three_quarter = line.get_position(0.75);
-        let pos_end = line.get_position(1.0);
+        let pos_start = line.position(0.0);
+        let pos_quarter = line.position(0.25);
+        let pos_three_quarter = line.position(0.75);
+        let pos_end = line.position(1.0);
 
         assert_near!(pos_start, TestCoord3::new(0.0, 0.0, 0.0));
         assert_near!(pos_quarter, TestCoord3::new(0.25, 0.0, 0.0));
@@ -143,16 +143,16 @@ mod tests {
             TestCoord3::repeat(0.0),
             TestCoord3::new(1.0, 1.0, 0.0),
         );
-        let pos_start = line.get_position(0.0);
-        let pos_quarter = line.get_position(0.25);
-        let pos_three_quarter = line.get_position(0.75);
-        let pos_1 = line.get_position(1.0);
-        let pos_end = line.get_position(1.41421356237);
+        let pos_start = line.position(0.0);
+        let pos_quarter = line.position(0.25);
+        let pos_three_quarter = line.position(0.75);
+        let pos_1 = line.position(1.0);
+        let pos_end = line.position(1.41421356237);
 
         let len = 2.0_f64.sqrt();
 
         // Sqrt(2)
-        assert_eq!(line.get_length(), len);
+        assert_eq!(line.len(), len);
 
         assert_near!(pos_start, TestCoord3::new(0.0, 0.0, 0.0));
         assert_near!(
@@ -173,16 +173,16 @@ mod tests {
             TestCoord3::new(2.0, 2.0, 0.0),
             TestCoord3::new(3.0, 3.0, 0.0),
         );
-        let pos_start = line.get_position(0.0);
-        let pos_quarter = line.get_position(0.25);
-        let pos_three_quarter = line.get_position(0.75);
-        let pos_1 = line.get_position(1.0);
-        let pos_end = line.get_position(1.41421356237);
+        let pos_start = line.position(0.0);
+        let pos_quarter = line.position(0.25);
+        let pos_three_quarter = line.position(0.75);
+        let pos_1 = line.position(1.0);
+        let pos_end = line.position(1.41421356237);
 
         let len = 2.0_f64.sqrt();
 
         // Sqrt(2)
-        assert_eq!(line.get_length(), len);
+        assert_eq!(line.len(), len);
 
         assert_near!(pos_start, TestCoord3::new(2.0, 2.0, 0.0));
         assert_near!(
