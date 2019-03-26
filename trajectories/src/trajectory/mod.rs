@@ -352,6 +352,7 @@ where
         }
     }
 
+    // TODO: Pass in clone of start_switching_point instead of cloning it in the fn
     fn integrate_backward(
         &self,
         start_trajectory: &[TrajectoryStep],
@@ -616,6 +617,7 @@ where
         let tangent_abs = self.path.tangent(position_along_path).abs();
         let velocity = self.velocity_limit.component_div(&tangent_abs);
 
+        // Find the component index with the smallest value
         let (constraint_axis, _) = velocity
             .iter()
             .enumerate()

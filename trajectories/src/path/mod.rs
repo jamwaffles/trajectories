@@ -193,6 +193,7 @@ where
         }
     }
 
+    // TODO: Keep a hashmap of segment positions to segments
     /// Get a path segment for a position along the entire path
     ///
     /// It will return the last segment in the path if a position greater than the total path length
