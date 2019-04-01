@@ -352,7 +352,9 @@ where
         }
     }
 
-    // TODO: Pass in clone of start_switching_point instead of cloning it in the fn
+    /// Integrate backward from the end of the path until an intersection point is found. The parts
+    /// of the current trajectory after this point are removed and replaced with the reverse
+    /// integration.
     fn integrate_backward(
         &self,
         start_trajectory: &[TrajectoryStep],
@@ -373,12 +375,21 @@ where
         let mut new_trajectory: Vec<TrajectoryStep> = Vec::new();
         let mut parts = it.next();
 
+        // Loop backwards from end of path, replacing path segments with new position and velocity
+        // until an intersection is encountered, or we hit the beginning of the path
+
         while let Some(&[ref start1, ref _start2]) = parts {
             trace!("Integrate backward loop, position {}", position);
 
             if position < 0.0 {
                 break;
             }
+
+            trace!(
+                "Backward start1 pos vs postition {} : {}",
+                start1.position,
+                position
+            );
 
             if start1.position <= position {
                 let new_point = TrajectoryStep::new(position, velocity);
