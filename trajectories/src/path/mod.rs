@@ -186,6 +186,9 @@ where
                 .expect("Cannot get length of empty path")
                 .len();
 
+        // Add a fallback switching point to the end of the path
+        switching_points.push(SwitchingPoint::new(length, Continuity::Discontinuous));
+
         Self {
             switching_points,
             segments,
@@ -213,12 +216,11 @@ where
     /// Get position of next switching point after a position along the path
     ///
     /// Returns the end of the path as position if no switching point could be found
-    pub fn next_switching_point(&self, position_along_path: f64) -> SwitchingPoint {
+    pub fn next_switching_point(&self, position_along_path: f64) -> Option<&SwitchingPoint> {
         self.switching_points
             .iter()
-            .cloned()
             .find(|sp| sp.position > position_along_path)
-            .unwrap_or_else(|| SwitchingPoint::new(self.length, Continuity::Discontinuous))
+            .or_else(|| self.switching_points.last())
     }
 }
 
@@ -467,15 +469,21 @@ mod tests {
 
         assert_eq!(
             path.next_switching_point(0.0),
-            SwitchingPoint::new(1.0173539279271488, Continuity::Discontinuous)
+            Some(&SwitchingPoint::new(
+                1.0173539279271488,
+                Continuity::Discontinuous
+            ))
         );
         assert_eq!(
             path.next_switching_point(5.425844),
-            SwitchingPoint::new(5.43325752688998, Continuity::Continuous)
+            Some(&SwitchingPoint::new(
+                5.43325752688998,
+                Continuity::Continuous
+            ))
         );
         assert_eq!(
             path.next_switching_point(path.len() - 0.01),
-            SwitchingPoint::new(path.len(), Continuity::Discontinuous),
+            Some(&SwitchingPoint::new(path.len(), Continuity::Discontinuous)),
             "Expected last switching point to be end of path"
         );
     }

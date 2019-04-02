@@ -654,10 +654,10 @@ where
         position_along_path: f64,
     ) -> Option<TrajectorySwitchingPoint> {
         let mut velocity;
-        let mut current_point = SwitchingPoint::new(position_along_path, Continuity::Continuous);
+        let mut current_point = &SwitchingPoint::new(position_along_path, Continuity::Continuous);
 
         while current_point.position <= self.path.len() - self.epsilon {
-            current_point = self.path.next_switching_point(current_point.position);
+            current_point = self.path.next_switching_point(current_point.position)?;
 
             match current_point.continuity {
                 Continuity::Discontinuous => {
