@@ -7,7 +7,7 @@ use trajectories::test_helpers::*;
 use trajectories_sys::*;
 
 #[test]
-fn it_works() {
+fn cpp_bindings() {
     pretty_env_logger::init();
 
     let waypoints: Vec<f64> = vec![
