@@ -171,24 +171,25 @@ where
         }
 
         // Backwards integrate last section
-        if let Ok((splice_index, updated_traj)) = self.integrate_backward(
-            &trajectory,
-            &TrajectorySwitchingPoint {
-                pos: TrajectoryStep::new(self.path.len(), 0.0),
-                before_acceleration: self
-                    .acceleration_at(&TrajectoryStep::new(self.path.len(), 0.0), MinMax::Min),
-                after_acceleration: 0.0,
-            },
-        ) {
-            let _ = trajectory.split_off(splice_index);
-            trajectory.extend(updated_traj);
-        } else {
-            panic!("Last section integrate backward failed");
-        }
+        let (splice_index, updated_traj) = self
+            .integrate_backward(
+                &trajectory,
+                &TrajectorySwitchingPoint {
+                    pos: TrajectoryStep::new(self.path.len(), 0.0),
+                    before_acceleration: self
+                        .acceleration_at(&TrajectoryStep::new(self.path.len(), 0.0), MinMax::Min),
+                    after_acceleration: 0.0,
+                },
+            )
+            .expect("Last section integrate backward failed");
+
+        let _ = trajectory.split_off(splice_index);
+        trajectory.extend(updated_traj);
 
         // Set times on segments
-        let timed = std::iter::once(TrajectoryStep::new(0.0, 0.0).with_time(0.0))
-            .chain(trajectory.windows(2).scan(0.0, |t, parts| {
+        let timed = trajectory
+            .windows(2)
+            .scan(0.0, |t, parts| {
                 if let [previous, current] = parts {
                     *t += (current.position - previous.position)
                         / ((current.velocity + previous.velocity) / 2.0);
@@ -197,7 +198,7 @@ where
                 } else {
                     panic!("Time windows");
                 }
-            }))
+            })
             .collect::<Vec<TrajectoryStep>>();
 
         self.trajectory = timed;
@@ -399,8 +400,7 @@ where
                         next_iter = false;
 
                         if vel < 0.0 {
-                            eprintln!("Velocity cannot be less than zero");
-                            break;
+                            return Err("Velocity cannot be less than zero".into());
                         }
 
                         let start_slope = (start2.velocity - start1.velocity)
