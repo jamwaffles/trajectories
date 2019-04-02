@@ -64,10 +64,7 @@ where
 
     /// Get duration of complete trajectory
     pub fn duration(&self) -> f64 {
-        self.trajectory
-            .last()
-            .expect("Could not get duration of empty trajectory")
-            .time
+        self.trajectory.last().map(|step| step.time).unwrap_or(0.0)
     }
 
     /// Get a position in n-dimensional space given a time along the trajectory
@@ -196,7 +193,7 @@ where
                     *t += (current.position - previous.position)
                         / ((current.velocity + previous.velocity) / 2.0);
 
-                    Some(current.clone().with_time(*t))
+                    Some(current.with_time(*t))
                 } else {
                     panic!("Time windows");
                 }
