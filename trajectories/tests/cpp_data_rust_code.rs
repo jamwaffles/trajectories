@@ -3,7 +3,7 @@
 extern crate pretty_env_logger;
 
 use trajectories::test_helpers::*;
-use trajectories::*;
+use trajectories::{Path, PathOptions, Trajectory, TrajectoryOptions};
 
 #[test]
 fn test_1() {
@@ -14,14 +14,21 @@ fn test_1() {
         TestCoord4::new(1423.0, 985.000244140625, 2126.0, 0.0),
     ];
 
-    let p = Path::from_waypoints(&waypoints, 100.0);
+    let p = Path::from_waypoints(
+        &waypoints,
+        PathOptions {
+            max_deviation: 100.0,
+        },
+    );
 
     let _trajectory = Trajectory::new(
         p,
-        TestCoord4::new(1.3, 0.67, 0.67, 0.5),
-        TestCoord4::new(0.00249, 0.00249, 0.00249, 0.00249),
-        0.000001,
-        10.0,
+        TrajectoryOptions {
+            velocity_limit: TestCoord4::new(1.3, 0.67, 0.67, 0.5),
+            acceleration_limit: TestCoord4::new(0.00249, 0.00249, 0.00249, 0.00249),
+            epsilon: 0.000001,
+            timestep: 10.0,
+        },
     );
 
     // TODO: Loop through, assert things
@@ -37,14 +44,21 @@ fn test_2() {
         TestCoord4::new(452.5, 533.0, 951.0, 90.0),
     ];
 
-    let p = Path::from_waypoints(&waypoints, 100.0);
+    let p = Path::from_waypoints(
+        &waypoints,
+        PathOptions {
+            max_deviation: 100.0,
+        },
+    );
 
     let _trajectory = Trajectory::new(
         p,
-        TestCoord4::new(1.3, 0.67, 0.67, 0.5),
-        TestCoord4::new(0.002, 0.002, 0.002, 0.002),
-        0.000001,
-        10.0,
+        TrajectoryOptions {
+            velocity_limit: TestCoord4::new(1.3, 0.67, 0.67, 0.5),
+            acceleration_limit: TestCoord4::new(0.002, 0.002, 0.002, 0.002),
+            epsilon: 0.000001,
+            timestep: 10.0,
+        },
     );
 
     // TODO: Loop through, assert things

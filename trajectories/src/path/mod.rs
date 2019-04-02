@@ -1,9 +1,11 @@
 mod circular_segment;
 mod linear_segment;
+mod path_options;
 mod segment;
 
 pub use self::circular_segment::CircularPathSegment;
 pub use self::linear_segment::LinearPathSegment;
+pub use self::path_options::PathOptions;
 pub use self::segment::PathSegment;
 use crate::Coord;
 use nalgebra::allocator::Allocator;
@@ -88,7 +90,9 @@ where
     /// Create a blended path from a set of waypoints
     ///
     /// The path must be differentiable, so small blends are added between linear segments
-    pub fn from_waypoints(waypoints: &[Coord<N>], max_deviation: f64) -> Self {
+    pub fn from_waypoints(waypoints: &[Coord<N>], options: PathOptions) -> Self {
+        let PathOptions { max_deviation } = options;
+
         let mut start_offset = 0.0;
         let mut switching_points = Vec::with_capacity((waypoints.len() as f32 * 2.5) as usize);
 
@@ -267,7 +271,12 @@ mod tests {
             TestCoord3::new(2.0, 0.0, 0.0),
         ];
 
-        let _path = Path::from_waypoints(&waypoints, 0.01);
+        let _path = Path::from_waypoints(
+            &waypoints,
+            PathOptions {
+                max_deviation: 0.01,
+            },
+        );
     }
 
     #[test]
@@ -275,8 +284,18 @@ mod tests {
     fn path_too_short() {
         let waypoints = vec![TestCoord3::new(1.0, 0.0, 0.0)];
 
-        let _p1 = Path::from_waypoints(&waypoints, 0.01);
-        let _p2 = Path::from_waypoints(&Vec::<TestCoord3>::new(), 0.01);
+        let _p1 = Path::from_waypoints(
+            &waypoints,
+            PathOptions {
+                max_deviation: 0.01,
+            },
+        );
+        let _p2 = Path::from_waypoints(
+            &Vec::<TestCoord3>::new(),
+            PathOptions {
+                max_deviation: 0.01,
+            },
+        );
     }
 
     #[test]
@@ -287,7 +306,12 @@ mod tests {
             TestCoord3::new(5.0, 0.0, 0.0),
         ];
 
-        let path = Path::from_waypoints(&waypoints, 0.01);
+        let path = Path::from_waypoints(
+            &waypoints,
+            PathOptions {
+                max_deviation: 0.01,
+            },
+        );
 
         assert_eq!(
             path.segment_at_position(0.0),
@@ -353,9 +377,6 @@ mod tests {
             TestCoord3::new(0.0, 1.0, 0.0),
             TestCoord3::new(0.0, 0.0, 1.0),
         ];
-
-        // Match Example.cpp accuracy
-        let accuracy = 0.001;
 
         // Tuple of (position, expected derivative, expected second derivative) taken from Example.cpp
         let expected = vec![
@@ -436,7 +457,7 @@ mod tests {
             ),
         ];
 
-        let path = Path::from_waypoints(&waypoints, accuracy);
+        let path = Path::from_waypoints(&waypoints, PathOptions::default());
 
         expected
             .into_iter()
@@ -462,10 +483,7 @@ mod tests {
             TestCoord3::new(0.0, 0.0, 1.0),
         ];
 
-        // Match Example.cpp accuracy
-        let accuracy = 0.001;
-
-        let path = Path::from_waypoints(&waypoints, accuracy);
+        let path = Path::from_waypoints(&waypoints, PathOptions::default());
 
         assert_eq!(
             path.next_switching_point(0.0),
@@ -497,7 +515,7 @@ mod tests {
             TestCoord3::new(1.0, 2.0, 0.0),
         ];
 
-        let path = Path::from_waypoints(&waypoints, 1.5);
+        let path = Path::from_waypoints(&waypoints, PathOptions { max_deviation: 1.5 });
 
         debug_path("length_limit_blend_size", &path, &waypoints);
 
@@ -540,10 +558,7 @@ mod tests {
             SwitchingPoint::new(8.845047598681882, Continuity::Discontinuous),
         ];
 
-        // Match Example.cpp accuracy
-        let accuracy = 0.001;
-
-        let path = Path::from_waypoints(&waypoints, accuracy);
+        let path = Path::from_waypoints(&waypoints, PathOptions::default());
 
         debug_path("correct_path_switching_points", &path, &waypoints);
 
@@ -572,9 +587,12 @@ mod tests {
             TestCoord3::new(0.0, 0.0, 0.0),
         ];
 
-        let accuracy = 0.05;
-
-        let path = Path::from_waypoints(&waypoints, accuracy);
+        let path = Path::from_waypoints(
+            &waypoints,
+            PathOptions {
+                max_deviation: 0.05,
+            },
+        );
 
         debug_path_switching_points("debug_switching_points", &path, &waypoints);
     }
@@ -607,10 +625,7 @@ mod tests {
             vec![],
         ];
 
-        // Match Example.cpp accuracy
-        let accuracy = 0.001;
-
-        let path = Path::from_waypoints(&waypoints, accuracy);
+        let path = Path::from_waypoints(&waypoints, PathOptions::default());
 
         debug_path("correct_segment_switching_points", &path, &waypoints);
 
@@ -641,7 +656,7 @@ mod tests {
             TestCoord3::new(4.0, 4.0, 0.0),
         ];
 
-        let path = Path::from_waypoints(&waypoints, 0.1);
+        let path = Path::from_waypoints(&waypoints, PathOptions { max_deviation: 0.1 });
 
         debug_path("path_with_blends", &path, &waypoints);
 
@@ -657,7 +672,7 @@ mod tests {
             TestCoord3::new(2.0, 2.0, 0.0),
         ];
 
-        let path = Path::from_waypoints(&waypoints, 0.1);
+        let path = Path::from_waypoints(&waypoints, PathOptions { max_deviation: 0.1 });
         let pos = path.position(0.5);
 
         debug_path_point("get_pos_in_first_segment", &path, &waypoints, &pos);
@@ -675,7 +690,7 @@ mod tests {
             TestCoord3::new(2.0, 2.0, 0.0),
         ];
 
-        let path = Path::from_waypoints(&waypoints, 0.1);
+        let path = Path::from_waypoints(&waypoints, PathOptions { max_deviation: 0.1 });
         let pos = path.position(path.len() - 0.70710678118);
 
         debug_path_point("get_pos_in_last_segment", &path, &waypoints, &pos);
@@ -693,7 +708,7 @@ mod tests {
             TestCoord3::new(2.5, 0.5, 0.0),
         ];
 
-        let path = Path::from_waypoints(&waypoints, 0.1);
+        let path = Path::from_waypoints(&waypoints, PathOptions { max_deviation: 0.1 });
         let pos = path.position(path.len() - 0.2);
 
         debug_path_point("get_pos_in_last_segment_other", &path, &waypoints, &pos);
@@ -714,7 +729,7 @@ mod tests {
             TestCoord3::new(2.0, 2.0, 0.0),
         ];
 
-        let path = Path::from_waypoints(&waypoints, 0.1);
+        let path = Path::from_waypoints(&waypoints, PathOptions { max_deviation: 0.1 });
         let pos = path.position(path.len());
 
         debug_path_point("get_pos_in_last_segment", &path, &waypoints, &pos);

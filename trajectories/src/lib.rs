@@ -53,8 +53,8 @@ pub mod prelude;
 pub mod test_helpers;
 mod trajectory;
 
-pub use crate::path::Path;
-pub use crate::trajectory::Trajectory;
+pub use crate::path::{Path, PathOptions};
+pub use crate::trajectory::{Trajectory, TrajectoryOptions};
 use nalgebra::VectorN;
 
 /// Type alias for all vector operations

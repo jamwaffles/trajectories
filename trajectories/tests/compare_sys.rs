@@ -2,8 +2,9 @@
 
 extern crate pretty_env_logger;
 
-use trajectories::test_helpers::*;
-use trajectories::*;
+use approx::assert_ulps_eq;
+use trajectories::test_helpers::TestCoord3;
+use trajectories::{Path, PathOptions, Trajectory, TrajectoryOptions};
 use trajectories_sys::{path_create, Trajectory as CppTrajectory};
 
 /// test1 from Test.cpp
@@ -16,14 +17,21 @@ fn compare_test_1() {
         TestCoord3::new(1423.0, 985.000244140625, 2126.0),
     ];
 
-    let rust_path = Path::from_waypoints(&waypoints, 0.001);
+    let rust_path = Path::from_waypoints(
+        &waypoints,
+        PathOptions {
+            max_deviation: 0.001,
+        },
+    );
 
     let rust_trajectory = Trajectory::new(
         rust_path,
-        TestCoord3::new(1.3, 0.67, 0.67),
-        TestCoord3::new(0.00249, 0.00249, 0.00249),
-        0.000001,
-        0.001,
+        TrajectoryOptions {
+            velocity_limit: TestCoord3::new(1.3, 0.67, 0.67),
+            acceleration_limit: TestCoord3::new(0.00249, 0.00249, 0.00249),
+            epsilon: 0.000001,
+            timestep: 0.001,
+        },
     )
     .unwrap();
 
@@ -68,14 +76,21 @@ fn compare_test_2() {
         TestCoord3::new(452.5, 533.0, 951.0),
     ];
 
-    let rust_path = Path::from_waypoints(&waypoints, 0.001);
+    let rust_path = Path::from_waypoints(
+        &waypoints,
+        PathOptions {
+            max_deviation: 100.0,
+        },
+    );
 
     let rust_trajectory = Trajectory::new(
         rust_path,
-        TestCoord3::new(1.3, 0.67, 0.67),
-        TestCoord3::new(0.002, 0.002, 0.002),
-        0.000001,
-        0.001,
+        TrajectoryOptions {
+            velocity_limit: TestCoord3::new(1.3, 0.67, 0.67),
+            acceleration_limit: TestCoord3::new(0.002, 0.002, 0.002),
+            epsilon: 0.000001,
+            timestep: 0.001,
+        },
     )
     .unwrap();
 
@@ -113,7 +128,7 @@ fn compare_test_2() {
         )
     };
 
-    assert_eq!(rust_trajectory.duration(), unsafe {
+    assert_ulps_eq!(rust_trajectory.duration(), unsafe {
         cpp_trajectory.getDuration()
     });
 }

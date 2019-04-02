@@ -2,14 +2,16 @@ mod limit;
 mod min_max;
 mod path_position;
 mod switching_point;
+mod trajectory_options;
 mod trajectory_step;
 
 use self::limit::Limit;
 use self::min_max::MinMax;
 use self::path_position::PathPosition;
 use self::switching_point::SwitchingPoint as TrajectorySwitchingPoint;
+pub use self::trajectory_options::TrajectoryOptions;
 use self::trajectory_step::TrajectoryStep;
-use crate::path::{Continuity, Path, PathItem, SwitchingPoint};
+use crate::path::{Continuity, Path, PathItem, PathOptions, SwitchingPoint};
 use crate::Coord;
 use nalgebra::allocator::Allocator;
 use nalgebra::allocator::SameShapeVectorAllocator;
@@ -41,13 +43,14 @@ where
 {
     // TODO: Stop panicking all over the place and actually use the error arm of this `Result`
     /// Create a new trajectory from a given path and max velocity and acceleration
-    pub fn new(
-        path: Path<N>,
-        velocity_limit: Coord<N>,
-        acceleration_limit: Coord<N>,
-        epsilon: f64,
-        timestep: f64,
-    ) -> Result<Self, String> {
+    pub fn new(path: Path<N>, options: TrajectoryOptions<N>) -> Result<Self, String> {
+        let TrajectoryOptions {
+            velocity_limit,
+            acceleration_limit,
+            timestep,
+            epsilon,
+        } = options;
+
         let mut traj = Self {
             path,
             velocity_limit,
@@ -849,11 +852,18 @@ mod tests {
 
         // Same epsilon as Example.cpp for equal comparison
         let traj = Trajectory::new(
-            Path::from_waypoints(&waypoints, 0.001),
-            TestCoord3::repeat(1.0),
-            TestCoord3::repeat(1.0),
-            0.000001,
-            0.001,
+            Path::from_waypoints(
+                &waypoints,
+                PathOptions {
+                    max_deviation: 0.001,
+                },
+            ),
+            TrajectoryOptions {
+                velocity_limit: TestCoord3::repeat(1.0),
+                acceleration_limit: TestCoord3::repeat(1.0),
+                epsilon: 0.000001,
+                timestep: 0.001,
+            },
         )
         .unwrap();
 
@@ -894,11 +904,18 @@ mod tests {
 
         // Same epsilon as Example.cpp for equal comparison
         let traj = Trajectory::new(
-            Path::from_waypoints(&waypoints, 0.001),
-            TestCoord3::repeat(1.0),
-            TestCoord3::repeat(1.0),
-            0.000001,
-            0.001,
+            Path::from_waypoints(
+                &waypoints,
+                PathOptions {
+                    max_deviation: 0.001,
+                },
+            ),
+            TrajectoryOptions {
+                velocity_limit: TestCoord3::repeat(1.0),
+                acceleration_limit: TestCoord3::repeat(1.0),
+                epsilon: 0.000001,
+                timestep: 0.001,
+            },
         )
         .unwrap();
 
@@ -924,15 +941,22 @@ mod tests {
         ];
         let mut rows = Vec::new();
 
-        let path = Path::from_waypoints(&waypoints, 0.001);
+        let path = Path::from_waypoints(
+            &waypoints,
+            PathOptions {
+                max_deviation: 0.001,
+            },
+        );
 
         // Same epsilon as Example.cpp for equal comparison
         let traj = Trajectory::new(
             path,
-            TestCoord3::repeat(1.0),
-            TestCoord3::repeat(1.0),
-            0.000001,
-            0.001,
+            TrajectoryOptions {
+                velocity_limit: TestCoord3::repeat(1.0),
+                acceleration_limit: TestCoord3::repeat(1.0),
+                epsilon: 0.000001,
+                timestep: 0.001,
+            },
         )
         .unwrap();
 
@@ -955,7 +979,7 @@ mod tests {
 
         write_debug_csv("../target/plot_native.csv".into(), &rows);
 
-        assert_eq!(traj.trajectory.len(), 14814);
+        assert_eq!(traj.trajectory.len(), 14813);
         assert_near!(duration, 14.802832847319937);
     }
 }

@@ -21,14 +21,21 @@ fn profile_native() {
 
     // start_profile();
 
-    let p = Path::from_waypoints(&waypoints, 0.001);
+    let p = Path::from_waypoints(
+        &waypoints,
+        PathOptions {
+            max_deviation: 0.001,
+        },
+    );
 
     let trajectory = Trajectory::new(
         p,
-        TestCoord3::new(1.0, 1.0, 1.0),
-        TestCoord3::new(1.0, 1.0, 1.0),
-        0.000001,
-        0.001,
+        TrajectoryOptions {
+            velocity_limit: TestCoord3::new(1.0, 1.0, 1.0),
+            acceleration_limit: TestCoord3::new(1.0, 1.0, 1.0),
+            epsilon: 0.000001,
+            timestep: 0.001,
+        },
     )
     .unwrap();
 
@@ -37,7 +44,6 @@ fn profile_native() {
     let _point3 = trajectory.position(7.89);
     let _point4 = trajectory.position(14.00001);
 
-    // assert_eq!(trajectory.trajectory.len(), 14814);
     assert_eq!(trajectory.duration(), 14.802832847319943);
 
     // end_profile();
