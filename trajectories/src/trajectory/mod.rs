@@ -29,7 +29,7 @@ where
     velocity_limit: Coord<N>,
     acceleration_limit: Coord<N>,
     timestep: f64,
-    trajectory: Vec<TrajectoryStep>,
+    pub(crate) trajectory: Vec<TrajectoryStep>,
     epsilon: f64,
 }
 
