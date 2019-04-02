@@ -162,15 +162,19 @@ where
 
             trace!("Setup loop 3");
 
-            if let Some(updated_traj) = self.integrate_backward(&trajectory, &switching_point) {
-                trajectory = updated_traj;
+            if let Ok((splice_index, updated_traj)) =
+                self.integrate_backward(&trajectory, &switching_point)
+            {
+                // trajectory = updated_traj;
+                let _ = trajectory.split_off(splice_index);
+                trajectory.extend(updated_traj);
             }
 
             trace!("Setup loop 4");
         }
 
         // Backwards integrate last section
-        if let Some(updated_traj) = self.integrate_backward(
+        if let Ok((splice_index, updated_traj)) = self.integrate_backward(
             &trajectory,
             &TrajectorySwitchingPoint {
                 pos: TrajectoryStep::new(self.path.len(), 0.0),
@@ -179,7 +183,8 @@ where
                 after_acceleration: 0.0,
             },
         ) {
-            trajectory = updated_traj;
+            let _ = trajectory.split_off(splice_index);
+            trajectory.extend(updated_traj);
         } else {
             panic!("Last section integrate backward failed");
         }
@@ -359,7 +364,7 @@ where
         &self,
         start_trajectory: &[TrajectoryStep],
         start_switching_point: &TrajectorySwitchingPoint,
-    ) -> Option<Vec<TrajectoryStep>> {
+    ) -> Result<(usize, Vec<TrajectoryStep>), String> {
         let TrajectorySwitchingPoint {
             pos: TrajectoryStep {
                 position, velocity, ..
@@ -374,10 +379,13 @@ where
         let mut acc = before_acceleration;
         let mut new_traj: Vec<TrajectoryStep> = Vec::new();
         let mut next_iter = false;
+        let mut splice_index = start_trajectory.len();
 
         for parts in start_trajectory.windows(2).rev() {
             match parts {
                 [ref start1, ref start2] => {
+                    splice_index -= 1;
+
                     while start1.position <= pos {
                         if !next_iter {
                             let new_point = TrajectoryStep::new(pos, vel);
@@ -423,28 +431,20 @@ where
                                 intersection_velocity,
                             ));
 
-                            let ret = start_trajectory
-                                .iter()
-                                .cloned()
-                                // Remove items in current trajectory after intersection point
-                                .filter(|step| step.position < start2.position)
-                                // Append new items. This generated trajectory part has been calculated
-                                // backwards, so is reversed here to append it in forward direction.
-                                .chain(new_traj.into_iter().rev())
-                                .collect::<Vec<TrajectoryStep>>();
+                            let ret = new_traj.into_iter().rev().collect();
 
-                            return Some(ret);
+                            return Ok((splice_index, ret));
                         }
                     }
 
                     // Skip computation at beginning of next loop
                     next_iter = true;
                 }
-                _ => panic!("Not enough parts: {}, expected 2", parts.len()),
+                _ => return Err(format!("Not enough parts: {}, expected 2", parts.len())),
             }
         }
 
-        panic!("Path is invalid: Integrate backwards did not hit start trajectory");
+        Err("Path is invalid: Integrate backwards did not hit start trajectory".into())
     }
 
     /// Get next switching point along the path, bounded by velocity or acceleration
