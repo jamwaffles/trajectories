@@ -2,8 +2,8 @@
 
 # Compare C++ code with Rust bindings
 
-cargo test
-cargo test -- --ignored
+cargo test --release
+cargo test --release -- --ignored
 
 echo "C++ native..."
 cd ./trajectories-sys
