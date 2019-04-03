@@ -9,6 +9,7 @@ use nalgebra::allocator::Allocator;
 use nalgebra::allocator::SameShapeVectorAllocator;
 use nalgebra::DefaultAllocator;
 use nalgebra::DimName;
+use serde::Serialize;
 use std::fmt;
 use std::fs::File;
 use svg;
@@ -463,7 +464,10 @@ impl TrajectoryStepRow {
 }
 
 /// Write a bunch of debug info to a CSV file
-pub fn write_debug_csv(path: String, rows: &[TrajectoryStepRow]) {
+pub fn write_debug_csv<R>(path: String, rows: &[R])
+where
+    R: Serialize,
+{
     let mut wtr = csv::Writer::from_writer(File::create(path).unwrap());
 
     for row in rows {
