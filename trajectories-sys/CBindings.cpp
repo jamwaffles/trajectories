@@ -8,7 +8,7 @@
 #include "Trajectory.hpp"
 
 // Take a C-style pointer to a list of floats and make a Path with it
-extern "C" void* path_create(double *waypoints, int len, double step) {
+extern "C" void* path_create(double *waypoints, int len, double maxDeviation) {
 	// int n = sizeof(waypoints) / sizeof(waypoints[0]);
 
 	// std::vector<double> nums(waypoints, waypoints + n);
@@ -46,5 +46,5 @@ extern "C" void* path_create(double *waypoints, int len, double step) {
 
 	// std::cout << "WAYPOINTS " << wps.size() << std::endl;
 
-	return new Path(wps, step);
+	return new Path(wps, maxDeviation);
 }
