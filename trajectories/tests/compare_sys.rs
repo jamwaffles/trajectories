@@ -4,7 +4,8 @@ extern crate pretty_env_logger;
 
 use approx::assert_ulps_eq;
 use trajectories::test_helpers::TestCoord3;
-use trajectories::{Path, PathOptions, Trajectory, TrajectoryOptions};
+use trajectories::test_helpers::*;
+use trajectories::{prelude::*, Path, PathOptions, Trajectory, TrajectoryOptions};
 use trajectories_sys::{path_create, Trajectory as CppTrajectory};
 
 /// test1 from Test.cpp
@@ -47,6 +48,7 @@ fn compare_test_1() {
             ]
             .as_ptr(),
             waypoints.len() * 3,
+            // Max deviation
             0.001f64,
         )
     };
@@ -56,6 +58,7 @@ fn compare_test_1() {
             cpp_path,
             &[1.3, 0.67, 0.67],
             &[0.00249, 0.00249, 0.00249],
+            // Timestep
             0.001f64,
         )
     };
@@ -76,6 +79,9 @@ fn compare_test_2() {
         TestCoord3::new(452.5, 533.0, 951.0),
     ];
 
+    let max_deviation = 100.0;
+    let timestep = 10.0;
+
     let rust_path = Path::from_waypoints(
         &waypoints,
         PathOptions {
@@ -83,13 +89,15 @@ fn compare_test_2() {
         },
     );
 
+    let rust_path_len = rust_path.len();
+
     let rust_trajectory = Trajectory::new(
         rust_path,
         TrajectoryOptions {
             velocity_limit: TestCoord3::new(1.3, 0.67, 0.67),
             acceleration_limit: TestCoord3::new(0.002, 0.002, 0.002),
             epsilon: 0.000001,
-            timestep: 0.001,
+            timestep,
         },
     )
     .unwrap();
@@ -115,7 +123,7 @@ fn compare_test_2() {
             ]
             .as_ptr(),
             waypoints.len() * 3,
-            0.001f64,
+            max_deviation,
         )
     };
 
@@ -124,9 +132,45 @@ fn compare_test_2() {
             cpp_path,
             &[1.3, 0.67, 0.67],
             &[0.002, 0.002, 0.002],
-            0.001f64,
+            timestep,
         )
     };
+
+    let mut cpp_rows = Vec::new();
+    let mut rust_rows = Vec::new();
+
+    for i in 0..(unsafe { cpp_trajectory.getDuration() } * 1000.0) as usize {
+        let time: f64 = i as f64 / 1000.0;
+
+        let c_p = unsafe { cpp_trajectory.getPosition(time) };
+        let c_v = unsafe { cpp_trajectory.getVelocity(time) };
+
+        let c_pos: TestPoint = c_p.into();
+        let c_vel: TestPoint = c_v.into();
+
+        cpp_rows.push(TrajectoryStepRow::from_parts(time, &c_pos, &c_vel));
+    }
+
+    for i in 0..(rust_trajectory.duration() * 1000.0) as usize {
+        let time: f64 = i as f64 / 1000.0;
+
+        let r_p = rust_trajectory.position(time);
+        let r_v = rust_trajectory.velocity(time);
+
+        let r_pos = TestPoint::from([r_p[0], r_p[1], r_p[2]]);
+        let r_vel = TestPoint::from([r_v[0], r_v[1], r_v[2]]);
+
+        rust_rows.push(TrajectoryStepRow::from_parts(time, &r_pos, &r_vel));
+    }
+
+    write_debug_csv("../target/compare_cpp_output.csv".into(), &cpp_rows);
+    write_debug_csv("../target/compare_rust_output.csv".into(), &rust_rows);
+
+    assert_eq!(
+        unsafe { trajectories_sys::Path_getLength(cpp_path) },
+        rust_path_len,
+        "path lengths do not match"
+    );
 
     assert_ulps_eq!(rust_trajectory.duration(), unsafe {
         cpp_trajectory.getDuration()

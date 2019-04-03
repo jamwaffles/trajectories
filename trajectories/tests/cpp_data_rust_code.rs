@@ -17,7 +17,7 @@ fn test_1() {
     let p = Path::from_waypoints(
         &waypoints,
         PathOptions {
-            max_deviation: 100.0,
+            max_deviation: 0.001,
         },
     );
 
@@ -47,7 +47,7 @@ fn test_2() {
     let p = Path::from_waypoints(
         &waypoints,
         PathOptions {
-            max_deviation: 100.0,
+            max_deviation: 0.001,
         },
     );
 
