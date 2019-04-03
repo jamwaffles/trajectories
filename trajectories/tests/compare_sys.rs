@@ -80,7 +80,7 @@ fn compare_test_2() {
     ];
 
     let max_deviation = 100.0;
-    let timestep = 10.0;
+    let timestep = 20.0;
 
     let rust_path = Path::from_waypoints(
         &waypoints,
@@ -139,8 +139,10 @@ fn compare_test_2() {
     let mut cpp_rows = Vec::new();
     let mut rust_rows = Vec::new();
 
-    for i in 0..(unsafe { cpp_trajectory.getDuration() } * 1000.0) as usize {
-        let time: f64 = i as f64 / 1000.0;
+    let step_size = 5;
+
+    for i in (0..unsafe { cpp_trajectory.getDuration() } as usize).step_by(step_size) {
+        let time: f64 = i as f64;
 
         let c_p = unsafe { cpp_trajectory.getPosition(time) };
         let c_v = unsafe { cpp_trajectory.getVelocity(time) };
@@ -151,8 +153,8 @@ fn compare_test_2() {
         cpp_rows.push(TrajectoryStepRow::from_parts(time, &c_pos, &c_vel));
     }
 
-    for i in 0..(rust_trajectory.duration() * 1000.0) as usize {
-        let time: f64 = i as f64 / 1000.0;
+    for i in (0..rust_trajectory.duration() as usize).step_by(step_size) {
+        let time: f64 = i as f64;
 
         let r_p = rust_trajectory.position(time);
         let r_v = rust_trajectory.velocity(time);
