@@ -167,6 +167,14 @@ fn compare_test_2() {
 
     write_debug_csv("../target/compare_cpp_output.csv".into(), &cpp_rows);
     write_debug_csv("../target/compare_rust_output.csv".into(), &rust_rows);
+    write_debug_csv(
+        "../target/compare_rust_steps.csv".into(),
+        &rust_trajectory
+            .trajectory
+            .iter()
+            .map(|step| step.time)
+            .collect::<Vec<f64>>(),
+    );
 
     assert_eq!(
         unsafe { trajectories_sys::Path_getLength(cpp_path) },
