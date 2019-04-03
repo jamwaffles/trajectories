@@ -118,7 +118,7 @@ where
             .windows(2)
             .find_map(|window| {
                 if let [ref prev, ref curr] = window {
-                    if curr.time >= time {
+                    if prev.time <= time && time < curr.time {
                         Some((prev, curr))
                     } else {
                         None
