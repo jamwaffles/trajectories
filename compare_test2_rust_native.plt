@@ -26,6 +26,9 @@ plot 'target/compare_cpp_output.csv' using 1:2 ps 0.4 pt 2 with linespoints titl
 
 set title 'Rust native'
 
+set grid x2tics
+set x2tics (50, 140.23806829245765, 380.71934373703334, 879.8507114774787, 1084.8016572321708, 1163.3414735719157)
+
 plot 'target/compare_rust_output.csv' using 1:2 ps 0.4 pt 2 with linespoints title 'Position X', \
 'target/compare_rust_output.csv' using 1:3 ps 0.4 pt 2 with linespoints title 'Position Y', \
 'target/compare_rust_output.csv' using 1:4 ps 0.4 pt 2 with linespoints title 'Position Z', \
