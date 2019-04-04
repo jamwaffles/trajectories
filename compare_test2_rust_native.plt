@@ -17,21 +17,21 @@ set multiplot layout 2,1 \
 
 set title 'C++ Rust bindings'
 
-plot 'target/compare_cpp_output.csv' using 1:2 ps 0.4 pt 2 with linespoints title 'Position X', \
-'target/compare_cpp_output.csv' using 1:3 ps 0.4 pt 2 with linespoints title 'Position Y', \
-'target/compare_cpp_output.csv' using 1:4 ps 0.4 pt 2 with linespoints title 'Position Z', \
-'target/compare_cpp_output.csv' using 1:5 ps 0.4 pt 2 with linespoints axes x1y2 title 'Velocity X', \
-'target/compare_cpp_output.csv' using 1:6 ps 0.4 pt 2 with linespoints axes x1y2 title 'Velocity Y', \
-'target/compare_cpp_output.csv' using 1:7 ps 0.4 pt 2 with linespoints axes x1y2 title 'Velocity Z'
+plot 'target/compare_cpp_output.csv' using 1:2 lw 2 ps 0.4 pt 2 with lines title 'Position X', \
+'target/compare_cpp_output.csv' using 1:3 lw 2 ps 0.4 pt 2 with lines title 'Position Y', \
+'target/compare_cpp_output.csv' using 1:4 lw 2 ps 0.4 pt 2 with lines title 'Position Z', \
+'target/compare_cpp_output.csv' using 1:5 lw 2 dt 4 with lines axes x1y2 title 'Velocity X', \
+'target/compare_cpp_output.csv' using 1:6 lw 2 dt 4 with lines axes x1y2 title 'Velocity Y', \
+'target/compare_cpp_output.csv' using 1:7 lw 2 dt 4 with lines axes x1y2 title 'Velocity Z'
 
 set title 'Rust native'
 
 set grid x2tics
 set x2tics (50, 140.23806829245765, 380.71934373703334, 879.8507114774787, 1084.8016572321708, 1163.3414735719157)
 
-plot 'target/compare_rust_output.csv' using 1:2 ps 0.4 pt 2 with linespoints title 'Position X', \
-'target/compare_rust_output.csv' using 1:3 ps 0.4 pt 2 with linespoints title 'Position Y', \
-'target/compare_rust_output.csv' using 1:4 ps 0.4 pt 2 with linespoints title 'Position Z', \
-'target/compare_rust_output.csv' using 1:5 ps 0.4 pt 2 with linespoints axes x1y2  title 'Velocity X', \
-'target/compare_rust_output.csv' using 1:6 ps 0.4 pt 2 with linespoints axes x1y2  title 'Velocity Y', \
-'target/compare_rust_output.csv' using 1:7 ps 0.4 pt 2 with linespoints axes x1y2  title 'Velocity Z'
+plot 'target/compare_rust_output.csv' using 1:2 lw 2 ps 0.4 pt 2 with lines title 'Position X', \
+'target/compare_rust_output.csv' using 1:3 lw 2 ps 0.4 pt 2 with lines title 'Position Y', \
+'target/compare_rust_output.csv' using 1:4 lw 2 ps 0.4 pt 2 with lines title 'Position Z', \
+'target/compare_rust_output.csv' using 1:5 lw 2 dt 4 with lines axes x1y2  title 'Velocity X', \
+'target/compare_rust_output.csv' using 1:6 lw 2 dt 4 with lines axes x1y2  title 'Velocity Y', \
+'target/compare_rust_output.csv' using 1:7 lw 2 dt 4 with lines axes x1y2  title 'Velocity Z'
