@@ -56,15 +56,15 @@ impl SwitchingPoint {
 /// Continuity flag
 #[derive(Debug, Clone, PartialEq)]
 pub enum Continuity {
-    /// The path at a point is discontinuous
+    /// The path at a point is discontinuous (`true` in C++ code)
     Discontinuous,
 
-    /// The path at a point is continuous
+    /// The path at a point is continuous (`false` in C++ code)
     Continuous,
 }
 
 /// A path with circular blends between segments
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Path<N>
 where
     N: DimName + Copy,

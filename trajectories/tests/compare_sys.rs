@@ -92,7 +92,7 @@ fn compare_test_2() {
     let rust_path_len = rust_path.len();
 
     let rust_trajectory = Trajectory::new(
-        rust_path,
+        rust_path.clone(),
         TrajectoryOptions {
             velocity_limit: TestCoord3::new(1.3, 0.67, 0.67),
             acceleration_limit: TestCoord3::new(0.002, 0.002, 0.002),
@@ -173,6 +173,14 @@ fn compare_test_2() {
             .trajectory
             .iter()
             .map(|step| step.time)
+            .collect::<Vec<f64>>(),
+    );
+    write_debug_csv(
+        "../target/compare_rust_switching_points.csv".into(),
+        &rust_path
+            .switching_points()
+            .iter()
+            .map(|point| point.position)
             .collect::<Vec<f64>>(),
     );
 
