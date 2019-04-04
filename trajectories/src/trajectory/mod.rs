@@ -74,15 +74,16 @@ where
     pub fn position(&self, time: f64) -> Coord<N> {
         let (previous, current) = self.trajectory_segment(time);
 
-        let mut segment_len = current.time - previous.time;
+        let duration = current.time - previous.time;
         let acceleration = 2.0
-            * (current.position - previous.position - segment_len * previous.velocity)
-            / segment_len.powi(2);
+            * (current.position - previous.position - duration * previous.velocity)
+            / duration.powi(2);
 
-        segment_len = time - previous.time;
+        let duration = time - previous.time;
 
         let position = previous.position
-            + segment_len * previous.velocity * 0.5 * segment_len.powi(2) * acceleration;
+            + duration * previous.velocity
+            + 0.5 * duration.powi(2) * acceleration;
 
         self.path.position(position)
     }
@@ -91,14 +92,18 @@ where
     pub fn velocity(&self, time: f64) -> Coord<N> {
         let (previous, current) = self.trajectory_segment(time);
 
-        let segment_len = current.time - previous.time;
+        let duration = current.time - previous.time;
         let acceleration = 2.0
-            * (current.position - previous.position - segment_len * previous.velocity)
-            / segment_len.powi(2);
+            * (current.position - previous.position - duration * previous.velocity)
+            / duration.powi(2);
+
+        let duration = time - previous.time;
 
         let position = previous.position
-            + segment_len * previous.velocity * 0.5 * segment_len.powi(2) * acceleration;
-        let velocity = previous.velocity + segment_len * acceleration;
+            + duration * previous.velocity
+            + 0.5 * duration.powi(2) * acceleration;
+
+        let velocity = previous.velocity + duration * acceleration;
 
         self.path.tangent(position) * velocity
     }
