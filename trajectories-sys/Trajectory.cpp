@@ -74,6 +74,7 @@ Trajectory::Trajectory(const Path &path, const Vector3d &maxVelocity, const Vect
 
 	if(valid) {
 		double beforeAcceleration = getMinMaxPathAcceleration(path.getLength(), 0.0, false);
+		// std::cout << "beforeAcceleration " << beforeAcceleration << " path len " << path.getLength() << std::endl;
 		integrateBackward(trajectory, path.getLength(), 0.0, beforeAcceleration);
 	}
 
@@ -89,6 +90,22 @@ Trajectory::Trajectory(const Path &path, const Vector3d &maxVelocity, const Vect
 			previous++;
 			it++;
 		}
+
+		// list<std::pair<double, bool> > thing = path.getSwitchingPoints();
+		// list<std::pair<double, bool> >::iterator ass = thing.begin();
+		// while(ass != thing.end()) {
+		// 	std::cout.precision(std::numeric_limits<double>::digits10);
+		// 	std::cout << "Switching point " << ass->first << "," << ass->second << std::endl;
+		// 	ass++;
+		// }
+
+		// list<TrajectoryStep > thing2 = trajectory;
+		// list<TrajectoryStep >::iterator ass2 = thing2.begin();
+		// while(ass2 != thing2.end()) {
+		// 	std::cout.precision(std::numeric_limits<double>::digits10);
+		// 	std::cout << "Trajectory step position " << ass2->pathPos << ", velocity " << ass2->pathVel << ", time " << ass2->time << std::endl;
+		// 	ass2++;
+		// }
 	}
 }
 
@@ -537,6 +554,10 @@ Vector3d Trajectory::getPosition(double time) const {
 
 	timeStep = time - previous->time;
 	const double pathPos = previous->pathPos + timeStep * previous->pathVel + 0.5 * timeStep * timeStep * acceleration;
+
+	// std::cout << "CPP time " << time << ", pos " << pathPos << std::endl;
+	// std::cout << "    Previous (pos, vel, t) " << previous->pathPos << "," << previous->pathVel << "," << previous->time << ", current (pos, vel, t) " << it->pathPos << "," << it->pathVel << "," << it->time << std::endl;
+	// std::cout << "    timestep  " << timeStep << ", acceleration " << acceleration << std::endl;
 
 	return path.getConfig(pathPos);
 }
