@@ -3,7 +3,7 @@
 set key autotitle columnhead
 set datafile separator ","
 
-set term svg size 1440,1440
+set term svg size 1440,1300
 set timestamp
 
 set y2tics
