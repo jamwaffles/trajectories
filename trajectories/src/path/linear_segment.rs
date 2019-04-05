@@ -30,6 +30,8 @@ where
 
     /// Start offset plus length
     pub end_offset: f64,
+
+    tangent: Coord<N>,
 }
 
 impl<N> LinearPathSegment<N>
@@ -47,6 +49,7 @@ where
             length,
             start_offset: 0.0,
             end_offset: length,
+            tangent: (&end - &start).normalize(),
         }
     }
 
@@ -89,7 +92,7 @@ where
 
     /// Get derivative (tangent) of point along path
     fn tangent(&self, _distance_along_line: f64) -> Coord<N> {
-        (&self.end - &self.start) / self.length
+        self.tangent
     }
 
     /// Get second derivative (rate of change of tangent, aka curvature) of point along path
