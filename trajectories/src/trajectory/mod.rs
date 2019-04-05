@@ -578,7 +578,8 @@ where
     /// Find maximum allowable velocity as limited by the acceleration at a point on the path
     fn max_velocity_from_acceleration(&self, position_along_path: f64) -> f64 {
         let segment = self.path.segment_at_position(position_along_path);
-        let vel_abs = segment.tangent(position_along_path).abs();
+        let vel = segment.tangent(position_along_path);
+        let vel_abs = vel.abs();
         let acceleration = segment.curvature(position_along_path);
 
         let n = nalgebra::dimension::<Coord<N>>();
@@ -586,11 +587,11 @@ where
         let mut max_path_velocity = std::f64::MAX;
 
         for i in 0..n {
-            if vel_abs[i] != 0.0 {
+            if vel[i] != 0.0 {
                 for j in (i + 1)..n {
-                    if vel_abs[j] != 0.0 {
+                    if vel[j] != 0.0 {
                         // TODO: Come up with a less mathsy name
-                        let a_ij = acceleration[i] / vel_abs[i] - acceleration[j] / vel_abs[j];
+                        let a_ij = acceleration[i] / vel[i] - acceleration[j] / vel[j];
 
                         if a_ij != 0.0 {
                             max_path_velocity = max_path_velocity.min(
