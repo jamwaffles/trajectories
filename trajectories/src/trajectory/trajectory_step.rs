@@ -2,13 +2,13 @@
 
 /// Trajectory step
 #[derive(Debug, PartialEq, Copy, Clone)]
-pub(crate) struct TrajectoryStep {
+pub struct TrajectoryStep {
     /// Position
-    pub(crate) position: f64,
+    pub position: f64,
     /// Velocity
-    pub(crate) velocity: f64,
+    pub velocity: f64,
     /// Time
-    pub(crate) time: f64,
+    pub time: f64,
 }
 
 impl TrajectoryStep {
@@ -23,6 +23,10 @@ impl TrajectoryStep {
 
     pub fn with_time(self, time: f64) -> Self {
         Self { time, ..self }
+    }
+
+    pub fn time(mut self, time: f64) {
+        self.time = time;
     }
 }
 

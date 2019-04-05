@@ -11,7 +11,7 @@ use self::path_position::PathPosition;
 use self::switching_point::SwitchingPoint as TrajectorySwitchingPoint;
 pub use self::trajectory_options::TrajectoryOptions;
 use self::trajectory_step::TrajectoryStep;
-use crate::path::{Continuity, Path, PathItem, PathOptions, SwitchingPoint};
+use crate::path::{Continuity, Path, PathItem, SwitchingPoint};
 use crate::Coord;
 use nalgebra::allocator::Allocator;
 use nalgebra::allocator::SameShapeVectorAllocator;
@@ -41,6 +41,7 @@ where
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
+    // TODO: Take a reference to a path
     // TODO: Stop panicking all over the place and actually use the error arm of this `Result`
     /// Create a new trajectory from a given path and max velocity and acceleration
     pub fn new(path: Path<N>, options: TrajectoryOptions<N>) -> Result<Self, String> {
@@ -246,12 +247,12 @@ where
 
             // If we've overstepped the next found discontinuity, move backwards to the position of
             // the discontinuity and calculate its velocity at that point
-            if let Some(next_disc) = next_discontinuity {
-                if position > next_disc.position {
+            if let Some(next_discontinuity) = next_discontinuity {
+                if position > next_discontinuity.position {
                     velocity = old_velocity
-                        + (next_disc.position - old_position) * (velocity - old_velocity)
+                        + (next_discontinuity.position - old_position) * (velocity - old_velocity)
                             / (position - old_position);
-                    position = next_disc.position;
+                    position = next_discontinuity.position;
                 }
             }
 
@@ -297,7 +298,6 @@ where
                 let mut before_velocity = last_point.velocity;
                 let mut after = overshoot.position;
                 let mut after_velocity = overshoot.velocity;
-                let mut midpoint;
                 let mut midpoint_velocity;
 
                 // Bisect (binary search) within step to find where overshoot occurred to within an
@@ -308,7 +308,7 @@ where
                         before,
                         after
                     );
-                    midpoint = 0.5 * (before + after);
+                    let midpoint = 0.5 * (before + after);
                     midpoint_velocity = 0.5 * (before_velocity + after_velocity);
 
                     let max_midpoint_velocity = self.max_velocity_at(midpoint, Limit::Velocity);
@@ -829,6 +829,7 @@ where
 mod tests {
     use super::*;
     use crate::test_helpers::*;
+    use crate::PathOptions;
 
     #[test]
     fn velocity_switching_points() {

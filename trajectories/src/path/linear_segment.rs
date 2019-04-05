@@ -31,7 +31,8 @@ where
     /// Start offset plus length
     pub end_offset: f64,
 
-    tangent: Coord<N>,
+    /// Precomputed line tangent
+    pub(crate) tangent: Coord<N>,
 }
 
 impl<N> LinearPathSegment<N>
@@ -42,6 +43,7 @@ where
 {
     pub fn from_waypoints(start: Coord<N>, end: Coord<N>) -> Self {
         let length = (&end - &start).norm();
+        let tangent = (&end - &start).normalize();
 
         Self {
             start,
@@ -49,7 +51,7 @@ where
             length,
             start_offset: 0.0,
             end_offset: length,
-            tangent: (&end - &start).normalize(),
+            tangent,
         }
     }
 
@@ -91,8 +93,9 @@ where
     }
 
     /// Get derivative (tangent) of point along path
+    // TODO: Fix clone
     fn tangent(&self, _distance_along_line: f64) -> Coord<N> {
-        self.tangent
+        self.tangent.clone()
     }
 
     /// Get second derivative (rate of change of tangent, aka curvature) of point along path

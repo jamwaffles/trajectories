@@ -75,7 +75,6 @@ where
         // If either segment is of negligible length, we don't need to blend it, however a blend
         // is still required to make the path differentiable.
         if (current - previous).norm() < TRAJ_EPSILON || (next - current).norm() < TRAJ_EPSILON {
-            // TODO: Implement Default so this section and others like it are shorter
             return CircularPathSegment {
                 center: current.clone(),
                 ..Self::default()
@@ -84,7 +83,7 @@ where
 
         // Yi
         let previous_normalised = (current - previous).normalize();
-        let previous_length = (previous - current).norm();
+        let previous_length = (current - previous).norm();
         let previous_half_length = previous_length / 2.0;
 
         let next_normalised = (next - current).normalize();
