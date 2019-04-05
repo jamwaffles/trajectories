@@ -3,7 +3,7 @@
 set key autotitle columnhead
 set datafile separator ","
 
-set term svg size 1440,1300
+set term svg size 2500,1300
 set timestamp
 
 set output 'target/overlay_test_2_native_cpp.svg'
