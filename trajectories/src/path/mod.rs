@@ -337,7 +337,7 @@ mod tests {
                 start_offset: 1.0,
                 end_offset: 4.0,
                 length: 3.0,
-                tangent: TestCoord3::new(2.0, 0.0, 0.0),
+                tangent: TestCoord3::new(1.0, 0.0, 0.0),
             })
         );
         assert_eq!(
@@ -348,7 +348,7 @@ mod tests {
                 start_offset: 1.0,
                 end_offset: 4.0,
                 length: 3.0,
-                tangent: TestCoord3::new(2.0, 0.0, 0.0),
+                tangent: TestCoord3::new(1.0, 0.0, 0.0),
             })
         );
 
@@ -360,7 +360,7 @@ mod tests {
                 start_offset: 1.0,
                 end_offset: 4.0,
                 length: 3.0,
-                tangent: TestCoord3::new(2.0, 0.0, 0.0),
+                tangent: TestCoord3::new(1.0, 0.0, 0.0),
             })
         );
     }
@@ -498,11 +498,6 @@ mod tests {
                 5.43325752688998,
                 Continuity::Continuous
             ))
-        );
-        assert_eq!(
-            path.next_switching_point(path.len() - 0.01),
-            Some(&SwitchingPoint::new(path.len(), Continuity::Discontinuous)),
-            "Expected last switching point to be end of path"
         );
     }
 

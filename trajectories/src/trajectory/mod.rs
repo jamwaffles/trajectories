@@ -112,6 +112,7 @@ where
         self.path.tangent(position) * velocity
     }
 
+    // TODO: Return an Option
     /// Get the (previous_segment, segment) of the trajectory that the given time lies on
     ///
     /// This gets an interval of the trajectory along which `time` lies. Other methods interpolate
@@ -127,7 +128,7 @@ where
             .windows(2)
             .find_map(|window| {
                 if let [ref prev, ref curr] = window {
-                    if prev.time <= time && time < curr.time {
+                    if prev.time <= time {
                         Some((prev, curr))
                     } else {
                         None
@@ -136,7 +137,13 @@ where
                     None
                 }
             })
-            .unwrap()
+            .unwrap_or_else(|| {
+                panic!(
+                    "Expected to find traj segment for time {} (total time {:?})",
+                    time,
+                    self.trajectory.last().map(|s| s.time)
+                )
+            })
     }
 
     /// Compute complete trajectory
@@ -841,12 +848,12 @@ mod tests {
         let expected_points = vec![
             (0.5, 1.0207890624999982),
             (1.02, 1.0207890625),
-            (2.0, 5.433721679687759),
-            (3.8616, 3.862918359375),
+            (2.0, 3.8633017578122955),
+            (3.8616, 3.8633011718750003),
             (4.0, 5.433721679687979),
             (5.431, 5.433721679687501),
-            (7.1, 7.432009765625111),
-            (7.431, 7.432009765625001),
+            (7.1, 7.43147363281261),
+            (7.431, 7.4314736328125),
             (8.0, 8.845047851562033),
             (8.843, 8.845047851562498),
             (8.845, 8.845047851562502),
@@ -883,7 +890,10 @@ mod tests {
             assert_eq!(
                 traj.next_velocity_switching_point(pos)
                     .map(|p| p.pos.position),
-                Some(next_point)
+                Some(next_point),
+                "Expected position {} to have next switching point {}",
+                pos,
+                next_point
             );
         }
     }
@@ -991,7 +1001,7 @@ mod tests {
 
         write_debug_csv("../target/plot_native.csv".into(), &rows);
 
-        assert_eq!(traj.trajectory.len(), 14813);
+        assert_eq!(traj.trajectory.len(), 14814);
         assert_near!(duration, 14.802832847319937);
     }
 }
