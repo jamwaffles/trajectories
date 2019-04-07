@@ -4,7 +4,7 @@ extern crate trajectories;
 extern crate trajectories_sys;
 
 use criterion::Criterion;
-use trajectories::{test_helpers::TestCoord3, Path, Trajectory};
+use trajectories::{test_helpers::TestCoord3, Path, PathOptions, Trajectory, TrajectoryOptions};
 
 fn get_positions(c: &mut Criterion) {
     c.bench_function("get positions from trajectory", |b| {
@@ -19,14 +19,21 @@ fn get_positions(c: &mut Criterion) {
         ];
 
         b.iter(|| {
-            let p = Path::from_waypoints(&waypoints, 0.001);
+            let p = Path::from_waypoints(
+                &waypoints,
+                PathOptions {
+                    max_deviation: 0.001,
+                },
+            );
 
             let trajectory = Trajectory::new(
                 p,
-                TestCoord3::new(1.0, 1.0, 1.0),
-                TestCoord3::new(1.0, 1.0, 1.0),
-                0.000001,
-                0.001,
+                TrajectoryOptions {
+                    velocity_limit: TestCoord3::new(1.0, 1.0, 1.0),
+                    acceleration_limit: TestCoord3::new(1.0, 1.0, 1.0),
+                    epsilon: 0.000001,
+                    timestep: 0.001,
+                },
             )
             .expect("Failed to create trajectory");
 

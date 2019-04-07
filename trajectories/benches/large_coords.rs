@@ -3,8 +3,7 @@ extern crate trajectories;
 
 use criterion::*;
 use std::time::Duration;
-use trajectories::Trajectory;
-use trajectories::{test_helpers::TestCoord4, Path};
+use trajectories::{test_helpers::TestCoord4, Path, PathOptions, Trajectory, TrajectoryOptions};
 
 fn test_2(c: &mut Criterion) {
     let waypoints: Vec<TestCoord4> = vec![
@@ -21,14 +20,21 @@ fn test_2(c: &mut Criterion) {
         "large_coords",
         Benchmark::new("test_2 path with large coordinates", move |b| {
             b.iter(|| {
-                let p = Path::from_waypoints(&waypoints, 100.0);
+                let p = Path::from_waypoints(
+                    &waypoints,
+                    PathOptions {
+                        max_deviation: 100.0,
+                    },
+                );
 
                 let _trajectory = Trajectory::new(
                     p,
-                    TestCoord4::new(1.3, 0.67, 0.67, 0.5),
-                    TestCoord4::new(0.002, 0.002, 0.002, 0.002),
-                    0.000001,
-                    10.0,
+                    TrajectoryOptions {
+                        velocity_limit: TestCoord4::new(1.3, 0.67, 0.67, 0.5),
+                        acceleration_limit: TestCoord4::new(0.002, 0.002, 0.002, 0.002),
+                        epsilon: 0.000001,
+                        timestep: 10.0,
+                    },
                 );
             })
         })

@@ -4,7 +4,7 @@ extern crate trajectories;
 
 use criterion::*;
 use trajectories::prelude::*;
-use trajectories::{test_helpers::TestCoord3, Path};
+use trajectories::{test_helpers::TestCoord3, Path, PathOptions};
 
 const DEVIATION: f64 = 0.01;
 const NUM_POINTS: usize = 100;
@@ -141,7 +141,14 @@ fn long_path_bench(c: &mut Criterion) {
 
     c.bench_function("benchmark long path", move |b| {
         b.iter_with_setup(
-            || Path::from_waypoints(&waypoints, DEVIATION),
+            || {
+                Path::from_waypoints(
+                    &waypoints,
+                    PathOptions {
+                        max_deviation: DEVIATION,
+                    },
+                )
+            },
             |p| {
                 let len = p.len();
                 let step = len / NUM_POINTS as f64;

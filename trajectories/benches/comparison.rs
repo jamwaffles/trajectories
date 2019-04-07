@@ -5,7 +5,7 @@ extern crate trajectories_sys;
 
 use criterion::{Criterion, Fun};
 use std::time::Duration;
-use trajectories::{test_helpers::TestCoord3, Path, Trajectory};
+use trajectories::{test_helpers::TestCoord3, Path, PathOptions, Trajectory, TrajectoryOptions};
 use trajectories_sys::{path_create, Trajectory as CPPTrajectory};
 
 fn compare(c: &mut Criterion) {
@@ -21,14 +21,21 @@ fn compare(c: &mut Criterion) {
         ];
 
         b.iter(|| {
-            let p = Path::from_waypoints(&waypoints, 0.001);
+            let p = Path::from_waypoints(
+                &waypoints,
+                PathOptions {
+                    max_deviation: 0.001,
+                },
+            );
 
             let _trajectory = Trajectory::new(
                 p,
-                TestCoord3::new(1.0, 1.0, 1.0),
-                TestCoord3::new(1.0, 1.0, 1.0),
-                0.000001,
-                0.001,
+                TrajectoryOptions {
+                    velocity_limit: TestCoord3::new(1.0, 1.0, 1.0),
+                    acceleration_limit: TestCoord3::new(1.0, 1.0, 1.0),
+                    epsilon: 0.000001,
+                    timestep: 0.001,
+                },
             );
         })
     });

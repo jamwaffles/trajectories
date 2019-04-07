@@ -4,7 +4,7 @@ extern crate trajectories;
 
 use criterion::*;
 use trajectories::prelude::*;
-use trajectories::{test_helpers::TestCoord3, Path};
+use trajectories::{test_helpers::TestCoord3, Path, PathOptions};
 
 const DEVIATION: f64 = 0.01;
 const NUM_POINTS: usize = 100;
@@ -25,7 +25,14 @@ fn create_path(c: &mut Criterion) {
     c.bench(
         "path",
         Benchmark::new(format!("create path with {} waypoints", 7), move |b| {
-            b.iter(|| Path::from_waypoints(&waypoints, DEVIATION))
+            b.iter(|| {
+                Path::from_waypoints(
+                    &waypoints,
+                    PathOptions {
+                        max_deviation: DEVIATION,
+                    },
+                )
+            })
         })
         .throughput(Throughput::Elements(len as u32)),
     );
@@ -49,7 +56,14 @@ fn create_path_and_iterate(c: &mut Criterion) {
         ),
         move |b| {
             b.iter_with_setup(
-                || Path::from_waypoints(&waypoints, DEVIATION),
+                || {
+                    Path::from_waypoints(
+                        &waypoints,
+                        PathOptions {
+                            max_deviation: DEVIATION,
+                        },
+                    )
+                },
                 |p| {
                     let len = p.len();
                     let step = len / NUM_POINTS as f64;
@@ -84,7 +98,14 @@ fn get_position(c: &mut Criterion) {
         "path",
         Benchmark::new("get position at point along path", move |b| {
             b.iter_with_setup(
-                || Path::from_waypoints(&waypoints, DEVIATION),
+                || {
+                    Path::from_waypoints(
+                        &waypoints,
+                        PathOptions {
+                            max_deviation: DEVIATION,
+                        },
+                    )
+                },
                 |p| p.position(5.6789),
             )
         })
@@ -104,7 +125,12 @@ fn get_tangent(c: &mut Criterion) {
             TestCoord3::new(4.0, 4.0, 0.0),
         ];
 
-        let p = Path::from_waypoints(&waypoints, DEVIATION);
+        let p = Path::from_waypoints(
+            &waypoints,
+            PathOptions {
+                max_deviation: DEVIATION,
+            },
+        );
 
         b.iter(|| {
             p.tangent(5.6789);
@@ -124,7 +150,12 @@ fn get_curvature(c: &mut Criterion) {
             TestCoord3::new(4.0, 4.0, 0.0),
         ];
 
-        let p = Path::from_waypoints(&waypoints, DEVIATION);
+        let p = Path::from_waypoints(
+            &waypoints,
+            PathOptions {
+                max_deviation: DEVIATION,
+            },
+        );
 
         b.iter(|| {
             p.tangent(5.6789);
@@ -144,7 +175,12 @@ fn get_segment_at_position(c: &mut Criterion) {
             TestCoord3::new(4.0, 4.0, 0.0),
         ];
 
-        let p = Path::from_waypoints(&waypoints, DEVIATION);
+        let p = Path::from_waypoints(
+            &waypoints,
+            PathOptions {
+                max_deviation: DEVIATION,
+            },
+        );
 
         b.iter(|| {
             p.segment_at_position(5.6789);

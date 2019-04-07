@@ -5,7 +5,7 @@ extern crate trajectories;
 use criterion::Criterion;
 use trajectories::{
     test_helpers::{CircularPathSegment, TestCoord3},
-    Path,
+    Path, PathOptions,
 };
 
 const DEVIATION: f64 = 0.01;
@@ -36,7 +36,12 @@ fn get_next_switching_point(c: &mut Criterion) {
             TestCoord3::new(4.0, 4.0, 0.0),
         ];
 
-        let path = Path::from_waypoints(&waypoints, DEVIATION);
+        let path = Path::from_waypoints(
+            &waypoints,
+            PathOptions {
+                max_deviation: DEVIATION,
+            },
+        );
 
         b.iter(|| {
             let _next_waypoint = path.next_switching_point(4.0);
