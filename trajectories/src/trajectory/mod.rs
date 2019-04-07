@@ -31,7 +31,10 @@ where
     velocity_limit: Coord<N>,
     acceleration_limit: Coord<N>,
     timestep: f64,
-    pub(crate) trajectory: Vec<TrajectoryStep>,
+    // TODO: Un-pub, add method to get reference. This is only used in tests and should not be
+    // mutable
+    /// Trajectory steps
+    pub trajectory: Vec<TrajectoryStep>,
     epsilon: f64,
 }
 
@@ -196,9 +199,10 @@ where
         trajectory.extend(updated_traj);
 
         // Set times on segments
-        let timed = trajectory
-            .windows(2)
-            .scan(0.0, |t, parts| {
+        // TODO: Stop doing this weird iter::once stuff. Instead, calculate all the positions
+        // properly in the windows()/scan() part
+        let timed = std::iter::once(*trajectory.first().unwrap())
+            .chain(trajectory.windows(2).scan(0.0, |t, parts| {
                 if let [previous, current] = parts {
                     *t += (current.position - previous.position)
                         / ((current.velocity + previous.velocity) / 2.0);
@@ -207,7 +211,7 @@ where
                 } else {
                     panic!("Time windows");
                 }
-            })
+            }))
             .collect::<Vec<TrajectoryStep>>();
 
         self.trajectory = timed;
@@ -234,6 +238,7 @@ where
                 self.path.len()
             );
 
+            // TODO: Keep next_discontinuity iterator cached for perf
             let next_discontinuity = self.path.switching_points().iter().find(|switching_point| {
                 switching_point.position > position
                     && switching_point.continuity == Continuity::Discontinuous
@@ -298,7 +303,6 @@ where
                 let mut before_velocity = last_point.velocity;
                 let mut after = overshoot.position;
                 let mut after_velocity = overshoot.velocity;
-                let mut midpoint_velocity;
 
                 // Bisect (binary search) within step to find where overshoot occurred to within an
                 // epsilon
@@ -309,7 +313,7 @@ where
                         after
                     );
                     let midpoint = 0.5 * (before + after);
-                    midpoint_velocity = 0.5 * (before_velocity + after_velocity);
+                    let mut midpoint_velocity = 0.5 * (before_velocity + after_velocity);
 
                     let max_midpoint_velocity = self.max_velocity_at(midpoint, Limit::Velocity);
 
@@ -570,9 +574,9 @@ where
     }
 
     fn max_velocity_from_velocity(&self, position_along_path: f64) -> f64 {
-        self.velocity_limit
-            .component_div(&self.path.tangent(position_along_path))
-            .amin()
+        let tangent = self.path.tangent(position_along_path);
+
+        self.velocity_limit.component_div(&tangent).amin()
     }
 
     /// Find maximum allowable velocity as limited by the acceleration at a point on the path
@@ -584,7 +588,7 @@ where
 
         let n = nalgebra::dimension::<Coord<N>>();
 
-        let mut max_path_velocity = std::f64::MAX;
+        let mut max_path_velocity = std::f64::INFINITY;
 
         for i in 0..n {
             if vel[i] != 0.0 {
@@ -623,7 +627,8 @@ where
 
     /// Get the derivative of the max acceleration-bounded velocity at a point along the path
     fn max_velocity_from_velocity_derivative(&self, position_along_path: f64) -> f64 {
-        let tangent_abs = self.path.tangent(position_along_path).abs();
+        let tangent = self.path.tangent(position_along_path);
+        let tangent_abs = tangent.abs();
         let velocity = self.velocity_limit.component_div(&tangent_abs);
 
         // Find the component index with the smallest value
@@ -634,8 +639,8 @@ where
             .unwrap_or((0, &std::f64::MAX));
 
         -(self.velocity_limit[constraint_axis]
-            * self.path.curvature(position_along_path)[constraint_axis]
-            / (tangent_abs[constraint_axis].powi(2)))
+            * self.path.curvature(position_along_path)[constraint_axis])
+            / (tangent[constraint_axis] * tangent_abs[constraint_axis])
     }
 
     /// Get the derivative of the max velocity at a point along the path

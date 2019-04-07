@@ -190,9 +190,6 @@ where
                 .expect("Cannot get length of empty path")
                 .len();
 
-        // Add a fallback switching point to the end of the path
-        switching_points.push(SwitchingPoint::new(length, Continuity::Discontinuous));
-
         Self {
             switching_points,
             segments,
@@ -340,6 +337,7 @@ mod tests {
                 start_offset: 1.0,
                 end_offset: 4.0,
                 length: 3.0,
+                tangent: TestCoord3::new(2.0, 0.0, 0.0),
             })
         );
         assert_eq!(
@@ -350,6 +348,7 @@ mod tests {
                 start_offset: 1.0,
                 end_offset: 4.0,
                 length: 3.0,
+                tangent: TestCoord3::new(2.0, 0.0, 0.0),
             })
         );
 
@@ -361,6 +360,7 @@ mod tests {
                 start_offset: 1.0,
                 end_offset: 4.0,
                 length: 3.0,
+                tangent: TestCoord3::new(2.0, 0.0, 0.0),
             })
         );
     }
