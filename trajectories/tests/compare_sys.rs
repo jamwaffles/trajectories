@@ -30,6 +30,7 @@ fn compare_test_1() {
         TrajectoryOptions {
             velocity_limit: TestCoord3::new(1.3, 0.67, 0.67),
             acceleration_limit: TestCoord3::new(0.00249, 0.00249, 0.00249),
+            // Same epsilon as C++ hardcoded value
             epsilon: 0.000001,
             timestep: 0.001,
         },
@@ -80,14 +81,11 @@ fn compare_test_2() {
     ];
 
     let max_deviation = 100.0;
-    let timestep = 20.0;
+    let timestep = 10.0;
+    // Same epsilon as C++ hardcoded value
+    let epsilon = 0.000001;
 
-    let rust_path = Path::from_waypoints(
-        &waypoints,
-        PathOptions {
-            max_deviation: 100.0,
-        },
-    );
+    let rust_path = Path::from_waypoints(&waypoints, PathOptions { max_deviation });
 
     let rust_path_len = rust_path.len();
 
@@ -96,7 +94,7 @@ fn compare_test_2() {
         TrajectoryOptions {
             velocity_limit: TestCoord3::new(1.3, 0.67, 0.67),
             acceleration_limit: TestCoord3::new(0.002, 0.002, 0.002),
-            epsilon: 0.000001,
+            epsilon,
             timestep,
         },
     )
@@ -186,11 +184,12 @@ fn compare_test_2() {
 
     assert_eq!(
         unsafe { trajectories_sys::Path_getLength(cpp_path) },
-        rust_path_len,
-        "path lengths do not match"
+        rust_path_len
     );
 
-    assert_ulps_eq!(rust_trajectory.duration(), unsafe {
-        cpp_trajectory.getDuration()
-    });
+    assert_ulps_eq!(
+        rust_trajectory.duration(),
+        unsafe { cpp_trajectory.getDuration() },
+        epsilon = epsilon
+    );
 }
