@@ -651,7 +651,7 @@ where
     ///
     /// TODO: Figure out what phase slope means in this context and give it a better name
     fn phase_slope(&self, pos_vel: &TrajectoryStep, min_max: MinMax) -> f64 {
-        self.acceleration_at(&pos_vel, min_max) / pos_vel.position
+        self.acceleration_at(&pos_vel, min_max) / pos_vel.velocity
     }
 
     /// Get the next acceleration-bounded switching point after the current position
