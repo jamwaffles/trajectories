@@ -1,10 +1,12 @@
 mod circular_segment;
 mod linear_segment;
+mod path_item;
 mod path_options;
 mod segment;
 
 pub use self::circular_segment::CircularPathSegment;
 pub use self::linear_segment::LinearPathSegment;
+pub use self::path_item::PathItem;
 pub use self::path_options::PathOptions;
 pub use self::segment::PathSegment;
 use crate::Coord;
@@ -12,26 +14,6 @@ use nalgebra::allocator::Allocator;
 use nalgebra::allocator::SameShapeVectorAllocator;
 use nalgebra::DefaultAllocator;
 use nalgebra::DimName;
-
-/// Helpful methods to get information about a path
-pub trait PathItem<N>: PartialEq
-where
-    N: DimName + Copy,
-    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
-    <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
-{
-    /// Get length of path
-    fn len(&self) -> f64;
-
-    /// Get position at a point along path
-    fn position(&self, distance_along_line: f64) -> Coord<N>;
-
-    /// Get first derivative (tangent) at a point
-    fn tangent(&self, distance_along_line: f64) -> Coord<N>;
-
-    /// Get second derivative (curvature) at a point
-    fn curvature(&self, distance_along_line: f64) -> Coord<N>;
-}
 
 /// A switching point
 #[derive(Debug, Clone, PartialEq)]
