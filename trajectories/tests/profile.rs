@@ -20,7 +20,7 @@ fn profile_native() {
         TestCoord3::new(0.0, 0.0, 1.0),
     ];
 
-    // start_profile();
+    start_profile();
 
     let p = Path::from_waypoints(
         &waypoints,
@@ -47,5 +47,5 @@ fn profile_native() {
 
     assert_ulps_eq!(trajectory.duration(), 14.802832847319943);
 
-    // end_profile();
+    end_profile();
 }
