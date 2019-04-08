@@ -86,8 +86,8 @@ where
             ))],
             _ => waypoints.windows(3).fold(
                 Vec::with_capacity(waypoints.len() * 3),
-                |mut segments, parts| {
-                    if let [prev, curr, next] = parts {
+                |mut segments, parts| match parts {
+                    [prev, curr, next] => {
                         let blend_segment =
                             CircularPathSegment::from_waypoints(&prev, &curr, &next, max_deviation);
 
@@ -159,9 +159,8 @@ where
                         ]);
 
                         segments
-                    } else {
-                        panic!("Linear segments");
                     }
+                    _ => panic!("Linear segments"),
                 },
             ),
         };
@@ -169,8 +168,8 @@ where
         let length = start_offset
             + segments
                 .last()
-                .expect("Cannot get length of empty path")
-                .len();
+                .map(|l| l.len())
+                .expect("Cannot get length of empty path");
 
         Self {
             switching_points,
