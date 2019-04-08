@@ -2,6 +2,7 @@
 
 extern crate trajectories;
 
+use approx::assert_ulps_eq;
 use trajectories::test_helpers::*;
 use trajectories::*;
 
@@ -44,7 +45,7 @@ fn profile_native() {
     let _point3 = trajectory.position(7.89);
     let _point4 = trajectory.position(14.00001);
 
-    assert_eq!(trajectory.duration(), 14.802832847319943);
+    assert_ulps_eq!(trajectory.duration(), 14.802832847319943);
 
     // end_profile();
 }
