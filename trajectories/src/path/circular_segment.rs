@@ -116,7 +116,10 @@ where
                 * (radius / (angle / 2.0).cos());
 
         // Xi (points from center of circle to point where circle touches previous segment)
-        let x = (current - max_blend_distance * &previous_normalised - &center).normalize();
+        let x = (current - max_blend_distance * &previous_normalised - &center)
+            .try_normalize(TRAJ_EPSILON)
+            .unwrap_or(Coord::zeros());
+
         // Yi (direction of previous segment)
         let y = previous_normalised;
 
