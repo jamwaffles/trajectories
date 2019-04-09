@@ -802,7 +802,7 @@ where
             prev_deriv = deriv;
         }
 
-        info!("END CONDITION {} LEN {}", position, self.path.len());
+        debug!("END CONDITION {} LEN {}", position, self.path.len());
 
         if position >= self.path.len() {
             return None;

@@ -14,6 +14,7 @@ use nalgebra::allocator::Allocator;
 use nalgebra::allocator::SameShapeVectorAllocator;
 use nalgebra::DefaultAllocator;
 use nalgebra::DimName;
+use std::time::Instant;
 
 /// A switching point
 #[derive(Debug, Clone, PartialEq)]
@@ -77,6 +78,8 @@ where
 
         let mut start_offset = 0.0;
         let mut switching_points = Vec::with_capacity((waypoints.len() as f32 * 2.5) as usize);
+
+        let start = Instant::now();
 
         let segments = match waypoints.len() {
             0 | 1 => panic!("Path must contain at least two waypoints"),
@@ -171,11 +174,12 @@ where
                 .map(|l| l.len())
                 .expect("Cannot get length of empty path");
 
-        debug!(
-            "Path created with {} segments and {} switching points, total len {}",
+        info!(
+            "Created path {} long with {} segments and {} switching points in {} ms",
+            length,
             segments.len(),
             switching_points.len(),
-            length
+            start.elapsed().as_millis()
         );
 
         Self {
