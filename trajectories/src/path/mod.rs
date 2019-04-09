@@ -171,6 +171,13 @@ where
                 .map(|l| l.len())
                 .expect("Cannot get length of empty path");
 
+        debug!(
+            "Path created with {} segments and {} switching points, total len {}",
+            segments.len(),
+            switching_points.len(),
+            length
+        );
+
         Self {
             switching_points,
             segments,

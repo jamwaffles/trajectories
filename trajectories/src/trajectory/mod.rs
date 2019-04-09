@@ -282,7 +282,10 @@ where
 
                 break (new_points, PathPosition::End, position);
             } else if velocity < 0.0 {
-                panic!("Integrate forward velocity cannot be 0");
+                panic!(
+                    "Integrate forward velocity cannot be 0, position {}, velocity {}",
+                    position, velocity
+                );
             }
 
             let max_velocity_at_position = self.max_velocity_at(position, Limit::Velocity);
@@ -469,7 +472,7 @@ where
             }
         }
 
-        Err("Path is invalid: Integrate backwards did not hit start trajectory".into())
+        Err(format!("Path is invalid: Integrate backwards did not hit start trajectory, start position {} velocity {}, end position {} velocity {}", position, velocity, pos, vel))
     }
 
     /// Get next switching point along the path, bounded by velocity or acceleration
