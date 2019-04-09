@@ -155,28 +155,35 @@ where
             pos: TrajectoryStep::new(0.0, 0.0),
         };
 
+        let mut dbg_iter = 0;
+
         loop {
-            trace!("Setup loop");
+            debug!("Setup loop, iter {}", dbg_iter);
 
             let (fwd, is_end, stop_position) =
                 self.integrate_forward(&trajectory, switching_point.after_acceleration);
 
             trajectory.extend(fwd);
 
-            trace!("Setup loop 2");
+            debug!(
+                "Setup loop 2, iter {}, stop_position {:?}",
+                dbg_iter, stop_position
+            );
 
             if is_end == PathPosition::End {
                 break;
             }
 
             if let Some(new_switching_point) = self.next_switching_point(stop_position) {
+                debug!("Switching point {:?}", new_switching_point);
+
                 switching_point = new_switching_point;
             } else {
                 // Break if we've reached the end of the path
                 break;
             }
 
-            trace!("Setup loop 3");
+            debug!("Setup loop 3, iter {}", dbg_iter);
 
             if let Ok((splice_index, updated_traj)) =
                 self.integrate_backward(&trajectory, &switching_point)
@@ -186,7 +193,9 @@ where
                 trajectory.extend(updated_traj);
             }
 
-            trace!("Setup loop 4");
+            debug!("Setup loop 4, iter {}", dbg_iter);
+
+            dbg_iter += 1;
         }
 
         // Backwards integrate last section
