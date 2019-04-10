@@ -406,89 +406,179 @@ where
         start_switching_point: &TrajectorySwitchingPoint,
     ) -> Result<(usize, Vec<TrajectoryStep>), String> {
         let TrajectorySwitchingPoint {
-            pos: TrajectoryStep {
-                position, velocity, ..
-            },
-            before_acceleration,
+            pos:
+                TrajectoryStep {
+                    mut position,
+                    mut velocity,
+                    ..
+                },
+            mut before_acceleration,
             ..
-        } = *start_switching_point;
-
+        } = start_switching_point.clone();
         let mut slope = 0.0;
-        let mut pos = position;
-        let mut vel = velocity;
-        let mut acc = before_acceleration;
-        let mut new_traj: Vec<TrajectoryStep> = Vec::new();
-        let mut next_iter = false;
-        let mut splice_index = start_trajectory.len();
+        let mut it = start_trajectory.windows(2).rev();
+        let mut new_trajectory: Vec<TrajectoryStep> = Vec::new();
+        let mut parts = it.next();
+        let mut splice_index = start_trajectory.len() - 1;
 
-        for parts in start_trajectory.windows(2).rev() {
-            match parts {
-                [ref start1, ref start2] => {
-                    splice_index -= 1;
+        // Loop backwards from end of path, replacing path segments with new position and velocity
+        // until an intersection is encountered, or we hit the beginning of the path
+        while let Some(&[ref start1, ref _start2]) = parts {
+            trace!("Integrate backward loop, position {}", position);
 
-                    while start1.position <= pos {
-                        if !next_iter {
-                            let new_point = TrajectoryStep::new(pos, vel);
+            if position < 0.0 {
+                break;
+            }
 
-                            vel -= self.timestep * acc;
-                            pos -= self.timestep * 0.5 * (vel + new_point.velocity);
-                            acc = self.acceleration_at(&TrajectoryStep::new(pos, vel), MinMax::Min);
-                            slope = (new_point.velocity - vel) / (new_point.position - pos);
+            trace!(
+                "Backward start1 pos vs postition {} : {}",
+                start1.position,
+                position
+            );
 
-                            new_traj.push(new_point);
-                        }
+            if start1.position <= position {
+                let new_point = TrajectoryStep::new(position, velocity);
 
-                        // Update pos/vel/acc in next iteration of loop
-                        next_iter = false;
+                velocity -= self.timestep * before_acceleration;
+                position -= self.timestep * 0.5 * (velocity + new_point.velocity);
+                before_acceleration =
+                    self.acceleration_at(&TrajectoryStep::new(position, velocity), MinMax::Min);
+                slope = (new_point.velocity - velocity) / (new_point.position - position);
 
-                        debug!("--> Back step,{},{},{},{}", vel, pos, acc, slope);
+                new_trajectory.push(new_point);
 
-                        if vel < 0.0 {
-                            return Err(format!(
-                                "Velocity cannot be less than zero at position {}, got {} (acceleration {}, slope {})",
-                                pos, vel, acc, slope
-                            ));
-                        }
-
-                        let start_slope = (start2.velocity - start1.velocity)
-                            / (start2.position - start1.position);
-
-                        // Normalised position along segment where intersection occurs
-                        let intersection_position = (start1.velocity - vel + slope * pos
-                            - start_slope * start1.position)
-                            / (slope - start_slope);
-
-                        // Check for intersection between path and current segment
-                        if start1.position.max(pos) - self.epsilon <= intersection_position
-                        && intersection_position <= self.epsilon + start2.position.min(
-                            new_traj
-                                .last()
-                                .expect("Integrate backwards cannot get last point of empty trajectory")
-                                .position,
-                        ) {
-                            let intersection_velocity =
-                                start1.velocity + start_slope * (intersection_position - start1.position);
-
-                            // Add intersection point
-                            new_traj.push(TrajectoryStep::new(
-                                intersection_position,
-                                intersection_velocity,
-                            ));
-
-                            let ret = new_traj.into_iter().rev().collect();
-
-                            return Ok((splice_index, ret));
-                        }
-                    }
-
-                    // Skip computation at beginning of next loop
-                    next_iter = true;
+                if velocity < 0.0 {
+                    return Err(format!(
+                        "Velocity cannot be less than zero at position {}, got {} (acceleration {}, slope {})",
+                        position, velocity, before_acceleration, slope
+                    ));
                 }
-                _ => return Err(format!("Not enough parts: {}, expected 2", parts.len())),
+            } else {
+                parts = it.next();
+                splice_index -= 1;
+            }
+
+            // If let here due to the `parts = it.next()` above
+            // TODO: Refactor so I don't have to do this
+            if let Some(&[ref start1, ref start2]) = parts {
+                let start_slope =
+                    (start2.velocity - start1.velocity) / (start2.position - start1.position);
+
+                // Normalised position along segment where intersection occurs
+                let intersection_position = (start1.velocity - velocity + slope * position
+                    - start_slope * start1.position)
+                    / (slope - start_slope);
+
+                // Check for intersection between path and current segment
+                if start1.position.max(position) - self.epsilon <= intersection_position
+                    && intersection_position <= self.epsilon + start2.position.min(
+                        new_trajectory
+                            .last()
+                            .expect("Integrate backwards cannot get last point of empty trajectory")
+                            .position,
+                    ) {
+                    let intersection_velocity =
+                        start1.velocity + start_slope * (intersection_position - start1.position);
+
+                    // Add intersection point
+                    new_trajectory.push(TrajectoryStep::new(
+                        intersection_position,
+                        intersection_velocity,
+                    ));
+
+                    let ret = new_trajectory.into_iter().rev().collect();
+
+                    return Ok((splice_index, ret));
+                }
             }
         }
 
-        Err(format!("Path is invalid: Integrate backwards did not hit start trajectory, start position {} velocity {}, end position {} velocity {}", position, velocity, pos, vel))
+        Err(format!("Path is invalid: Integrate backwards did not hit start trajectory, start position {} velocity {}", position, velocity))
+
+        // let TrajectorySwitchingPoint {
+        //     pos: TrajectoryStep {
+        //         position, velocity, ..
+        //     },
+        //     before_acceleration,
+        //     ..
+        // } = *start_switching_point;
+
+        // let mut slope = 0.0;
+        // let mut pos = position;
+        // let mut vel = velocity;
+        // let mut acc = before_acceleration;
+        // let mut new_traj: Vec<TrajectoryStep> = Vec::new();
+        // let mut next_iter = false;
+        // let mut splice_index = start_trajectory.len();
+
+        // for parts in start_trajectory.windows(2).rev() {
+        //     match parts {
+        //         [ref start1, ref start2] => {
+        //             splice_index -= 1;
+
+        //             while start1.position <= pos {
+        //                 if !next_iter {
+        //                     let new_point = TrajectoryStep::new(pos, vel);
+
+        //                     vel -= self.timestep * acc;
+        //                     pos -= self.timestep * 0.5 * (vel + new_point.velocity);
+        //                     acc = self.acceleration_at(&TrajectoryStep::new(pos, vel), MinMax::Min);
+        //                     slope = (new_point.velocity - vel) / (new_point.position - pos);
+
+        //                     new_traj.push(new_point);
+        //                 }
+
+        //                 // Update pos/vel/acc in next iteration of loop
+        //                 next_iter = false;
+
+        //                 debug!("--> Back step,{},{},{},{}", vel, pos, acc, slope);
+
+        //                 if vel < 0.0 {
+        //                     return Err(format!(
+        //                         "Velocity cannot be less than zero at position {}, got {} (acceleration {}, slope {})",
+        //                         pos, vel, acc, slope
+        //                     ));
+        //                 }
+
+        //                 let start_slope = (start2.velocity - start1.velocity)
+        //                     / (start2.position - start1.position);
+
+        //                 // Normalised position along segment where intersection occurs
+        //                 let intersection_position = (start1.velocity - vel + slope * pos
+        //                     - start_slope * start1.position)
+        //                     / (slope - start_slope);
+
+        //                 // Check for intersection between path and current segment
+        //                 if start1.position.max(pos) - self.epsilon <= intersection_position
+        //                 && intersection_position <= self.epsilon + start2.position.min(
+        //                     new_traj
+        //                         .last()
+        //                         .expect("Integrate backwards cannot get last point of empty trajectory")
+        //                         .position,
+        //                 ) {
+        //                     let intersection_velocity =
+        //                         start1.velocity + start_slope * (intersection_position - start1.position);
+
+        //                     // Add intersection point
+        //                     new_traj.push(TrajectoryStep::new(
+        //                         intersection_position,
+        //                         intersection_velocity,
+        //                     ));
+
+        //                     let ret = new_traj.into_iter().rev().collect();
+
+        //                     return Ok((splice_index, ret));
+        //                 }
+        //             }
+
+        //             // Skip computation at beginning of next loop
+        //             next_iter = true;
+        //         }
+        //         _ => return Err(format!("Not enough parts: {}, expected 2", parts.len())),
+        //     }
+        // }
+
+        // Err(format!("Path is invalid: Integrate backwards did not hit start trajectory, start position {} velocity {}, end position {} velocity {}", position, velocity, pos, vel))
     }
 
     /// Get next switching point along the path, bounded by velocity or acceleration
