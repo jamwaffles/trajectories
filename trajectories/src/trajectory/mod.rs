@@ -172,7 +172,7 @@ where
             debug!("Setup loop, iter {}", dbg_iter);
 
             let (fwd, is_end, stop_position) =
-                self.integrate_forward(&trajectory, switching_point.after_acceleration);
+                self.integrate_forward(&trajectory, switching_point.after_acceleration)?;
 
             trajectory.extend(fwd);
 
@@ -228,7 +228,7 @@ where
                     after_acceleration: 0.0,
                 },
             )
-            .expect("Last section integrate backward failed");
+            .map_err(|e| format!("Last section integrate backwards failed: {}", e))?;
 
         let _ = trajectory.split_off(splice_index);
         trajectory.extend(updated_traj);
@@ -258,13 +258,16 @@ where
         &self,
         trajectory: &[TrajectoryStep],
         start_acceleration: f64,
-    ) -> (Vec<TrajectoryStep>, PathPosition, f64) {
+    ) -> Result<(Vec<TrajectoryStep>, PathPosition, f64), String> {
         let mut new_points = Vec::new();
+        let last = trajectory.last().ok_or(String::from(
+            "Attempted to get last element of empty trajectory",
+        ))?;
         let TrajectoryStep {
             mut position,
             mut velocity,
             ..
-        } = trajectory.last().expect("Empty traj");
+        } = last;
         let mut acceleration = start_acceleration;
 
         loop {
@@ -301,7 +304,7 @@ where
             if position > self.path.len() {
                 new_points.push(TrajectoryStep::new(position, velocity));
 
-                break (new_points, PathPosition::End, position);
+                break Ok((new_points, PathPosition::End, position));
             } else if velocity < 0.0 {
                 panic!(
                     "Integrate forward velocity cannot be 0, position {}, velocity {}",
@@ -332,12 +335,10 @@ where
             if velocity > self.max_velocity_at(position, Limit::Acceleration)
                 || velocity > max_velocity_at_position
             {
-                let overshoot = new_points.pop().expect("No overshoot available");
-                let last_point = new_points.last().unwrap_or_else(|| {
-                    trajectory
-                        .last()
-                        .expect("Could not get last point of empty trajectory")
-                });
+                let overshoot = new_points
+                    .pop()
+                    .ok_or(String::from("Attempted to pop last element off empty vec"))?;
+                let last_point = new_points.last().unwrap_or(last);
 
                 let mut before = last_point.position;
                 let mut before_velocity = last_point.velocity;
@@ -389,19 +390,19 @@ where
                 {
                     if let Some(next) = next_discontinuity {
                         if after > next.position {
-                            break (new_points, PathPosition::NotEnd, position);
+                            break Ok((new_points, PathPosition::NotEnd, position));
                         }
                     }
 
                     if self.phase_slope(&new_point, MinMax::Max)
                         > self.max_velocity_derivative_at(new_point.position, Limit::Acceleration)
                     {
-                        break (new_points, PathPosition::NotEnd, position);
+                        break Ok((new_points, PathPosition::NotEnd, position));
                     }
                 } else if self.phase_slope(&new_point, MinMax::Min)
                     > self.max_velocity_derivative_at(new_point.position, Limit::Velocity)
                 {
-                    break (new_points, PathPosition::NotEnd, position);
+                    break Ok((new_points, PathPosition::NotEnd, position));
                 }
             }
         }
@@ -481,12 +482,17 @@ where
 
                 // Check for intersection between path and current segment
                 if start1.position.max(position) - self.epsilon <= intersection_position
-                    && intersection_position <= self.epsilon + start2.position.min(
-                        new_trajectory
-                            .last()
-                            .expect("Integrate backwards cannot get last point of empty trajectory")
-                            .position,
-                    ) {
+                    && intersection_position
+                        <= self.epsilon
+                            + start2.position.min(
+                                new_trajectory
+                                    .last()
+                                    .ok_or(String::from(
+                                        "Could not get last point of empty trajectory",
+                                    ))?
+                                    .position,
+                            )
+                {
                     let intersection_velocity =
                         start1.velocity + start_slope * (intersection_position - start1.position);
 
@@ -613,6 +619,7 @@ where
                 self.path.len(),
                 self.max_velocity_at(point.pos.position, Limit::Velocity)
             );
+
             acceleration_switching_point = Some(point.clone());
 
             if point.pos.velocity <= self.max_velocity_at(point.pos.position, Limit::Velocity) {
@@ -630,15 +637,15 @@ where
                 .unwrap_or(position_along_path),
         ) {
             trace!("Get vel point pos {}", point.pos.position);
+
             velocity_switching_point = Some(point.clone());
 
             if point.pos.position
                 > acceleration_switching_point
                     // TODO: Fix clone
                     .clone()
-                    .expect("Accel switching point")
-                    .pos
-                    .position
+                    .map(|p| p.pos.position)
+                    .expect("Acceleration switching point")
                 || (point.pos.velocity
                     <= self.max_velocity_at(point.pos.position - self.epsilon, Limit::Acceleration)
                     && point.pos.velocity
@@ -653,10 +660,12 @@ where
 
         // Return the next earliest switching point (if any)
         match (acceleration_switching_point, velocity_switching_point) {
-            (Some(ref accel_point), Some(ref vel_point))
-                if accel_point.pos.position <= vel_point.pos.position =>
-            {
-                Some(accel_point.clone())
+            (Some(accel_point), Some(vel_point)) => {
+                if accel_point.pos.position <= vel_point.pos.position {
+                    Some(accel_point)
+                } else {
+                    None
+                }
             }
             (Some(accel_point), None) => Some(accel_point),
             (None, Some(vel_point)) => Some(vel_point),
@@ -673,21 +682,6 @@ where
         let derivative = self.path.tangent(position);
         let second_derivative = self.path.curvature(position);
         let factor = min_max.as_multiplier();
-
-        trace!(
-            "RS deriv1,{},{},{},{}",
-            position,
-            derivative[0],
-            derivative[1],
-            derivative[2]
-        );
-        trace!(
-            "RS deriv2,{},{},{},{}",
-            position,
-            derivative[0],
-            derivative[1],
-            derivative[2]
-        );
 
         let res = self
             .acceleration_limit
@@ -711,8 +705,6 @@ where
                     }
                 },
             );
-
-        trace!("RS acc_at,{},{},{}", position, velocity, res * factor);
 
         res * factor
     }
