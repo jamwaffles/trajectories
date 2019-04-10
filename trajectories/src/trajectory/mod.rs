@@ -158,6 +158,7 @@ where
         let mut dbg_iter = 0;
 
         loop {
+            debug!("--- ");
             debug!("Setup loop, iter {}", dbg_iter);
 
             let (fwd, is_end, stop_position) =
@@ -175,7 +176,10 @@ where
             }
 
             if let Some(new_switching_point) = self.next_switching_point(stop_position) {
-                debug!("Switching point {:?}", new_switching_point);
+                debug!(
+                    "Switching point {:?} from stop_position {}",
+                    new_switching_point, stop_position
+                );
 
                 switching_point = new_switching_point;
             } else {
@@ -187,6 +191,13 @@ where
 
             let (splice_index, updated_traj) =
                 self.integrate_backward(&trajectory, &switching_point)?;
+
+            trace!(
+                "Splice {} on len {} with {} new items",
+                splice_index,
+                trajectory.len(),
+                updated_traj.len()
+            );
 
             let _ = trajectory.split_off(splice_index);
             trajectory.extend(updated_traj);
@@ -430,8 +441,13 @@ where
                         // Update pos/vel/acc in next iteration of loop
                         next_iter = false;
 
+                        debug!("--> Back step,{},{},{},{}", vel, pos, acc, slope);
+
                         if vel < 0.0 {
-                            return Err("Velocity cannot be less than zero".into());
+                            return Err(format!(
+                                "Velocity cannot be less than zero at position {}, got {} (acceleration {}, slope {})",
+                                pos, vel, acc, slope
+                            ));
                         }
 
                         let start_slope = (start2.velocity - start1.velocity)
@@ -518,6 +534,7 @@ where
 
             if point.pos.position
                 > acceleration_switching_point
+                    // TODO: Fix clone
                     .clone()
                     .expect("Accel switching point")
                     .pos
@@ -557,6 +574,15 @@ where
         let second_derivative = self.path.curvature(position);
         let factor = min_max.as_multiplier();
 
+        println!(
+            "RS deriv1,{},{},{},{}",
+            position, derivative[0], derivative[1], derivative[2]
+        );
+        println!(
+            "RS deriv2,{},{},{},{}",
+            position, derivative[0], derivative[1], derivative[2]
+        );
+
         let res = self
             .acceleration_limit
             .iter()
@@ -579,6 +605,8 @@ where
                     }
                 },
             );
+
+        println!("RS acc_at,{},{},{}", position, velocity, res * factor);
 
         res * factor
     }
@@ -773,7 +801,9 @@ where
     ) -> Option<TrajectorySwitchingPoint> {
         // Broad phase search step
         let step_size = 0.001;
-        let mut position = position_along_path;
+        // TODO: Use self.epsilon again
+        let accuracy = 0.000001;
+        let mut position = position_along_path - step_size;
         let mut prev_slope = self.phase_slope(
             &TrajectoryStep::new(position, self.max_velocity_at(position, Limit::Velocity)),
             MinMax::Min,
@@ -813,7 +843,7 @@ where
         let mut after_position = position;
 
         // Binary search through interval to find switching point within an epsilon
-        while after_position - prev_position > self.epsilon {
+        while after_position - prev_position > accuracy {
             position = (prev_position + after_position) / 2.0;
 
             if self.phase_slope(
