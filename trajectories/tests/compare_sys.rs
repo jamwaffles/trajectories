@@ -26,7 +26,7 @@ fn compare_test_1() {
     );
 
     let rust_trajectory = Trajectory::new(
-        rust_path,
+        &rust_path,
         TrajectoryOptions {
             velocity_limit: TestCoord3::new(1.3, 0.67, 0.67),
             acceleration_limit: TestCoord3::new(0.00249, 0.00249, 0.00249),
@@ -90,7 +90,7 @@ fn compare_test_2() {
     let rust_path_len = rust_path.len();
 
     let rust_trajectory = Trajectory::new(
-        rust_path.clone(),
+        &rust_path,
         TrajectoryOptions {
             velocity_limit: TestCoord3::new(1.3, 0.67, 0.67),
             acceleration_limit: TestCoord3::new(0.002, 0.002, 0.002),

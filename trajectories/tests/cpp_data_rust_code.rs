@@ -22,7 +22,7 @@ fn test_1() {
     );
 
     let _trajectory = Trajectory::new(
-        p,
+        &p,
         TrajectoryOptions {
             velocity_limit: TestCoord4::new(1.3, 0.67, 0.67, 0.5),
             acceleration_limit: TestCoord4::new(0.00249, 0.00249, 0.00249, 0.00249),
@@ -52,7 +52,7 @@ fn test_2() {
     );
 
     let _trajectory = Trajectory::new(
-        p,
+        &p,
         TrajectoryOptions {
             velocity_limit: TestCoord4::new(1.3, 0.67, 0.67, 0.5),
             acceleration_limit: TestCoord4::new(0.002, 0.002, 0.002, 0.002),

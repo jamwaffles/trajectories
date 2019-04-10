@@ -30,7 +30,7 @@ fn profile_native() {
     );
 
     let trajectory = Trajectory::new(
-        p,
+        &p,
         TrajectoryOptions {
             velocity_limit: TestCoord3::new(1.0, 1.0, 1.0),
             acceleration_limit: TestCoord3::new(1.0, 1.0, 1.0),

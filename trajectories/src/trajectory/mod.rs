@@ -22,13 +22,13 @@ use std::time::Instant;
 
 /// Motion trajectory
 #[derive(Debug)]
-pub struct Trajectory<N>
+pub struct Trajectory<'a, N>
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
-    path: Path<N>,
+    path: &'a Path<N>,
     velocity_limit: Coord<N>,
     acceleration_limit: Coord<N>,
     timestep: f64,
@@ -39,16 +39,15 @@ where
     epsilon: f64,
 }
 
-impl<N> Trajectory<N>
+impl<'a, N> Trajectory<'a, N>
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
-    // TODO: Take a reference to a path
     // TODO: Stop panicking all over the place and actually use the error arm of this `Result`
     /// Create a new trajectory from a given path and max velocity and acceleration
-    pub fn new(path: Path<N>, options: TrajectoryOptions<N>) -> Result<Self, String> {
+    pub fn new(path: &'a Path<N>, options: TrajectoryOptions<N>) -> Result<Self, String> {
         let TrajectoryOptions {
             velocity_limit,
             acceleration_limit,
@@ -1016,14 +1015,16 @@ mod tests {
             TestCoord3::new(0.0, 0.0, 1.0),
         ];
 
+        let path = Path::from_waypoints(
+            &waypoints,
+            PathOptions {
+                max_deviation: 0.001,
+            },
+        );
+
         // Same epsilon as Example.cpp for equal comparison
         let traj = Trajectory::new(
-            Path::from_waypoints(
-                &waypoints,
-                PathOptions {
-                    max_deviation: 0.001,
-                },
-            ),
+            &path,
             TrajectoryOptions {
                 velocity_limit: TestCoord3::repeat(1.0),
                 acceleration_limit: TestCoord3::repeat(1.0),
@@ -1071,14 +1072,16 @@ mod tests {
             TestCoord3::new(0.0, 0.0, 1.0),
         ];
 
+        let path = Path::from_waypoints(
+            &waypoints,
+            PathOptions {
+                max_deviation: 0.001,
+            },
+        );
+
         // Same epsilon as Example.cpp for equal comparison
         let traj = Trajectory::new(
-            Path::from_waypoints(
-                &waypoints,
-                PathOptions {
-                    max_deviation: 0.001,
-                },
-            ),
+            &path,
             TrajectoryOptions {
                 velocity_limit: TestCoord3::repeat(1.0),
                 acceleration_limit: TestCoord3::repeat(1.0),
@@ -1119,7 +1122,7 @@ mod tests {
 
         // Same epsilon as Example.cpp for equal comparison
         let traj = Trajectory::new(
-            path,
+            &path,
             TrajectoryOptions {
                 velocity_limit: TestCoord3::repeat(1.0),
                 acceleration_limit: TestCoord3::repeat(1.0),
