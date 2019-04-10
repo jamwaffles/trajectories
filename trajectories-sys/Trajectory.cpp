@@ -69,6 +69,7 @@ Trajectory::Trajectory(const Path &path, const Vector3d &maxVelocity, const Vect
 		if(getNextSwitchingPoint(trajectory.back().pathPos, switchingPoint, beforeAcceleration, afterAcceleration)) {
 			break;
 		}
+		// std::cout<<"Switching point "<<switchingPoint.pathPos<<" vel "<<switchingPoint.pathVel<<std::endl;
 		integrateBackward(trajectory, switchingPoint.pathPos, switchingPoint.pathVel, beforeAcceleration);
 	}
 
@@ -234,6 +235,8 @@ bool Trajectory::getNextVelocitySwitchingPoint(double pathPos, TrajectoryStep &n
 		}
 	} while((!start || getMinMaxPhaseSlope(pathPos, getVelocityMaxPathVelocity(pathPos), false) > getVelocityMaxPathVelocityDeriv(pathPos))
 		&& pathPos < path.getLength());
+
+	// std::cout<<"CPP END CONDITION "<<pathPos<<" LEN "<<path.getLength()<<std::endl;
 
 	// No next switching point could be found (return `None`)
 	if(pathPos >= path.getLength()) {
@@ -409,6 +412,8 @@ void Trajectory::integrateBackward(list<TrajectoryStep> &startTrajectory, double
 			// Update slope at new position
 			slope = (trajectory.front().pathVel - pathVel) / (trajectory.front().pathPos - pathPos);
 
+			std::cout<<"    CPP Back step vel,"<<pathVel<<","<<pathPos<<","<<acceleration<<","<<slope<<std::endl;
+
 			// If velocity is below zero, bail
 			if(pathVel < 0.0) {
 				valid = false;
@@ -450,6 +455,10 @@ void Trajectory::integrateBackward(list<TrajectoryStep> &startTrajectory, double
 double Trajectory::getMinMaxPathAcceleration(double pathPos, double pathVel, bool max) {
 	Vector3d configDeriv = path.getTangent(pathPos);
 	Vector3d configDeriv2 = path.getCurvature(pathPos);
+
+	// std::cout<<"CPP deriv1,"<<pathPos<<","<<configDeriv[0]<<","<<configDeriv[1]<<","<<configDeriv[2]<<std::endl;
+	// std::cout<<"CPP deriv2,"<<pathPos<<","<<configDeriv2[0]<<","<<configDeriv2[1]<<","<<configDeriv2[2]<<std::endl;
+
 	double factor = max ? 1.0 : -1.0;
 	double maxPathAcceleration = numeric_limits<double>::max();
 	for(unsigned int i = 0; i < n; i++) {
@@ -458,6 +467,7 @@ double Trajectory::getMinMaxPathAcceleration(double pathPos, double pathVel, boo
 				maxAcceleration[i]/abs(configDeriv[i]) - factor * configDeriv2[i] * pathVel*pathVel / configDeriv[i]);
 		}
 	}
+	// std::cout<<"CPP acc_at,"<<pathPos<<","<<pathVel<<","<<(factor*maxPathAcceleration)<<std::endl;
 	return factor * maxPathAcceleration;
 }
 
