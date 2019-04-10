@@ -1,17 +1,17 @@
 mod limit;
 mod min_max;
 mod path_position;
-mod switching_point;
 mod trajectory_options;
 mod trajectory_step;
+mod trajectory_switching_point;
 
 use self::limit::Limit;
 use self::min_max::MinMax;
 use self::path_position::PathPosition;
-use self::switching_point::SwitchingPoint as TrajectorySwitchingPoint;
 pub use self::trajectory_options::TrajectoryOptions;
 use self::trajectory_step::TrajectoryStep;
-use crate::path::{Continuity, Path, PathItem, SwitchingPoint};
+use self::trajectory_switching_point::TrajectorySwitchingPoint;
+use crate::path::{Continuity, Path, PathItem, PathSwitchingPoint};
 use crate::Coord;
 use nalgebra::allocator::Allocator;
 use nalgebra::allocator::SameShapeVectorAllocator;
@@ -818,7 +818,8 @@ where
         position_along_path: f64,
     ) -> Option<TrajectorySwitchingPoint> {
         let mut velocity;
-        let mut current_point = &SwitchingPoint::new(position_along_path, Continuity::Continuous);
+        let mut current_point =
+            &PathSwitchingPoint::new(position_along_path, Continuity::Continuous);
 
         while current_point.position <= self.path.len() - self.epsilon {
             current_point = self.path.next_switching_point(current_point.position)?;

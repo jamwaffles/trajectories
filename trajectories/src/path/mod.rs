@@ -2,12 +2,14 @@ mod circular_segment;
 mod linear_segment;
 mod path_item;
 mod path_options;
+mod path_switching_point;
 mod segment;
 
 pub use self::circular_segment::CircularPathSegment;
 pub use self::linear_segment::LinearPathSegment;
 pub use self::path_item::PathItem;
 pub use self::path_options::PathOptions;
+pub use self::path_switching_point::PathSwitchingPoint;
 pub use self::segment::PathSegment;
 use crate::Coord;
 use nalgebra::allocator::Allocator;
@@ -15,26 +17,6 @@ use nalgebra::allocator::SameShapeVectorAllocator;
 use nalgebra::DefaultAllocator;
 use nalgebra::DimName;
 use std::time::Instant;
-
-/// A switching point
-#[derive(Debug, Clone, PartialEq)]
-pub struct SwitchingPoint {
-    /// Position along the path at which this switching point occurs
-    pub position: f64,
-    /// Whether this switching point is discontinuous or not
-    pub continuity: Continuity,
-}
-
-impl SwitchingPoint {
-    /// Create a new switching point from position and continuity flag
-    #[inline(always)]
-    pub fn new(position: f64, continuity: Continuity) -> Self {
-        Self {
-            position,
-            continuity,
-        }
-    }
-}
 
 /// Continuity flag
 #[derive(Debug, Clone, PartialEq)]
@@ -61,7 +43,7 @@ where
     length: f64,
 
     /// Switching points. Bool denotes whether point is discontinuous (`true`) or not (`false`)
-    switching_points: Vec<SwitchingPoint>,
+    switching_points: Vec<PathSwitchingPoint>,
 }
 
 impl<N> Path<N>
@@ -118,8 +100,10 @@ where
                         // Switching point where linear segment touches blend (discontinuous)
                         // TODO: Get actual list of switching points when support for non-linear
                         // path segments (that aren't blends) is added.
-                        switching_points
-                            .push(SwitchingPoint::new(start_offset, Continuity::Discontinuous));
+                        switching_points.push(PathSwitchingPoint::new(
+                            start_offset,
+                            Continuity::Discontinuous,
+                        ));
 
                         let blend_segment = blend_segment.with_start_offset(start_offset);
                         let blend_switching_points = blend_segment.switching_points();
@@ -133,7 +117,10 @@ where
                                     let p_offset = p + blend_segment.start_offset;
 
                                     if p_offset < blend_end_offset {
-                                        Some(SwitchingPoint::new(p_offset, Continuity::Continuous))
+                                        Some(PathSwitchingPoint::new(
+                                            p_offset,
+                                            Continuity::Continuous,
+                                        ))
                                     } else {
                                         None
                                     }
@@ -151,8 +138,10 @@ where
                         // Switching point where linear segment touches blend
                         // TODO: Get actual list of switching points when support for non-linear
                         // path segments (that aren't blends) is added.
-                        switching_points
-                            .push(SwitchingPoint::new(start_offset, Continuity::Discontinuous));
+                        switching_points.push(PathSwitchingPoint::new(
+                            start_offset,
+                            Continuity::Discontinuous,
+                        ));
 
                         // Add both linear segments with blend in between to overall path
                         segments.append(&mut vec![
@@ -202,14 +191,14 @@ where
     }
 
     /// Get all switching points along this path
-    pub fn switching_points(&self) -> &Vec<SwitchingPoint> {
+    pub fn switching_points(&self) -> &Vec<PathSwitchingPoint> {
         &self.switching_points
     }
 
     /// Get position of next switching point after a position along the path
     ///
     /// Returns the end of the path as position if no switching point could be found
-    pub fn next_switching_point(&self, position_along_path: f64) -> Option<&SwitchingPoint> {
+    pub fn next_switching_point(&self, position_along_path: f64) -> Option<&PathSwitchingPoint> {
         self.switching_points
             .iter()
             .find(|sp| sp.position > position_along_path)
@@ -479,14 +468,14 @@ mod tests {
 
         assert_eq!(
             path.next_switching_point(0.0),
-            Some(&SwitchingPoint::new(
+            Some(&PathSwitchingPoint::new(
                 1.0173539279271488,
                 Continuity::Discontinuous
             ))
         );
         assert_eq!(
             path.next_switching_point(5.425844),
-            Some(&SwitchingPoint::new(
+            Some(&PathSwitchingPoint::new(
                 5.43325752688998,
                 Continuity::Continuous
             ))
@@ -526,23 +515,23 @@ mod tests {
 
         // Switching generated from waypoints from Example.cpp
         let expected_switching_points = vec![
-            SwitchingPoint::new(1.0173539279271488, Continuity::Discontinuous),
-            SwitchingPoint::new(1.0173539279271488, Continuity::Continuous),
-            SwitchingPoint::new(1.0207890617732325, Continuity::Continuous),
-            SwitchingPoint::new(1.0212310438858092, Continuity::Discontinuous),
-            SwitchingPoint::new(3.8614234182834446, Continuity::Discontinuous),
-            SwitchingPoint::new(3.8626971078471364, Continuity::Continuous),
-            SwitchingPoint::new(3.8633009591232206, Continuity::Discontinuous),
-            SwitchingPoint::new(5.425842981796586, Continuity::Discontinuous),
-            SwitchingPoint::new(5.43325752688998, Continuity::Continuous),
-            SwitchingPoint::new(5.43372148747555, Continuity::Discontinuous),
-            SwitchingPoint::new(7.430435574066095, Continuity::Discontinuous),
-            SwitchingPoint::new(7.430435574066095, Continuity::Continuous),
-            SwitchingPoint::new(7.4314735160725895, Continuity::Continuous),
-            SwitchingPoint::new(7.432009534887585, Continuity::Discontinuous),
-            SwitchingPoint::new(8.842953203579489, Continuity::Discontinuous),
-            SwitchingPoint::new(8.844000401130685, Continuity::Continuous),
-            SwitchingPoint::new(8.845047598681882, Continuity::Discontinuous),
+            PathSwitchingPoint::new(1.0173539279271488, Continuity::Discontinuous),
+            PathSwitchingPoint::new(1.0173539279271488, Continuity::Continuous),
+            PathSwitchingPoint::new(1.0207890617732325, Continuity::Continuous),
+            PathSwitchingPoint::new(1.0212310438858092, Continuity::Discontinuous),
+            PathSwitchingPoint::new(3.8614234182834446, Continuity::Discontinuous),
+            PathSwitchingPoint::new(3.8626971078471364, Continuity::Continuous),
+            PathSwitchingPoint::new(3.8633009591232206, Continuity::Discontinuous),
+            PathSwitchingPoint::new(5.425842981796586, Continuity::Discontinuous),
+            PathSwitchingPoint::new(5.43325752688998, Continuity::Continuous),
+            PathSwitchingPoint::new(5.43372148747555, Continuity::Discontinuous),
+            PathSwitchingPoint::new(7.430435574066095, Continuity::Discontinuous),
+            PathSwitchingPoint::new(7.430435574066095, Continuity::Continuous),
+            PathSwitchingPoint::new(7.4314735160725895, Continuity::Continuous),
+            PathSwitchingPoint::new(7.432009534887585, Continuity::Discontinuous),
+            PathSwitchingPoint::new(8.842953203579489, Continuity::Discontinuous),
+            PathSwitchingPoint::new(8.844000401130685, Continuity::Continuous),
+            PathSwitchingPoint::new(8.845047598681882, Continuity::Discontinuous),
         ];
 
         let path = Path::from_waypoints(&waypoints, PathOptions::default());
