@@ -18,6 +18,7 @@ use nalgebra::allocator::SameShapeVectorAllocator;
 use nalgebra::DefaultAllocator;
 use nalgebra::DimName;
 use std;
+use std::time::Instant;
 
 /// Motion trajectory
 #[derive(Debug)]
@@ -64,7 +65,15 @@ where
             epsilon,
         };
 
+        let start = Instant::now();
+
         traj.setup()?;
+
+        info!(
+            "Created trajectory with {} segments in {} ms",
+            traj.trajectory.len(),
+            start.elapsed().as_millis()
+        );
 
         Ok(traj)
     }
