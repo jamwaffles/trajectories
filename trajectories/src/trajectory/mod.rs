@@ -64,7 +64,7 @@ where
             epsilon,
         };
 
-        traj.setup();
+        traj.setup()?;
 
         Ok(traj)
     }
@@ -147,7 +147,7 @@ where
     }
 
     /// Compute complete trajectory
-    fn setup(&mut self) {
+    fn setup(&mut self) -> Result<(), String> {
         let mut trajectory = vec![TrajectoryStep::new(0.0, 0.0)];
         let mut switching_point = TrajectorySwitchingPoint {
             before_acceleration: 0.0,
@@ -185,13 +185,11 @@ where
 
             debug!("Setup loop 3, iter {}", dbg_iter);
 
-            if let Ok((splice_index, updated_traj)) =
-                self.integrate_backward(&trajectory, &switching_point)
-            {
-                // trajectory = updated_traj;
-                let _ = trajectory.split_off(splice_index);
-                trajectory.extend(updated_traj);
-            }
+            let (splice_index, updated_traj) =
+                self.integrate_backward(&trajectory, &switching_point)?;
+
+            let _ = trajectory.split_off(splice_index);
+            trajectory.extend(updated_traj);
 
             debug!("Setup loop 4, iter {}", dbg_iter);
 
@@ -231,6 +229,8 @@ where
             .collect::<Vec<TrajectoryStep>>();
 
         self.trajectory = timed;
+
+        Ok(())
     }
 
     fn integrate_forward(
