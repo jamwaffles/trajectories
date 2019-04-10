@@ -664,13 +664,19 @@ where
         let second_derivative = self.path.curvature(position);
         let factor = min_max.as_multiplier();
 
-        println!(
+        trace!(
             "RS deriv1,{},{},{},{}",
-            position, derivative[0], derivative[1], derivative[2]
+            position,
+            derivative[0],
+            derivative[1],
+            derivative[2]
         );
-        println!(
+        trace!(
             "RS deriv2,{},{},{},{}",
-            position, derivative[0], derivative[1], derivative[2]
+            position,
+            derivative[0],
+            derivative[1],
+            derivative[2]
         );
 
         let res = self
@@ -696,7 +702,7 @@ where
                 },
             );
 
-        println!("RS acc_at,{},{},{}", position, velocity, res * factor);
+        trace!("RS acc_at,{},{},{}", position, velocity, res * factor);
 
         res * factor
     }
