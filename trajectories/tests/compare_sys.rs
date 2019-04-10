@@ -168,7 +168,7 @@ fn compare_test_2() {
     write_debug_csv(
         "../target/compare_rust_steps.csv".into(),
         &rust_trajectory
-            .trajectory
+            .trajectory()
             .iter()
             .map(|step| step.time)
             .collect::<Vec<f64>>(),

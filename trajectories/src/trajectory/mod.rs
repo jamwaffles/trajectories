@@ -32,10 +32,7 @@ where
     velocity_limit: Coord<N>,
     acceleration_limit: Coord<N>,
     timestep: f64,
-    // TODO: Un-pub, add method to get reference. This is only used in tests and should not be
-    // mutable
-    /// Trajectory steps
-    pub trajectory: Vec<TrajectoryStep>,
+    trajectory: Vec<TrajectoryStep>,
     epsilon: f64,
 }
 
@@ -118,6 +115,11 @@ where
         let velocity = previous.velocity + duration * acceleration;
 
         self.path.tangent(position) * velocity
+    }
+
+    /// Get a reference to the generated trajectory
+    pub fn trajectory(&self) -> &Vec<TrajectoryStep> {
+        &self.trajectory
     }
 
     // TODO: Return an Option
