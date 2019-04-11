@@ -458,6 +458,14 @@ where
 
                 new_trajectory.push(new_point);
 
+                trace!(
+                    "RS back_step (pathVel;pathPos;acceleration;slope),{},{},{},{}",
+                    velocity,
+                    position,
+                    before_acceleration,
+                    slope
+                );
+
                 if velocity < 0.0 {
                     return Err(format!(
                         "Velocity cannot be less than zero at position {}, got {} (acceleration {}, slope {})",
@@ -706,6 +714,13 @@ where
                 },
             );
 
+        trace!(
+            "CPP acc_at (pathPos;pathVel;factor*maxPathAcceleration),{},{},{}",
+            position,
+            velocity,
+            res * factor
+        );
+
         res * factor
     }
 
@@ -931,7 +946,11 @@ where
             prev_deriv = deriv;
         }
 
-        debug!("END CONDITION {} LEN {}", position, self.path.len());
+        trace!(
+            "RS end_condition (pathPos;path.getLength()),{},{}",
+            position,
+            self.path.len()
+        );
 
         if position >= self.path.len() {
             return None;

@@ -236,7 +236,7 @@ bool Trajectory::getNextVelocitySwitchingPoint(double pathPos, TrajectoryStep &n
 	} while((!start || getMinMaxPhaseSlope(pathPos, getVelocityMaxPathVelocity(pathPos), false) > getVelocityMaxPathVelocityDeriv(pathPos))
 		&& pathPos < path.getLength());
 
-	// std::cout<<"CPP END CONDITION "<<pathPos<<" LEN "<<path.getLength()<<std::endl;
+	std::cout<<"CPP end_condition (pathPos;path.getLength()),"<<pathPos<<","<<path.getLength()<<std::endl;
 
 	// No next switching point could be found (return `None`)
 	if(pathPos >= path.getLength()) {
@@ -412,7 +412,7 @@ void Trajectory::integrateBackward(list<TrajectoryStep> &startTrajectory, double
 			// Update slope at new position
 			slope = (trajectory.front().pathVel - pathVel) / (trajectory.front().pathPos - pathPos);
 
-			std::cout<<"    CPP Back step vel,"<<pathVel<<","<<pathPos<<","<<acceleration<<","<<slope<<std::endl;
+			std::cout<<"CPP Back step (pathVel;pathPos;acceleration;slope),"<<pathVel<<","<<pathPos<<","<<acceleration<<","<<slope<<std::endl;
 
 			// If velocity is below zero, bail
 			if(pathVel < 0.0) {
@@ -467,7 +467,7 @@ double Trajectory::getMinMaxPathAcceleration(double pathPos, double pathVel, boo
 				maxAcceleration[i]/abs(configDeriv[i]) - factor * configDeriv2[i] * pathVel*pathVel / configDeriv[i]);
 		}
 	}
-	// std::cout<<"CPP acc_at,"<<pathPos<<","<<pathVel<<","<<(factor*maxPathAcceleration)<<std::endl;
+	std::cout<<"CPP acc_at (pathPos;pathVel;factor*maxPathAcceleration),"<<pathPos<<","<<pathVel<<","<<(factor*maxPathAcceleration)<<std::endl;
 	return factor * maxPathAcceleration;
 }
 
