@@ -191,6 +191,14 @@ where
                     new_switching_point, stop_position
                 );
 
+                trace!(
+                    "RS forward_sw_point (pos;vel;beforeAccel;afterAccel),{},{},{},{}",
+                    switching_point.pos.position,
+                    switching_point.pos.velocity,
+                    switching_point.before_acceleration,
+                    switching_point.after_acceleration
+                );
+
                 switching_point = new_switching_point;
             } else {
                 // Break if we've reached the end of the path
