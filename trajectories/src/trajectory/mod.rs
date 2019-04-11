@@ -715,7 +715,7 @@ where
             );
 
         trace!(
-            "CPP acc_at (pathPos;pathVel;factor*maxPathAcceleration),{},{},{}",
+            "RS acc_at (pathPos;pathVel;factor*maxPathAcceleration),{},{},{}",
             position,
             velocity,
             res * factor
