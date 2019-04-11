@@ -459,9 +459,9 @@ where
                 new_trajectory.push(new_point);
 
                 trace!(
-                    "RS back_step (pathVel;pathPos;acceleration;slope),{},{},{},{}",
-                    velocity,
+                    "RS back_step (pathPos;pathVel;acceleration;slope),{},{},{},{}",
                     position,
+                    velocity,
                     before_acceleration,
                     slope
                 );

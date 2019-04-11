@@ -48,7 +48,7 @@ const double Trajectory::eps = 0.000001;
 
 // static double squared(double d) {
 // 	return d * d;
-// }
+// }f
 
 Trajectory::Trajectory(const Path &path, const Vector3d &maxVelocity, const Vector3d &maxAcceleration, double timeStep) :
 	path(path),
@@ -412,7 +412,7 @@ void Trajectory::integrateBackward(list<TrajectoryStep> &startTrajectory, double
 			// Update slope at new position
 			slope = (trajectory.front().pathVel - pathVel) / (trajectory.front().pathPos - pathPos);
 
-			std::cout<<"CPP Back step (pathVel;pathPos;acceleration;slope),"<<pathVel<<","<<pathPos<<","<<acceleration<<","<<slope<<std::endl;
+			std::cout<<"CPP back_step (pathPos;pathVel;acceleration;slope),"<<pathPos<<","<<pathVel<<","<<acceleration<<","<<slope<<std::endl;
 
 			// If velocity is below zero, bail
 			if(pathVel < 0.0) {

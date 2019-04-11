@@ -11,8 +11,6 @@ use trajectories_sys::{path_create, Trajectory as CppTrajectory};
 /// test1 from Test.cpp
 #[test]
 fn compare_test_1() {
-    pretty_env_logger::init();
-
     let waypoints: Vec<TestCoord3> = vec![
         TestCoord3::new(1424.0, 984.999694824219, 2126.0),
         TestCoord3::new(1423.0, 985.000244140625, 2126.0),
@@ -72,6 +70,8 @@ fn compare_test_1() {
 /// test2 from Test.cpp
 #[test]
 fn compare_test_2() {
+    pretty_env_logger::init();
+
     let waypoints: Vec<TestCoord3> = vec![
         TestCoord3::new(1427.0, 368.0, 690.0),
         TestCoord3::new(1427.0, 368.0, 790.0),
