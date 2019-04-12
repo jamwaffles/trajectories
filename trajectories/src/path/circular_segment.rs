@@ -125,6 +125,13 @@ where
 
         let arc_length = angle * radius;
 
+        trace!(
+            "RS circ_seg (arc_len;angle;radius),{},{},{}",
+            arc_length,
+            angle,
+            radius
+        );
+
         CircularPathSegment {
             center,
             radius,

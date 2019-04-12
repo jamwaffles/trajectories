@@ -157,6 +157,10 @@ where
             ),
         };
 
+        for p in switching_points.iter() {
+            trace!("RS switching_point (pos;1.0),{},1.0", p.position);
+        }
+
         let length = start_offset
             + segments
                 .last()

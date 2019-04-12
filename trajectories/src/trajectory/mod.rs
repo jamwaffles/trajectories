@@ -83,6 +83,15 @@ where
     pub fn position(&self, time: f64) -> Coord<N> {
         let (previous, current) = self.trajectory_segment(time);
 
+        trace!(
+            "RS get_pos (time;prev_pos;prev_vel;curr_pos;curr_vel),{},{},{},{},{}",
+            time,
+            previous.position,
+            previous.velocity,
+            current.position,
+            current.velocity
+        );
+
         let duration = current.time - previous.time;
         let acceleration = 2.0
             * (current.position - previous.position - duration * previous.velocity)
@@ -174,12 +183,13 @@ where
             let (fwd, is_end, stop_position) =
                 self.integrate_forward(&trajectory, switching_point.after_acceleration)?;
 
-            trajectory.extend(fwd);
-
             debug!(
-                "Setup loop 2, iter {}, stop_position {:?}",
-                dbg_iter, stop_position
+                "RS integ_fwd_end_step (pos;vel),{},{}",
+                fwd.last().unwrap().position,
+                fwd.last().unwrap().velocity,
             );
+
+            trajectory.extend(fwd);
 
             if is_end == PathPosition::End {
                 break;
@@ -262,6 +272,11 @@ where
         Ok(())
     }
 
+    /// Integrate forward returning:
+    ///
+    /// * A new trajectory segment to append
+    /// * A flag indicating whether the end of the path was reached
+    /// * The new position from which to continue processing
     fn integrate_forward(
         &self,
         trajectory: &[TrajectoryStep],
@@ -496,6 +511,12 @@ where
                     - start_slope * start1.position)
                     / (slope - start_slope);
 
+                trace!(
+                    "RS intersection_values (i_pos;start_slope),{},{}",
+                    intersection_position,
+                    start_slope
+                );
+
                 // Check for intersection between path and current segment
                 if start1.position.max(position) - self.epsilon <= intersection_position
                     && intersection_position
@@ -519,6 +540,12 @@ where
                     ));
 
                     let ret = new_trajectory.into_iter().rev().collect();
+
+                    trace!(
+                        "RS back_splice_idx (start_sw_pos;splice_idx),{},{}",
+                        start_switching_point.pos.position,
+                        splice_index
+                    );
 
                     return Ok((splice_index, ret));
                 }
@@ -615,11 +642,7 @@ where
 
     /// Get next switching point along the path, bounded by velocity or acceleration
     fn next_switching_point(&self, position_along_path: f64) -> Option<TrajectorySwitchingPoint> {
-        let mut acceleration_switching_point: Option<TrajectorySwitchingPoint> =
-            Some(TrajectorySwitchingPoint {
-                pos: TrajectoryStep::new(position_along_path, 0.0),
-                ..TrajectorySwitchingPoint::default()
-            });
+        let mut acceleration_switching_point: Option<TrajectorySwitchingPoint> = None;
 
         // Find the next acceleration switching point
         while let Some(point) = self.next_acceleration_switching_point(
@@ -691,7 +714,7 @@ where
         );
 
         // Return the next earliest switching point (if any)
-        match (acceleration_switching_point, velocity_switching_point) {
+        let result = match (acceleration_switching_point, velocity_switching_point) {
             (Some(accel_point), Some(vel_point)) => {
                 if accel_point.pos.position <= vel_point.pos.position {
                     Some(accel_point)
@@ -702,7 +725,18 @@ where
             (Some(accel_point), None) => Some(accel_point),
             (None, Some(vel_point)) => Some(vel_point),
             _ => None,
-        }
+        };
+
+        trace!(
+            "RS next_sw_point (pos_along_path;sw_pos;sw_vel;before_accel;after_accel),{},{},{},{},{}",
+            position_along_path,
+            result.clone().map(|p| p.pos.position).unwrap_or(0.0),
+            result.clone().map(|p| p.pos.velocity).unwrap_or(0.0),
+            result.clone().map(|p| p.before_acceleration).unwrap_or(0.0),
+            result.clone().map(|p| p.after_acceleration).unwrap_or(0.0),
+        );
+
+        result
     }
 
     /// Find minimum or maximum acceleration at a point along path
@@ -760,7 +794,15 @@ where
     fn max_velocity_from_velocity(&self, position_along_path: f64) -> f64 {
         let tangent = self.path.tangent(position_along_path);
 
-        self.velocity_limit.component_div(&tangent).amin()
+        let result = self.velocity_limit.component_div(&tangent).amin();
+
+        trace!(
+            "RS max_vel_from_vel (pos;vel),{},{}",
+            position_along_path,
+            result
+        );
+
+        result
     }
 
     /// Find maximum allowable velocity as limited by the acceleration at a point on the path
@@ -797,6 +839,12 @@ where
             }
         }
 
+        trace!(
+            "RS max_vel_from_acc (pos;vel),{},{}",
+            position_along_path,
+            max_path_velocity
+        );
+
         max_path_velocity
     }
 
@@ -822,9 +870,17 @@ where
             .min_by(|a, b| a.1.partial_cmp(b.1).unwrap())
             .unwrap_or((0, &std::f64::MAX));
 
-        -(self.velocity_limit[constraint_axis]
+        let result = -(self.velocity_limit[constraint_axis]
             * self.path.curvature(position_along_path)[constraint_axis])
-            / (tangent[constraint_axis] * tangent_abs[constraint_axis])
+            / (tangent[constraint_axis] * tangent_abs[constraint_axis]);
+
+        trace!(
+            "RS max_vel_vel_deriv (pos;vel),{},{}",
+            position_along_path,
+            result
+        );
+
+        result
     }
 
     /// Get the derivative of the max velocity at a point along the path
@@ -852,7 +908,7 @@ where
         let mut current_point =
             &PathSwitchingPoint::new(position_along_path, Continuity::Continuous);
 
-        while current_point.position <= self.path.len() - self.epsilon {
+        while current_point.position <= self.path.len() {
             current_point = self.path.next_switching_point(current_point.position)?;
 
             match current_point.continuity {
@@ -893,6 +949,12 @@ where
                         && (before_velocity < after_velocity
                             || after_phase_slope < after_max_velocity_deriv)
                     {
+                        trace!(
+                            "RS acc_sw_discont (in_pos;next_pos;next_vel),{},{},{}",
+                            position_along_path,
+                            current_point.position,
+                            velocity
+                        );
                         return Some(TrajectorySwitchingPoint {
                             pos: TrajectoryStep::new(current_point.position, velocity),
                             before_acceleration,
@@ -914,6 +976,12 @@ where
                     );
 
                     if low_deriv < 0.0 && high_deriv > 0.0 {
+                        trace!(
+                            "RS acc_sw_cont (in_pos;next_pos;next_vel),{},{},{}",
+                            position_along_path,
+                            current_point.position,
+                            velocity
+                        );
                         return Some(TrajectorySwitchingPoint {
                             pos: TrajectoryStep::new(current_point.position, velocity),
                             before_acceleration: 0.0,

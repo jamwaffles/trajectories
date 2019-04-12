@@ -93,6 +93,8 @@ class CircularPathSegment : public PathSegment
 {
 public:
 	CircularPathSegment(const Eigen::Vector3d &start, const Eigen::Vector3d &intersection, const Eigen::Vector3d &end, double maxDeviation) {
+		std::cout.precision(std::numeric_limits<double>::max_digits10 - 1);
+
 		if((intersection - start).norm() < 0.000001 || (end - intersection).norm() < 0.000001) {
 			length = 0.0;
 			radius = 1.0;
@@ -129,6 +131,8 @@ public:
 
 		x = (intersection - distance * startDirection - center).normalized();
 		y = startDirection;
+
+		std::cout<<"CPP circ_seg (arc_len;angle;radius),"<<length<<","<<angle<<","<<radius<<std::endl;
 
 		// IOFormat CommaInitFmt(StreamPrecision, DontAlignCols, ", ", ", ", "", "", " << ", ";");
 
@@ -248,9 +252,9 @@ Path::Path(const list<Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > &pat
 	}
 	switchingPoints.pop_back();
 
-	// for(std::list<std::pair<double, bool> >::iterator i = switchingPoints.begin(); i != switchingPoints.end(); i++) {
-	// 	std::cout << "Switching point " << (*i).first << " " << (*i).second << std::endl;
-	// }
+	for(std::list<std::pair<double, bool> >::iterator i = switchingPoints.begin(); i != switchingPoints.end(); i++) {
+		std::cout << "CPP switching_point (pos;1.0)," << (*i).first << ",1.0" << std::endl;
+	}
 }
 
 Path::Path(const Path &path) :
