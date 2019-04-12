@@ -628,20 +628,25 @@ where
                 .map(|p| p.pos.position)
                 .unwrap_or(position_along_path),
         ) {
-            trace!(
-                "Get accel point pos {} vel {} from len {}, max_vel {}",
-                point.pos.position,
-                point.pos.velocity,
-                self.path.len(),
-                self.max_velocity_at(point.pos.position, Limit::Velocity)
-            );
-
             acceleration_switching_point = Some(point.clone());
 
             if point.pos.velocity <= self.max_velocity_at(point.pos.position, Limit::Velocity) {
                 break;
             }
         }
+
+        trace!(
+            "RS next_accel_sw_point (pos_along_path;sw_pos;sw_vel),{},{},{}",
+            position_along_path,
+            acceleration_switching_point
+                .clone()
+                .map(|p| p.pos.position)
+                .unwrap_or(0.0),
+            acceleration_switching_point
+                .clone()
+                .map(|p| p.pos.velocity)
+                .unwrap_or(0.0),
+        );
 
         let mut velocity_switching_point: Option<TrajectorySwitchingPoint> = None;
 
@@ -652,8 +657,6 @@ where
                 .map(|p| p.pos.position)
                 .unwrap_or(position_along_path),
         ) {
-            trace!("Get vel point pos {}", point.pos.position);
-
             velocity_switching_point = Some(point.clone());
 
             if point.pos.position
@@ -673,6 +676,19 @@ where
                 break;
             }
         }
+
+        trace!(
+            "RS next_vel_sw_point (pos_along_path;sw_pos;sw_vel),{},{},{}",
+            position_along_path,
+            velocity_switching_point
+                .clone()
+                .map(|p| p.pos.position)
+                .unwrap_or(0.0),
+            velocity_switching_point
+                .clone()
+                .map(|p| p.pos.velocity)
+                .unwrap_or(0.0),
+        );
 
         // Return the next earliest switching point (if any)
         match (acceleration_switching_point, velocity_switching_point) {
