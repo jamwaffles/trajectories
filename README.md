@@ -2,9 +2,9 @@
 
 ### `trajectories-sys`
 
-Original C++ code from <https://github.com/tobiaskunz/trajectories> with added broken Rust Bindgen config.
+Original C++ code from <https://github.com/tobiaskunz/trajectories> with added Rust Bindgen config.
 
-### Build bindings (broken)
+### Build bindings
 
 ```bash
 # macOS
@@ -42,3 +42,10 @@ g++ -I/usr/local/Cellar/eigen/3.3.4/include/eigen3 -I/usr/include/eigen3 Test.cp
 ## TODO
 
 * [x] Prepare path; introduce circular blends between straight segments, shorten straight segments
+
+## Debugging values against C++ reference implementation
+
+1. Uncomment any `// COMP` and following `cout` lines in `trajectories-sys/Path.cpp` and `trajectories-sys/Trajectory.cpp`
+1. Find a Gnuplot script with values to compare with `ls gnuplot/*.pl`
+1. Run `./record_and_plot.sh ./gnuplot/<script>.plt`
+1. Open `target/<script>.svg` or `target/<script>.png`
