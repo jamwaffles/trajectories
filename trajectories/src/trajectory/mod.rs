@@ -448,7 +448,7 @@ where
                 },
             mut before_acceleration,
             ..
-        } = start_switching_point.clone();
+        } = start_switching_point;
         let mut slope = 0.0;
         let mut it = start_trajectory.windows(2).rev();
         let mut new_trajectory: Vec<TrajectoryStep> = Vec::new();
@@ -555,17 +555,17 @@ where
         Err(format!("Path is invalid: Integrate backwards did not hit start trajectory, start position {} velocity {}", position, velocity))
 
         // let TrajectorySwitchingPoint {
-        //     pos: TrajectoryStep {
-        //         position, velocity, ..
-        //     },
-        //     before_acceleration,
+        //     pos:
+        //         TrajectoryStep {
+        //             position: mut pos,
+        //             velocity: mut vel,
+        //             ..
+        //         },
+        //     before_acceleration: mut acc,
         //     ..
         // } = *start_switching_point;
 
         // let mut slope = 0.0;
-        // let mut pos = position;
-        // let mut vel = velocity;
-        // let mut acc = before_acceleration;
         // let mut new_traj: Vec<TrajectoryStep> = Vec::new();
         // let mut next_iter = false;
         // let mut splice_index = start_trajectory.len();
@@ -590,7 +590,13 @@ where
         //                 // Update pos/vel/acc in next iteration of loop
         //                 next_iter = false;
 
-        //                 debug!("--> Back step,{},{},{},{}", vel, pos, acc, slope);
+        //                 trace!(
+        //                     "RS back_step (pathPos;pathVel;acceleration;slope),{},{},{},{}",
+        //                     pos,
+        //                     vel,
+        //                     acc,
+        //                     slope
+        //                 );
 
         //                 if vel < 0.0 {
         //                     return Err(format!(
@@ -609,14 +615,19 @@ where
 
         //                 // Check for intersection between path and current segment
         //                 if start1.position.max(pos) - self.epsilon <= intersection_position
-        //                 && intersection_position <= self.epsilon + start2.position.min(
-        //                     new_traj
-        //                         .last()
-        //                         .expect("Integrate backwards cannot get last point of empty trajectory")
-        //                         .position,
-        //                 ) {
-        //                     let intersection_velocity =
-        //                         start1.velocity + start_slope * (intersection_position - start1.position);
+        //                     && intersection_position
+        //                         <= self.epsilon
+        //                             + start2.position.min(
+        //                                 new_traj
+        //                                     .last()
+        //                                     .ok_or(String::from(
+        //                                         "Could not get last point of empty trajectory",
+        //                                     ))?
+        //                                     .position,
+        //                             )
+        //                 {
+        //                     let intersection_velocity = start1.velocity
+        //                         + start_slope * (intersection_position - start1.position);
 
         //                     // Add intersection point
         //                     new_traj.push(TrajectoryStep::new(
@@ -625,6 +636,12 @@ where
         //                     ));
 
         //                     let ret = new_traj.into_iter().rev().collect();
+
+        //                     trace!(
+        //                         "RS back_splice_idx (start_sw_pos;splice_idx),{},{}",
+        //                         start_switching_point.pos.position,
+        //                         splice_index
+        //                     );
 
         //                     return Ok((splice_index, ret));
         //                 }
@@ -637,7 +654,9 @@ where
         //     }
         // }
 
-        // Err(format!("Path is invalid: Integrate backwards did not hit start trajectory, start position {} velocity {}, end position {} velocity {}", position, velocity, pos, vel))
+        // Err(format!("Path is invalid: Integrate backwards did not hit start trajectory, start position {} velocity {}, end position {} velocity {}",
+        //     start_switching_point.pos.position, start_switching_point.pos.velocity, pos, vel
+        // ))
     }
 
     /// Get next switching point along the path, bounded by velocity or acceleration

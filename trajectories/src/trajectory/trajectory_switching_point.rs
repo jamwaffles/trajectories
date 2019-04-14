@@ -2,7 +2,7 @@
 
 use crate::trajectory::TrajectoryStep;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct TrajectorySwitchingPoint {
     // TODO: Split this out into position and velocity
     pub(crate) pos: TrajectoryStep,
