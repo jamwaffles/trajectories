@@ -2,7 +2,7 @@
 
 /// Limited by velocity or acceleration
 #[derive(Debug)]
-pub enum Limit {
+pub enum LimitType {
     Velocity,
     Acceleration,
 }
