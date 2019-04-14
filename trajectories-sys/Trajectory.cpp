@@ -419,7 +419,7 @@ void Trajectory::integrateBackward(list<TrajectoryStep> &startTrajectory, double
 	double slope = 0.0;
 	assert(start1->pathPos <= pathPos);
 	int blah = startTrajectory.size() - 1;
-	double start_sw_pos = pathPos;
+	// double start_sw_pos = pathPos;
 	// Move backwards through path in windows of 2. Exit if beginning of path is reached
 	while(start1 != startTrajectory.begin() || pathPos >= 0.0)
 	{
