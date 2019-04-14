@@ -1,10 +1,10 @@
 use crate::path::{CircularPathSegment, LinearPathSegment, PathItem};
 use crate::Coord;
 use core::cmp::Ordering;
-use nalgebra::allocator::Allocator;
-use nalgebra::allocator::SameShapeVectorAllocator;
-use nalgebra::DefaultAllocator;
-use nalgebra::DimName;
+use nalgebra::{
+    allocator::{Allocator, SameShapeVectorAllocator},
+    DefaultAllocator, DimName,
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum PathSegment<N>

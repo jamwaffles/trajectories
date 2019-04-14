@@ -1,9 +1,15 @@
+mod limit_type;
+mod min_max;
+mod path_position;
+mod trajectory_switching_point;
+
+use self::limit_type::LimitType;
+use self::min_max::MinMax;
+use self::path_position::PathPosition;
+use self::trajectory_switching_point::TrajectorySwitchingPoint;
 use crate::path::{Continuity, PathItem, PathSwitchingPoint};
-use crate::trajectory::{
-    LimitType, MinMax, PathPosition, TrajectoryStep, TrajectorySwitchingPoint,
-};
-use crate::Coord;
-use crate::{Path, TrajectoryOptions};
+use crate::trajectory::TrajectoryStep;
+use crate::{Coord, Path, TrajectoryOptions};
 use nalgebra::{
     allocator::{Allocator, SameShapeVectorAllocator},
     DefaultAllocator, DimName,

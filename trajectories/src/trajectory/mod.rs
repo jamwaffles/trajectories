@@ -1,16 +1,8 @@
-mod limit_type;
-mod min_max;
-mod path_position;
 mod trajectory_options;
 mod trajectory_step;
-mod trajectory_switching_point;
 
-pub(crate) use self::limit_type::LimitType;
-pub(crate) use self::min_max::MinMax;
-pub(crate) use self::path_position::PathPosition;
 pub use self::trajectory_options::TrajectoryOptions;
 pub(crate) use self::trajectory_step::TrajectoryStep;
-pub(crate) use self::trajectory_switching_point::TrajectorySwitchingPoint;
 use crate::path::{Path, PathItem};
 use crate::trajectory_builder::TrajectoryBuilder;
 use crate::Coord;
