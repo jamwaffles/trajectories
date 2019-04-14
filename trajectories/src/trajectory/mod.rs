@@ -29,11 +29,8 @@ where
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     path: &'a Path<N>,
-    velocity_limit: Coord<N>,
-    acceleration_limit: Coord<N>,
-    timestep: f64,
     trajectory: Vec<TrajectoryStep>,
-    epsilon: f64,
+    options: TrajectoryOptions<N>,
 }
 
 impl<'a, N> Trajectory<'a, N>
@@ -45,20 +42,10 @@ where
     // TODO: Stop panicking all over the place and actually use the error arm of this `Result`
     /// Create a new trajectory from a given path and max velocity and acceleration
     pub fn new(path: &'a Path<N>, options: TrajectoryOptions<N>) -> Result<Self, String> {
-        let TrajectoryOptions {
-            velocity_limit,
-            acceleration_limit,
-            timestep,
-            epsilon,
-        } = options;
-
         let mut traj = Self {
             path,
-            velocity_limit,
-            acceleration_limit,
-            timestep,
             trajectory: Vec::new(),
-            epsilon,
+            options,
         };
 
         let start = Instant::now();
@@ -321,7 +308,7 @@ where
         loop {
             trace!(
                 "Integrate forward loop, by {}, position {} out of {}",
-                self.timestep,
+                self.options.timestep,
                 position,
                 self.path.len()
             );
@@ -335,8 +322,8 @@ where
             let old_position = position;
             let old_velocity = velocity;
 
-            velocity += self.timestep * acceleration;
-            position += self.timestep * 0.5 * (old_velocity + velocity);
+            velocity += self.options.timestep * acceleration;
+            position += self.options.timestep * 0.5 * (old_velocity + velocity);
 
             // If we've overstepped the next found discontinuity, move backwards to the position of
             // the discontinuity and calculate its velocity at that point
@@ -395,7 +382,7 @@ where
 
                 // Bisect (binary search) within step to find where overshoot occurred to within an
                 // epsilon
-                while after - before > self.epsilon {
+                while after - before > self.options.epsilon {
                     trace!(
                         "Integrate forward bisection, before {} after {}",
                         before,
@@ -499,8 +486,8 @@ where
             if start1.position <= position {
                 let new_point = TrajectoryStep::new(position, velocity);
 
-                velocity -= self.timestep * before_acceleration;
-                position -= self.timestep * 0.5 * (velocity + new_point.velocity);
+                velocity -= self.options.timestep * before_acceleration;
+                position -= self.options.timestep * 0.5 * (velocity + new_point.velocity);
                 before_acceleration =
                     self.acceleration_at(&TrajectoryStep::new(position, velocity), MinMax::Min);
                 slope = (new_point.velocity - velocity) / (new_point.position - position);
@@ -544,9 +531,9 @@ where
                 );
 
                 // Check for intersection between path and current segment
-                if start1.position.max(position) - self.epsilon <= intersection_position
+                if start1.position.max(position) - self.options.epsilon <= intersection_position
                     && intersection_position
-                        <= self.epsilon
+                        <= self.options.epsilon
                             + start2.position.min(
                                 new_trajectory
                                     .last()
@@ -605,8 +592,8 @@ where
         //                 if !next_iter {
         //                     let new_point = TrajectoryStep::new(pos, vel);
 
-        //                     vel -= self.timestep * acc;
-        //                     pos -= self.timestep * 0.5 * (vel + new_point.velocity);
+        //                     vel -= self.options.timestep * acc;
+        //                     pos -= self.options.timestep * 0.5 * (vel + new_point.velocity);
         //                     acc = self.acceleration_at(&TrajectoryStep::new(pos, vel), MinMax::Min);
         //                     slope = (new_point.velocity - vel) / (new_point.position - pos);
 
@@ -640,9 +627,9 @@ where
         //                     / (slope - start_slope);
 
         //                 // Check for intersection between path and current segment
-        //                 if start1.position.max(pos) - self.epsilon <= intersection_position
+        //                 if start1.position.max(pos) - self.options.epsilon <= intersection_position
         //                     && intersection_position
-        //                         <= self.epsilon
+        //                         <= self.options.epsilon
         //                             + start2.position.min(
         //                                 new_traj
         //                                     .last()
@@ -695,6 +682,7 @@ where
         let factor = min_max.as_multiplier();
 
         let res = self
+            .options
             .acceleration_limit
             .iter()
             .zip(derivative.iter().zip(second_derivative.iter()))
@@ -733,7 +721,7 @@ where
         match limit_type {
             LimitType::Velocity => {
                 let tangent = self.path.tangent(position_along_path);
-                let result = self.velocity_limit.component_div(&tangent).amin();
+                let result = self.options.velocity_limit.component_div(&tangent).amin();
 
                 trace!(
                     "RS max_vel_from_vel (pos;vel),{},{}",
@@ -759,8 +747,8 @@ where
 
                                 if a_ij != 0.0 {
                                     max_path_velocity = max_path_velocity.min(
-                                        ((self.acceleration_limit[i] / vel_abs[i]
-                                            + self.acceleration_limit[j] / vel_abs[j])
+                                        ((self.options.acceleration_limit[i] / vel_abs[i]
+                                            + self.options.acceleration_limit[j] / vel_abs[j])
                                             / a_ij.abs())
                                         .sqrt(),
                                     );
@@ -768,8 +756,9 @@ where
                             }
                         }
                     } else if acceleration[i] != 0.0 {
-                        max_path_velocity = max_path_velocity
-                            .min((self.acceleration_limit[i] / acceleration[i].abs()).sqrt());
+                        max_path_velocity = max_path_velocity.min(
+                            (self.options.acceleration_limit[i] / acceleration[i].abs()).sqrt(),
+                        );
                     }
                 }
 
@@ -789,7 +778,7 @@ where
             LimitType::Velocity => {
                 let (tangent, curvature) = self.path.tangent_and_curvature(position_along_path);
                 let tangent_abs = tangent.abs();
-                let velocity = self.velocity_limit.component_div(&tangent_abs);
+                let velocity = self.options.velocity_limit.component_div(&tangent_abs);
 
                 // Find the component index with the smallest value
                 let (constraint_axis, _) = velocity
@@ -798,7 +787,8 @@ where
                     .min_by(|a, b| a.1.partial_cmp(b.1).unwrap())
                     .unwrap_or((0, &std::f64::MAX));
 
-                let result = -(self.velocity_limit[constraint_axis] * curvature[constraint_axis])
+                let result = -(self.options.velocity_limit[constraint_axis]
+                    * curvature[constraint_axis])
                     / (tangent[constraint_axis] * tangent_abs[constraint_axis]);
 
                 trace!(
@@ -810,12 +800,13 @@ where
                 result
             }
             LimitType::Acceleration => {
-                (self.max_velocity_at(position_along_path + self.epsilon, LimitType::Acceleration)
-                    - self.max_velocity_at(
-                        position_along_path - self.epsilon,
-                        LimitType::Acceleration,
-                    ))
-                    / (2.0 * self.epsilon)
+                (self.max_velocity_at(
+                    position_along_path + self.options.epsilon,
+                    LimitType::Acceleration,
+                ) - self.max_velocity_at(
+                    position_along_path - self.options.epsilon,
+                    LimitType::Acceleration,
+                )) / (2.0 * self.options.epsilon)
             }
         }
     }
@@ -871,12 +862,12 @@ where
                     .expect("Acceleration switching point")
                 || (point.pos.velocity
                     <= self.max_velocity_at(
-                        point.pos.position - self.epsilon,
+                        point.pos.position - self.options.epsilon,
                         LimitType::Acceleration,
                     )
                     && point.pos.velocity
                         <= self.max_velocity_at(
-                            point.pos.position + self.epsilon,
+                            point.pos.position + self.options.epsilon,
                             LimitType::Acceleration,
                         ))
             {
@@ -936,20 +927,24 @@ where
             match current_point.continuity {
                 Continuity::Discontinuous => {
                     let before_velocity = self.max_velocity_at(
-                        current_point.position - self.epsilon,
+                        current_point.position - self.options.epsilon,
                         LimitType::Acceleration,
                     );
                     let after_velocity = self.max_velocity_at(
-                        current_point.position + self.epsilon,
+                        current_point.position + self.options.epsilon,
                         LimitType::Acceleration,
                     );
 
                     velocity = before_velocity.min(after_velocity);
 
-                    let before_point =
-                        TrajectoryStep::new(current_point.position - self.epsilon, velocity);
-                    let after_point =
-                        TrajectoryStep::new(current_point.position + self.epsilon, velocity);
+                    let before_point = TrajectoryStep::new(
+                        current_point.position - self.options.epsilon,
+                        velocity,
+                    );
+                    let after_point = TrajectoryStep::new(
+                        current_point.position + self.options.epsilon,
+                        velocity,
+                    );
 
                     let before_acceleration = self.acceleration_at(&before_point, MinMax::Min);
                     let after_acceleration = self.acceleration_at(&after_point, MinMax::Max);
@@ -958,11 +953,11 @@ where
                     let after_phase_slope = self.phase_slope(&after_point, MinMax::Max);
 
                     let before_max_velocity_deriv = self.max_velocity_derivative_at(
-                        current_point.position - 2.0 * self.epsilon,
+                        current_point.position - 2.0 * self.options.epsilon,
                         LimitType::Acceleration,
                     );
                     let after_max_velocity_deriv = self.max_velocity_derivative_at(
-                        current_point.position + 2.0 * self.epsilon,
+                        current_point.position + 2.0 * self.options.epsilon,
                         LimitType::Acceleration,
                     );
 
@@ -989,11 +984,11 @@ where
                         self.max_velocity_at(current_point.position, LimitType::Acceleration);
 
                     let low_deriv = self.max_velocity_derivative_at(
-                        current_point.position - self.epsilon,
+                        current_point.position - self.options.epsilon,
                         LimitType::Acceleration,
                     );
                     let high_deriv = self.max_velocity_derivative_at(
-                        current_point.position + self.epsilon,
+                        current_point.position + self.options.epsilon,
                         LimitType::Acceleration,
                     );
 
@@ -1029,7 +1024,7 @@ where
     ) -> Option<TrajectorySwitchingPoint> {
         // Broad phase search step
         let step_size = 0.001;
-        // TODO: Use self.epsilon again
+        // TODO: Use self.options.epsilon again
         let accuracy = 0.000001;
         let mut position = position_along_path - step_size;
         let mut prev_slope = self.phase_slope(
