@@ -239,6 +239,11 @@ where
         self.segment_at_position(distance_along_line)
             .curvature(distance_along_line)
     }
+
+    fn tangent_and_curvature(&self, distance_along_line: f64) -> (Coord<N>, Coord<N>) {
+        self.segment_at_position(distance_along_line)
+            .tangent_and_curvature(distance_along_line)
+    }
 }
 
 #[cfg(test)]

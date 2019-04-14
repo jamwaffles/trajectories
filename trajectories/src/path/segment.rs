@@ -74,6 +74,13 @@ where
             PathSegment::Circular(s) => s.curvature(distance_along_line),
         }
     }
+
+    fn tangent_and_curvature(&self, distance_along_line: f64) -> (Coord<N>, Coord<N>) {
+        match self {
+            PathSegment::Linear(s) => s.tangent_and_curvature(distance_along_line),
+            PathSegment::Circular(s) => s.tangent_and_curvature(distance_along_line),
+        }
+    }
 }
 
 impl<N> PathSegment<N>

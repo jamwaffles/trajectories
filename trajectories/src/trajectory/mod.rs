@@ -691,8 +691,7 @@ where
             position, velocity, ..
         } = pos_vel;
 
-        let derivative = self.path.tangent(position);
-        let second_derivative = self.path.curvature(position);
+        let (derivative, second_derivative) = self.path.tangent_and_curvature(position);
         let factor = min_max.as_multiplier();
 
         let res = self
@@ -745,9 +744,8 @@ where
                 result
             }
             LimitType::Acceleration => {
-                let vel = self.path.tangent(position_along_path);
+                let (vel, acceleration) = self.path.tangent_and_curvature(position_along_path);
                 let vel_abs = vel.abs();
-                let acceleration = self.path.curvature(position_along_path);
                 let n = nalgebra::dimension::<Coord<N>>();
 
                 let mut max_path_velocity = std::f64::INFINITY;
@@ -789,7 +787,7 @@ where
     fn max_velocity_derivative_at(&self, position_along_path: f64, limit: LimitType) -> f64 {
         match limit {
             LimitType::Velocity => {
-                let tangent = self.path.tangent(position_along_path);
+                let (tangent, curvature) = self.path.tangent_and_curvature(position_along_path);
                 let tangent_abs = tangent.abs();
                 let velocity = self.velocity_limit.component_div(&tangent_abs);
 
@@ -800,8 +798,7 @@ where
                     .min_by(|a, b| a.1.partial_cmp(b.1).unwrap())
                     .unwrap_or((0, &std::f64::MAX));
 
-                let result = -(self.velocity_limit[constraint_axis]
-                    * self.path.curvature(position_along_path)[constraint_axis])
+                let result = -(self.velocity_limit[constraint_axis] * curvature[constraint_axis])
                     / (tangent[constraint_axis] * tangent_abs[constraint_axis]);
 
                 trace!(

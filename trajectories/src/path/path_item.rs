@@ -22,4 +22,10 @@ where
 
     /// Get second derivative (curvature) at a point
     fn curvature(&self, distance_along_line: f64) -> Coord<N>;
+
+    /// Get the tangent (first derivative) and curvature (second derivative) in one call
+    ///
+    /// Use this method instead of separate `.tangent()` or `.curvature()` calls for a small speed
+    /// increase.
+    fn tangent_and_curvature(&self, distance_along_line: f64) -> (Coord<N>, Coord<N>);
 }

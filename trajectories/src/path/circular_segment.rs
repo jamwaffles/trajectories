@@ -226,6 +226,17 @@ where
 
         -1.0 / self.radius * (&self.x * angle.cos() + &self.y * angle.sin())
     }
+
+    fn tangent_and_curvature(&self, distance_along_arc: f64) -> (Coord<N>, Coord<N>) {
+        let angle = (distance_along_arc - self.start_offset) / self.radius;
+        let angle_s = angle.sin();
+        let angle_c = angle.cos();
+
+        (
+            -&self.x * angle_s + &self.y * angle_c,
+            -1.0 / self.radius * (&self.x * angle_c + &self.y * angle_s),
+        )
+    }
 }
 
 #[cfg(test)]

@@ -105,6 +105,10 @@ where
         Coord::repeat(0.0)
     }
 
+    fn tangent_and_curvature(&self, _distance_along_line: f64) -> (Coord<N>, Coord<N>) {
+        (self.tangent.clone(), Coord::zeros())
+    }
+
     /// Get the length of this line
     fn len(&self) -> f64 {
         self.length
