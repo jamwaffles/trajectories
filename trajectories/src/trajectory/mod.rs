@@ -126,6 +126,31 @@ where
         self.path.tangent(position) * velocity
     }
 
+    /// Get position and velocity at a time along the path
+    ///
+    /// Use this method as a more optimised way of calling both `.position()` and `.velocity()
+    pub fn position_and_velocity(&self, time: f64) -> (Coord<N>, Coord<N>) {
+        let (previous, current) = self.trajectory_segment(time);
+
+        let duration = current.time - previous.time;
+        let acceleration = 2.0
+            * (current.position - previous.position - duration * previous.velocity)
+            / duration.powi(2);
+
+        let duration = time - previous.time;
+
+        let position = previous.position
+            + duration * previous.velocity
+            + 0.5 * duration.powi(2) * acceleration;
+
+        let velocity = previous.velocity + duration * acceleration;
+
+        (
+            self.path.position(position),
+            self.path.tangent(position) * velocity,
+        )
+    }
+
     /// Get a reference to the generated trajectory
     pub fn trajectory(&self) -> &Vec<TrajectoryStep> {
         &self.trajectory
