@@ -157,9 +157,9 @@ where
         start_acceleration: f64,
     ) -> Result<(Vec<TrajectoryStep>, PathPosition, f64), String> {
         let mut new_points = Vec::new();
-        let last = trajectory.last().ok_or(String::from(
-            "Attempted to get last element of empty trajectory",
-        ))?;
+        let last = trajectory
+            .last()
+            .ok_or_else(|| String::from("Attempted to get last element of empty trajectory"))?;
         let TrajectoryStep {
             mut position,
             mut velocity,
@@ -234,7 +234,7 @@ where
             {
                 let overshoot = new_points
                     .pop()
-                    .ok_or(String::from("Attempted to pop last element off empty vec"))?;
+                    .ok_or_else(|| String::from("Attempted to pop last element off empty vec"))?;
                 let last_point = new_points.last().unwrap_or(last);
 
                 let mut before = last_point.position;
@@ -399,9 +399,9 @@ where
                             + start2.position.min(
                                 new_trajectory
                                     .last()
-                                    .ok_or(String::from(
-                                        "Could not get last point of empty trajectory",
-                                    ))?
+                                    .ok_or_else(|| {
+                                        String::from("Could not get last point of empty trajectory")
+                                    })?
                                     .position,
                             )
                 {
@@ -495,7 +495,7 @@ where
         //                             + start2.position.min(
         //                                 new_traj
         //                                     .last()
-        //                                     .ok_or(String::from(
+        //                                     .ok_or_else(|| String::from(
         //                                         "Could not get last point of empty trajectory",
         //                                     ))?
         //                                     .position,
@@ -886,8 +886,7 @@ where
     ) -> Option<TrajectorySwitchingPoint> {
         // Broad phase search step
         let step_size = 0.001;
-        // TODO: Use self.options.epsilon again
-        let accuracy = 0.000001;
+        let accuracy = self.options.epsilon;
         let mut position = position_along_path - step_size;
         let mut prev_slope = self.phase_slope(
             &TrajectoryStep::new(
