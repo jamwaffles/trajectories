@@ -1,6 +1,6 @@
 use super::PathItem;
 use crate::Coord;
-use crate::TRAJ_EPSILON;
+use crate::TRAJECTORY_EPSILON;
 use nalgebra::allocator::Allocator;
 use nalgebra::allocator::SameShapeVectorAllocator;
 use nalgebra::DefaultAllocator;
@@ -74,7 +74,9 @@ where
     ) -> Self {
         // If either segment is of negligible length, we don't need to blend it, however a blend
         // is still required to make the path differentiable.
-        if (current - previous).norm() < TRAJ_EPSILON || (next - current).norm() < TRAJ_EPSILON {
+        if (current - previous).norm() < TRAJECTORY_EPSILON
+            || (next - current).norm() < TRAJECTORY_EPSILON
+        {
             return CircularPathSegment {
                 center: current.clone(),
                 ..Self::default()
@@ -92,7 +94,7 @@ where
 
         // If segments are essentially parallel, they don't need blending, however a blend
         // is still required to make the path differentiable.
-        if (&previous_normalised - &next_normalised).norm() < TRAJ_EPSILON {
+        if (&previous_normalised - &next_normalised).norm() < TRAJECTORY_EPSILON {
             return CircularPathSegment {
                 center: current.clone(),
                 ..Self::default()
@@ -117,7 +119,7 @@ where
 
         // Xi (points from center of circle to point where circle touches previous segment)
         let x = (current - max_blend_distance * &previous_normalised - &center)
-            .try_normalize(TRAJ_EPSILON)
+            .try_normalize(TRAJECTORY_EPSILON)
             .unwrap_or(Coord::zeros());
 
         // Yi (direction of previous segment)
@@ -455,8 +457,8 @@ mod tests {
     /// |
     fn it_computes_tiny_blends() {
         let before = TestCoord3::new(0.0, 0.0, 0.0);
-        let current = TestCoord3::new(0.0, TRAJ_EPSILON / 2.0, 0.0);
-        let after = TestCoord3::new(0.0, TRAJ_EPSILON, 0.0);
+        let current = TestCoord3::new(0.0, TRAJECTORY_EPSILON / 2.0, 0.0);
+        let after = TestCoord3::new(0.0, TRAJECTORY_EPSILON, 0.0);
 
         let blend_circle = CircularPathSegment::from_waypoints(&before, &current, &after, 0.1);
 

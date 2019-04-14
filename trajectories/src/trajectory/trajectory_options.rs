@@ -32,7 +32,7 @@ where
         Self {
             velocity_limit: Coord::repeat(1.0),
             acceleration_limit: Coord::repeat(1.0),
-            epsilon: crate::TRAJ_EPSILON,
+            epsilon: crate::TRAJECTORY_EPSILON,
             timestep: 0.1,
         }
     }
