@@ -182,6 +182,24 @@ fn compare_test_2() {
             .collect::<Vec<f64>>(),
     );
 
+    for i in (0..rust_trajectory.duration() as usize).step_by(step_size) {
+        let time: f64 = i as f64;
+
+        let r_p = rust_trajectory.position(time);
+        let r_v = rust_trajectory.velocity(time);
+
+        let c_p = unsafe { cpp_trajectory.getPosition(time) };
+        let c_v = unsafe { cpp_trajectory.getVelocity(time) };
+
+        assert_ulps_eq!(r_p[0], c_p[0], epsilon = epsilon);
+        assert_ulps_eq!(r_p[1], c_p[1], epsilon = epsilon);
+        assert_ulps_eq!(r_p[2], c_p[2], epsilon = epsilon);
+
+        assert_ulps_eq!(r_v[0], c_v[0], epsilon = epsilon);
+        assert_ulps_eq!(r_v[1], c_v[1], epsilon = epsilon);
+        assert_ulps_eq!(r_v[2], c_v[2], epsilon = epsilon);
+    }
+
     assert_eq!(
         unsafe { trajectories_sys::Path_getLength(cpp_path) },
         rust_path_len
