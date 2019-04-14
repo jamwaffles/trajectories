@@ -666,11 +666,10 @@ where
         // Find the next acceleration switching point
         while let Some(point) = self.next_acceleration_switching_point(
             acceleration_switching_point
-                .clone()
                 .map(|p| p.pos.position)
                 .unwrap_or(position_along_path),
         ) {
-            acceleration_switching_point = Some(point.clone());
+            acceleration_switching_point = Some(point);
 
             if point.pos.velocity <= self.max_velocity_at(point.pos.position, Limit::Velocity) {
                 break;
@@ -681,11 +680,9 @@ where
             "RS next_accel_sw_point (pos_along_path;sw_pos;sw_vel),{},{},{}",
             position_along_path,
             acceleration_switching_point
-                .clone()
                 .map(|p| p.pos.position)
                 .unwrap_or(0.0),
             acceleration_switching_point
-                .clone()
                 .map(|p| p.pos.velocity)
                 .unwrap_or(0.0),
         );
@@ -695,16 +692,13 @@ where
         // Find the next velocity switching point
         while let Some(point) = self.next_velocity_switching_point(
             velocity_switching_point
-                .clone()
                 .map(|p| p.pos.position)
                 .unwrap_or(position_along_path),
         ) {
-            velocity_switching_point = Some(point.clone());
+            velocity_switching_point = Some(point);
 
             if point.pos.position
                 > acceleration_switching_point
-                    // TODO: Fix clone
-                    .clone()
                     .map(|p| p.pos.position)
                     .expect("Acceleration switching point")
                 || (point.pos.velocity
@@ -723,11 +717,9 @@ where
             "RS next_vel_sw_point (pos_along_path;sw_pos;sw_vel),{},{},{}",
             position_along_path,
             velocity_switching_point
-                .clone()
                 .map(|p| p.pos.position)
                 .unwrap_or(0.0),
             velocity_switching_point
-                .clone()
                 .map(|p| p.pos.velocity)
                 .unwrap_or(0.0),
         );
@@ -749,10 +741,10 @@ where
         trace!(
             "RS next_sw_point (pos_along_path;sw_pos;sw_vel;before_accel;after_accel),{},{},{},{},{}",
             position_along_path,
-            result.clone().map(|p| p.pos.position).unwrap_or(0.0),
-            result.clone().map(|p| p.pos.velocity).unwrap_or(0.0),
-            result.clone().map(|p| p.before_acceleration).unwrap_or(0.0),
-            result.clone().map(|p| p.after_acceleration).unwrap_or(0.0),
+            result.map(|p| p.pos.position).unwrap_or(0.0),
+            result.map(|p| p.pos.velocity).unwrap_or(0.0),
+            result.map(|p| p.before_acceleration).unwrap_or(0.0),
+            result.map(|p| p.after_acceleration).unwrap_or(0.0),
         );
 
         result
