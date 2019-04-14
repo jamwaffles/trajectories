@@ -132,7 +132,8 @@ public:
 		x = (intersection - distance * startDirection - center).normalized();
 		y = startDirection;
 
-		std::cout<<"CPP circ_seg (arc_len;angle;radius),"<<length<<","<<angle<<","<<radius<<std::endl;
+		// COMP
+		// std::cout<<"CPP circ_seg (arc_len;angle;radius),"<<length<<","<<angle<<","<<radius<<std::endl;
 
 		// IOFormat CommaInitFmt(StreamPrecision, DontAlignCols, ", ", ", ", "", "", " << ", ";");
 
@@ -253,7 +254,8 @@ Path::Path(const list<Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > &pat
 	switchingPoints.pop_back();
 
 	for(std::list<std::pair<double, bool> >::iterator i = switchingPoints.begin(); i != switchingPoints.end(); i++) {
-		std::cout << "CPP switching_point (pos;1.0)," << (*i).first << ",1.0" << std::endl;
+		// COMP
+		// std::cout << "CPP switching_point (pos;1.0)," << (*i).first << ",1.0" << std::endl;
 	}
 }
 

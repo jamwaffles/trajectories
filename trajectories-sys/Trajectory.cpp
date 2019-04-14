@@ -65,16 +65,15 @@ Trajectory::Trajectory(const Path &path, const Vector3d &maxVelocity, const Vect
 		double beforeAcceleration;
 		TrajectoryStep switchingPoint;
 
-		std::cout<<"CPP integ_fwd_end_step (pos;vel),"
-			<<trajectory.back().pathPos<<","
-			<<trajectory.back().pathVel<<
-		std::endl;
+		// COMP
+		// std::cout<<"CPP integ_fwd_end_step (pos;vel),"<<trajectory.back().pathPos<<","<<trajectory.back().pathVel<< std::endl;
 
 		// Break if we've reached the end of the path
 		if(getNextSwitchingPoint(trajectory.back().pathPos, switchingPoint, beforeAcceleration, afterAcceleration)) {
 			break;
 		}
-		std::cout<<"CPP forward_sw_point (pos;vel;beforeAcceleration;afterAcceleration),"<<switchingPoint.pathPos<<","<<switchingPoint.pathVel<<","<<beforeAcceleration<<","<<afterAcceleration<<","<<std::endl;
+		// COMP
+		// std::cout<<"CPP forward_sw_point (pos;vel;beforeAcceleration;afterAcceleration),"<<switchingPoint.pathPos<<","<<switchingPoint.pathVel<<","<<beforeAcceleration<<","<<afterAcceleration<<","<<std::endl;
 		integrateBackward(trajectory, switchingPoint.pathPos, switchingPoint.pathVel, beforeAcceleration);
 	}
 
@@ -152,7 +151,8 @@ bool Trajectory::getNextSwitchingPoint(double pathPos, TrajectoryStep &nextSwitc
 		// double test = getVelocityMaxPathVelocity(accelerationSwitchingPoint.pathPos);
 	} while(!accelerationReachedEnd && accelerationSwitchingPoint.pathVel > getVelocityMaxPathVelocity(accelerationSwitchingPoint.pathPos));
 
-	std::cout<<"CPP next_accel_sw_point (pos_along_path;sw_pos;sw_vel),"<<pathPos<<","<<accelerationSwitchingPoint.pathPos<<","<<accelerationSwitchingPoint.pathVel<<std::endl;
+	// COMP
+	// std::cout<<"CPP next_accel_sw_point (pos_along_path;sw_pos;sw_vel),"<<pathPos<<","<<accelerationSwitchingPoint.pathPos<<","<<accelerationSwitchingPoint.pathVel<<std::endl;
 
 	// Velocity switching point, defaults to zero velocity
 	TrajectoryStep velocitySwitchingPoint(pathPos, 0.0);
@@ -164,7 +164,8 @@ bool Trajectory::getNextSwitchingPoint(double pathPos, TrajectoryStep &nextSwitc
 		&& (velocitySwitchingPoint.pathVel > getAccelerationMaxPathVelocity(velocitySwitchingPoint.pathPos - eps)
 		|| velocitySwitchingPoint.pathVel > getAccelerationMaxPathVelocity(velocitySwitchingPoint.pathPos + eps)));
 
-	std::cout<<"CPP next_vel_sw_point (pos_along_path;sw_pos;sw_vel),"<<pathPos<<","<<velocitySwitchingPoint.pathPos<<","<<velocitySwitchingPoint.pathVel<<std::endl;
+	// COMP
+	// std::cout<<"CPP next_vel_sw_point (pos_along_path;sw_pos;sw_vel),"<<pathPos<<","<<velocitySwitchingPoint.pathPos<<","<<velocitySwitchingPoint.pathVel<<std::endl;
 
 	if(accelerationReachedEnd && velocityReachedEnd) {
 		return true;
@@ -174,7 +175,8 @@ bool Trajectory::getNextSwitchingPoint(double pathPos, TrajectoryStep &nextSwitc
 		beforeAcceleration = accelerationBeforeAcceleration;
 		afterAcceleration = accelerationAfterAcceleration;
 
-		std::cout<<"CPP next_sw_point (pos_along_path;sw_pos;sw_vel;before_accel;after_accel),"<<pathPos<<","<<nextSwitchingPoint.pathPos<<","<<nextSwitchingPoint.pathVel<<","<<beforeAcceleration<<","<<afterAcceleration<<std::endl;
+		// COMP
+		// std::cout<<"CPP next_sw_point (pos_along_path;sw_pos;sw_vel;before_accel;after_accel),"<<pathPos<<","<<nextSwitchingPoint.pathPos<<","<<nextSwitchingPoint.pathVel<<","<<beforeAcceleration<<","<<afterAcceleration<<std::endl;
 
 		return false;
 	}
@@ -183,7 +185,8 @@ bool Trajectory::getNextSwitchingPoint(double pathPos, TrajectoryStep &nextSwitc
 		beforeAcceleration = velocityBeforeAcceleration;
 		afterAcceleration = velocityAfterAcceleration;
 
-		std::cout<<"CPP next_sw_point (pos_along_path;sw_pos;sw_vel;before_accel;after_accel),"<<pathPos<<","<<nextSwitchingPoint.pathPos<<","<<nextSwitchingPoint.pathVel<<","<<beforeAcceleration<<","<<afterAcceleration<<std::endl;
+		// COMP
+		// std::cout<<"CPP next_sw_point (pos_along_path;sw_pos;sw_vel;before_accel;after_accel),"<<pathPos<<","<<nextSwitchingPoint.pathPos<<","<<nextSwitchingPoint.pathVel<<","<<beforeAcceleration<<","<<afterAcceleration<<std::endl;
 
 		return false;
 	}
@@ -212,7 +215,8 @@ bool Trajectory::getNextAccelerationSwitchingPoint(double pathPos, TrajectorySte
 				&& (beforePathVel < afterPathVel
 				|| getMinMaxPhaseSlope(switchingPathPos + eps, switchingPathVel, true) < getAccelerationMaxPathVelocityDeriv(switchingPathPos + 2.0*eps)))
 			{
-				std::cout<<"CPP acc_sw_discont (in_pos;next_post;next_vel),"<<pathPos<<","<<switchingPathPos<<","<<switchingPathVel<<std::endl;
+				// COMP
+				// std::cout<<"CPP acc_sw_discont (in_pos;next_post;next_vel),"<<pathPos<<","<<switchingPathPos<<","<<switchingPathVel<<std::endl;
 				break;
 			}
 		}
@@ -222,7 +226,8 @@ bool Trajectory::getNextAccelerationSwitchingPoint(double pathPos, TrajectorySte
 			afterAcceleration = 0.0;
 
 			if(getAccelerationMaxPathVelocityDeriv(switchingPathPos - eps) < 0.0 && getAccelerationMaxPathVelocityDeriv(switchingPathPos + eps) > 0.0) {
-				std::cout<<"CPP acc_sw_cont (in_pos;next_post;next_vel),"<<pathPos<<","<<switchingPathPos<<","<<switchingPathVel<<std::endl;
+				// COMP
+				// std::cout<<"CPP acc_sw_cont (in_pos;next_post;next_vel),"<<pathPos<<","<<switchingPathPos<<","<<switchingPathVel<<std::endl;
 				break;
 			}
 		}
@@ -253,7 +258,8 @@ bool Trajectory::getNextVelocitySwitchingPoint(double pathPos, TrajectoryStep &n
 	} while((!start || getMinMaxPhaseSlope(pathPos, getVelocityMaxPathVelocity(pathPos), false) > getVelocityMaxPathVelocityDeriv(pathPos))
 		&& pathPos < path.getLength());
 
-	std::cout<<"CPP end_condition (pathPos;path.getLength()),"<<pathPos<<","<<path.getLength()<<std::endl;
+	// COMP
+	// std::cout<<"CPP end_condition (pathPos;path.getLength()),"<<pathPos<<","<<path.getLength()<<std::endl;
 
 	// No next switching point could be found (return `None`)
 	if(pathPos >= path.getLength()) {
@@ -431,7 +437,8 @@ void Trajectory::integrateBackward(list<TrajectoryStep> &startTrajectory, double
 			// Update slope at new position
 			slope = (trajectory.front().pathVel - pathVel) / (trajectory.front().pathPos - pathPos);
 
-			std::cout<<"CPP back_step (pathPos;pathVel;acceleration;slope),"<<pathPos<<","<<pathVel<<","<<acceleration<<","<<slope<<std::endl;
+			// COMP
+			// std::cout<<"CPP back_step (pathPos;pathVel;acceleration;slope),"<<pathPos<<","<<pathVel<<","<<acceleration<<","<<slope<<std::endl;
 
 			// If velocity is below zero, bail
 			if(pathVel < 0.0) {
@@ -455,7 +462,8 @@ void Trajectory::integrateBackward(list<TrajectoryStep> &startTrajectory, double
 		// Find point along path where backwards integration intersects forward integration
 		const double intersectionPathPos = (start1->pathVel - pathVel + slope * pathPos - startSlope * start1->pathPos) / (slope - startSlope);
 
-		std::cout<<"CPP intersection_values (i_pos;start_slope),"<<intersectionPathPos<<","<<startSlope<<std::endl;
+		// COMP
+		// std::cout<<"CPP intersection_values (i_pos;start_slope),"<<intersectionPathPos<<","<<startSlope<<std::endl;
 
 		// If the current backwards-iterating segment intersects the original path, we're done
 		if(max(start1->pathPos, pathPos) - eps <= intersectionPathPos && intersectionPathPos <= eps + min(start2->pathPos, trajectory.front().pathPos)) {
@@ -467,7 +475,8 @@ void Trajectory::integrateBackward(list<TrajectoryStep> &startTrajectory, double
 			// Append this newly generated path to the current trajectory
 			startTrajectory.splice(startTrajectory.end(), trajectory);
 
-			std::cout<<"CPP back_splice_idx (start_sw_pos;splice_idx),"<<start_sw_pos<<","<<blah<<std::endl;
+			// COMP
+			// std::cout<<"CPP back_splice_idx (start_sw_pos;splice_idx),"<<start_sw_pos<<","<<blah<<std::endl;
 
 			return;
 		}
@@ -494,7 +503,9 @@ double Trajectory::getMinMaxPathAcceleration(double pathPos, double pathVel, boo
 				maxAcceleration[i]/abs(configDeriv[i]) - factor * configDeriv2[i] * pathVel*pathVel / configDeriv[i]);
 		}
 	}
-	std::cout<<"CPP acc_at (pathPos;pathVel;factor*maxPathAcceleration),"<<pathPos<<","<<pathVel<<","<<(factor*maxPathAcceleration)<<std::endl;
+
+	// COMP
+	// std::cout<<"CPP acc_at (pathPos;pathVel;factor*maxPathAcceleration),"<<pathPos<<","<<pathVel<<","<<(factor*maxPathAcceleration)<<std::endl;
 	return factor * maxPathAcceleration;
 }
 
@@ -524,7 +535,8 @@ double Trajectory::getAccelerationMaxPathVelocity(double pathPos) const {
 		}
 	}
 
-	std::cout<<"CPP max_vel_from_acc (pos;vel),"<<pathPos<<","<<maxPathVelocity<<std::endl;
+	// COMP
+	// std::cout<<"CPP max_vel_from_acc (pos;vel),"<<pathPos<<","<<maxPathVelocity<<std::endl;
 
 	return maxPathVelocity;
 }
@@ -537,7 +549,8 @@ double Trajectory::getVelocityMaxPathVelocity(double pathPos) const {
 		maxPathVelocity = min(maxPathVelocity, maxVelocity[i] / abs(tangent[i]));
 	}
 
-	std::cout<<"CPP max_vel_from_vel (pos;vel),"<<pathPos<<","<<maxPathVelocity<<std::endl;
+	// COMP
+	// std::cout<<"CPP max_vel_from_vel (pos;vel),"<<pathPos<<","<<maxPathVelocity<<std::endl;
 
 	return maxPathVelocity;
 }
@@ -560,7 +573,8 @@ double Trajectory::getVelocityMaxPathVelocityDeriv(double pathPos) {
 	const double result = - (maxVelocity[activeConstraint] * path.getCurvature(pathPos)[activeConstraint])
 		/ (tangent[activeConstraint] * abs(tangent[activeConstraint]));
 
-	std::cout<<"CPP max_vel_vel_deriv (pos;vel),"<<pathPos<<","<<result<<std::endl;
+	// COMP
+	// std::cout<<"CPP max_vel_vel_deriv (pos;vel),"<<pathPos<<","<<result<<std::endl;
 
 	return result;
 }
@@ -596,14 +610,8 @@ Vector3d Trajectory::getPosition(double time) const {
 	list<TrajectoryStep>::const_iterator previous = it;
 	previous--;
 
-	std::cout<<"CPP get_pos (time;prev_pos;prev_vel;curr_pos;curr_vel),"
-		<<time<<","
-		<<previous->pathPos<<","
-		<<previous->pathVel<<","
-		<<it->pathPos<<","
-		<<it->pathVel
-	<<std::endl;
-
+	// COMP
+	// std::cout<<"CPP get_pos (time;prev_pos;prev_vel;curr_pos;curr_vel),"<<time<<","<<previous->pathPos<<","<<previous->pathVel<<","<<it->pathPos<<","<<it->pathVel <<std::endl;
 	double timeStep = it->time - previous->time;
 	const double acceleration = 2.0
 		* (it->pathPos - previous->pathPos - timeStep * previous->pathVel)
