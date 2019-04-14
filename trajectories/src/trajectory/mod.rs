@@ -684,6 +684,149 @@ where
         // ))
     }
 
+    /// Find minimum or maximum acceleration at a point along path
+    fn acceleration_at(&self, pos_vel: &TrajectoryStep, min_max: MinMax) -> f64 {
+        let &TrajectoryStep {
+            position, velocity, ..
+        } = pos_vel;
+
+        let derivative = self.path.tangent(position);
+        let second_derivative = self.path.curvature(position);
+        let factor = min_max.as_multiplier();
+
+        let res = self
+            .acceleration_limit
+            .iter()
+            .zip(derivative.iter().zip(second_derivative.iter()))
+            .fold(
+                std::f64::MAX,
+                |acc,
+                 (
+                    acceleration_limit_component,
+                    (derivative_component, second_derivative_component),
+                )| {
+                    if *derivative_component != 0.0 {
+                        acc.min(
+                            acceleration_limit_component / derivative_component.abs()
+                                - factor * second_derivative_component * velocity.powi(2)
+                                    / derivative_component,
+                        )
+                    } else {
+                        acc
+                    }
+                },
+            );
+
+        trace!(
+            "RS acc_at (pathPos;pathVel;factor*maxPathAcceleration),{},{},{}",
+            position,
+            velocity,
+            res * factor
+        );
+
+        res * factor
+    }
+
+    /// Find the maximum allowable velocity at a point, limited by either max acceleration or max
+    /// velocity.
+    fn max_velocity_at(&self, position_along_path: f64, limit_type: Limit) -> f64 {
+        match limit_type {
+            Limit::Velocity => {
+                let tangent = self.path.tangent(position_along_path);
+                let result = self.velocity_limit.component_div(&tangent).amin();
+
+                trace!(
+                    "RS max_vel_from_vel (pos;vel),{},{}",
+                    position_along_path,
+                    result
+                );
+
+                result
+            }
+            Limit::Acceleration => {
+                let segment = self.path.segment_at_position(position_along_path);
+                let vel = segment.tangent(position_along_path);
+                let vel_abs = vel.abs();
+                let acceleration = segment.curvature(position_along_path);
+                let n = nalgebra::dimension::<Coord<N>>();
+
+                let mut max_path_velocity = std::f64::INFINITY;
+
+                for i in 0..n {
+                    if vel[i] != 0.0 {
+                        for j in (i + 1)..n {
+                            if vel[j] != 0.0 {
+                                // TODO: Come up with a less mathsy name
+                                let a_ij = acceleration[i] / vel[i] - acceleration[j] / vel[j];
+
+                                if a_ij != 0.0 {
+                                    max_path_velocity = max_path_velocity.min(
+                                        ((self.acceleration_limit[i] / vel_abs[i]
+                                            + self.acceleration_limit[j] / vel_abs[j])
+                                            / a_ij.abs())
+                                        .sqrt(),
+                                    );
+                                }
+                            }
+                        }
+                    } else if acceleration[i] != 0.0 {
+                        max_path_velocity = max_path_velocity
+                            .min((self.acceleration_limit[i] / acceleration[i].abs()).sqrt());
+                    }
+                }
+
+                trace!(
+                    "RS max_vel_from_acc (pos;vel),{},{}",
+                    position_along_path,
+                    max_path_velocity
+                );
+
+                max_path_velocity
+            }
+        }
+    }
+
+    fn max_velocity_derivative_at(&self, position_along_path: f64, limit: Limit) -> f64 {
+        match limit {
+            Limit::Velocity => {
+                let tangent = self.path.tangent(position_along_path);
+                let tangent_abs = tangent.abs();
+                let velocity = self.velocity_limit.component_div(&tangent_abs);
+
+                // Find the component index with the smallest value
+                let (constraint_axis, _) = velocity
+                    .iter()
+                    .enumerate()
+                    .min_by(|a, b| a.1.partial_cmp(b.1).unwrap())
+                    .unwrap_or((0, &std::f64::MAX));
+
+                let result = -(self.velocity_limit[constraint_axis]
+                    * self.path.curvature(position_along_path)[constraint_axis])
+                    / (tangent[constraint_axis] * tangent_abs[constraint_axis]);
+
+                trace!(
+                    "RS max_vel_vel_deriv (pos;vel),{},{}",
+                    position_along_path,
+                    result
+                );
+
+                result
+            }
+            Limit::Acceleration => {
+                (self.max_velocity_at(position_along_path + self.epsilon, Limit::Acceleration)
+                    - self.max_velocity_at(position_along_path - self.epsilon, Limit::Acceleration))
+                    / (2.0 * self.epsilon)
+            }
+        }
+    }
+
+    /// Get the minimum or maximum phase slope for a position along the path
+    ///
+    /// TODO: Figure out what phase slope means in this context and give it a better name
+    fn phase_slope(&self, pos_vel: &TrajectoryStep, min_max: MinMax) -> f64 {
+        self.acceleration_at(&pos_vel, min_max) / pos_vel.velocity
+    }
+
     /// Get next switching point along the path, bounded by velocity or acceleration
     fn next_switching_point(&self, position_along_path: f64) -> Option<TrajectorySwitchingPoint> {
         let mut acceleration_switching_point: Option<TrajectorySwitchingPoint> = None;
@@ -773,166 +916,6 @@ where
         );
 
         result
-    }
-
-    /// Find minimum or maximum acceleration at a point along path
-    fn acceleration_at(&self, pos_vel: &TrajectoryStep, min_max: MinMax) -> f64 {
-        let &TrajectoryStep {
-            position, velocity, ..
-        } = pos_vel;
-
-        let derivative = self.path.tangent(position);
-        let second_derivative = self.path.curvature(position);
-        let factor = min_max.as_multiplier();
-
-        let res = self
-            .acceleration_limit
-            .iter()
-            .zip(derivative.iter().zip(second_derivative.iter()))
-            .fold(
-                std::f64::MAX,
-                |acc,
-                 (
-                    acceleration_limit_component,
-                    (derivative_component, second_derivative_component),
-                )| {
-                    if *derivative_component != 0.0 {
-                        acc.min(
-                            acceleration_limit_component / derivative_component.abs()
-                                - factor * second_derivative_component * velocity.powi(2)
-                                    / derivative_component,
-                        )
-                    } else {
-                        acc
-                    }
-                },
-            );
-
-        trace!(
-            "RS acc_at (pathPos;pathVel;factor*maxPathAcceleration),{},{},{}",
-            position,
-            velocity,
-            res * factor
-        );
-
-        res * factor
-    }
-
-    /// Find the maximum allowable velocity at a point, limited by either max acceleration or max
-    /// velocity.
-    fn max_velocity_at(&self, position_along_path: f64, limit: Limit) -> f64 {
-        match limit {
-            Limit::Velocity => self.max_velocity_from_velocity(position_along_path),
-            Limit::Acceleration => self.max_velocity_from_acceleration(position_along_path),
-        }
-    }
-
-    fn max_velocity_from_velocity(&self, position_along_path: f64) -> f64 {
-        let tangent = self.path.tangent(position_along_path);
-
-        let result = self.velocity_limit.component_div(&tangent).amin();
-
-        trace!(
-            "RS max_vel_from_vel (pos;vel),{},{}",
-            position_along_path,
-            result
-        );
-
-        result
-    }
-
-    /// Find maximum allowable velocity as limited by the acceleration at a point on the path
-    fn max_velocity_from_acceleration(&self, position_along_path: f64) -> f64 {
-        let segment = self.path.segment_at_position(position_along_path);
-        let vel = segment.tangent(position_along_path);
-        let vel_abs = vel.abs();
-        let acceleration = segment.curvature(position_along_path);
-
-        let n = nalgebra::dimension::<Coord<N>>();
-
-        let mut max_path_velocity = std::f64::INFINITY;
-
-        for i in 0..n {
-            if vel[i] != 0.0 {
-                for j in (i + 1)..n {
-                    if vel[j] != 0.0 {
-                        // TODO: Come up with a less mathsy name
-                        let a_ij = acceleration[i] / vel[i] - acceleration[j] / vel[j];
-
-                        if a_ij != 0.0 {
-                            max_path_velocity = max_path_velocity.min(
-                                ((self.acceleration_limit[i] / vel_abs[i]
-                                    + self.acceleration_limit[j] / vel_abs[j])
-                                    / a_ij.abs())
-                                .sqrt(),
-                            );
-                        }
-                    }
-                }
-            } else if acceleration[i] != 0.0 {
-                max_path_velocity = max_path_velocity
-                    .min((self.acceleration_limit[i] / acceleration[i].abs()).sqrt());
-            }
-        }
-
-        trace!(
-            "RS max_vel_from_acc (pos;vel),{},{}",
-            position_along_path,
-            max_path_velocity
-        );
-
-        max_path_velocity
-    }
-
-    fn max_velocity_derivative_at(&self, position_along_path: f64, limit: Limit) -> f64 {
-        match limit {
-            Limit::Velocity => self.max_velocity_from_velocity_derivative(position_along_path),
-            Limit::Acceleration => {
-                self.max_velocity_from_acceleration_derivative(position_along_path)
-            }
-        }
-    }
-
-    /// Get the derivative of the max acceleration-bounded velocity at a point along the path
-    fn max_velocity_from_velocity_derivative(&self, position_along_path: f64) -> f64 {
-        let tangent = self.path.tangent(position_along_path);
-        let tangent_abs = tangent.abs();
-        let velocity = self.velocity_limit.component_div(&tangent_abs);
-
-        // Find the component index with the smallest value
-        let (constraint_axis, _) = velocity
-            .iter()
-            .enumerate()
-            .min_by(|a, b| a.1.partial_cmp(b.1).unwrap())
-            .unwrap_or((0, &std::f64::MAX));
-
-        let result = -(self.velocity_limit[constraint_axis]
-            * self.path.curvature(position_along_path)[constraint_axis])
-            / (tangent[constraint_axis] * tangent_abs[constraint_axis]);
-
-        trace!(
-            "RS max_vel_vel_deriv (pos;vel),{},{}",
-            position_along_path,
-            result
-        );
-
-        result
-    }
-
-    /// Get the derivative of the max velocity at a point along the path
-    ///
-    /// The max velocity in this case is bounded by the acceleration limits at the point
-    fn max_velocity_from_acceleration_derivative(&self, position_along_path: f64) -> f64 {
-        (self.max_velocity_at(position_along_path + self.epsilon, Limit::Acceleration)
-            - self.max_velocity_at(position_along_path - self.epsilon, Limit::Acceleration))
-            / (2.0 * self.epsilon)
-    }
-
-    /// Get the minimum or maximum phase slope for a position along the path
-    ///
-    /// TODO: Figure out what phase slope means in this context and give it a better name
-    fn phase_slope(&self, pos_vel: &TrajectoryStep, min_max: MinMax) -> f64 {
-        self.acceleration_at(&pos_vel, min_max) / pos_vel.velocity
     }
 
     /// Get the next acceleration-bounded switching point after the current position
