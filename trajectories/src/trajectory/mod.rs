@@ -745,10 +745,9 @@ where
                 result
             }
             LimitType::Acceleration => {
-                let segment = self.path.segment_at_position(position_along_path);
-                let vel = segment.tangent(position_along_path);
+                let vel = self.path.tangent(position_along_path);
                 let vel_abs = vel.abs();
-                let acceleration = segment.curvature(position_along_path);
+                let acceleration = self.path.curvature(position_along_path);
                 let n = nalgebra::dimension::<Coord<N>>();
 
                 let mut max_path_velocity = std::f64::INFINITY;
