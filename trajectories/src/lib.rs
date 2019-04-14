@@ -54,7 +54,7 @@ pub mod test_helpers;
 mod trajectory;
 mod trajectory_builder;
 
-pub use crate::path::{Path, PathOptions};
+pub use crate::path::{Path, PathItem, PathOptions};
 pub use crate::trajectory::{Trajectory, TrajectoryOptions};
 use nalgebra::VectorN;
 
