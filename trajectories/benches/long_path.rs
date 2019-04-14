@@ -1,4 +1,3 @@
-#[macro_use]
 extern crate criterion;
 extern crate trajectories;
 
@@ -142,17 +141,18 @@ fn long_path_bench(c: &mut Criterion) {
     c.bench_function("benchmark long path", move |b| {
         b.iter_with_setup(
             || {
-                Path::from_waypoints(
+                let p = Path::from_waypoints(
                     &waypoints,
                     PathOptions {
                         max_deviation: DEVIATION,
                     },
-                )
-            },
-            |p| {
+                );
                 let len = p.len();
                 let step = len / NUM_POINTS as f64;
 
+                (p, len, step)
+            },
+            |(p, len, step)| {
                 let mut i = 0.0;
 
                 while i < len {
