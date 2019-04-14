@@ -39,13 +39,22 @@ g++ -I/usr/local/Cellar/eigen/3.3.4/include/eigen3 -I/usr/include/eigen3 Test.cp
 ./test
 ```
 
-## TODO
-
-* [x] Prepare path; introduce circular blends between straight segments, shorten straight segments
-
 ## Debugging values against C++ reference implementation
 
 1. Uncomment any `// COMP` and following `cout` lines in `trajectories-sys/Path.cpp` and `trajectories-sys/Trajectory.cpp`
 1. Find a Gnuplot script with values to compare with `ls gnuplot/*.pl`
 1. Run `./record_and_plot.sh ./gnuplot/<script>.plt`
 1. Open `target/<script>.svg` or `target/<script>.png`
+
+## Profiling
+
+Inspired by <http://athemathmo.github.io/2016/09/14/tools-for-profiling-rust.html>
+
+1. `apt install libunwind-dev graphviz`
+1. Install gperftools like [here](https://github.com/AtheMathmo/cpuprofiler#installation). This installs `pprof` too.
+1. Run `cargo test --release --all-features profile_native`
+1. Run `pprof --web target/debug/profile_native-053b2b3c4f96d9b9 target/profiles/profile-eab52bd8a8b7be7c.profile`
+
+OR
+
+Install `cargo-profiler` and just use that
