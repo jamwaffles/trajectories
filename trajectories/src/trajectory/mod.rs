@@ -32,7 +32,7 @@ where
     // TODO: Stop panicking all over the place and actually use the error arm of this `Result`
     /// Create a new trajectory from a given path and max velocity and acceleration
     pub fn new(path: &'a Path<N>, options: TrajectoryOptions<N>) -> Result<Self, String> {
-        let builder = TrajectoryBuilder::from_path(path).with_options(options);
+        let builder = TrajectoryBuilder::from_path(path, options);
 
         let trajectory = builder.into_steps()?;
 
