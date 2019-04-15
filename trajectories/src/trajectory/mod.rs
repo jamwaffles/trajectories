@@ -8,6 +8,7 @@ use crate::trajectory_builder::TrajectoryBuilder;
 use crate::Coord;
 use nalgebra::{
     allocator::{Allocator, SameShapeVectorAllocator},
+    storage::Owned,
     DefaultAllocator, DimName,
 };
 use std::time::Instant;
@@ -19,6 +20,7 @@ where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
 {
     trajectory: Vec<TrajectoryStep>,
     path: &'a Path<N>,
@@ -29,6 +31,7 @@ where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
 {
     // TODO: Stop panicking all over the place and actually use the error arm of this `Result`
     /// Create a new trajectory from a given path and max velocity and acceleration

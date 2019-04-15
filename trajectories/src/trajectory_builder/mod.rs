@@ -19,6 +19,7 @@ use limits::{
 };
 use nalgebra::{
     allocator::{Allocator, SameShapeVectorAllocator},
+    storage::Owned,
     DefaultAllocator, DimName,
 };
 
@@ -27,10 +28,11 @@ where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
 {
     options: TrajectoryOptions<N>,
     path: &'a Path<N>,
-    switching_points: TrajectorySwitchingPoints<N>,
+    switching_points: TrajectorySwitchingPoints<'a, N>,
 }
 
 impl<'a, N> TrajectoryBuilder<'a, N>
@@ -38,14 +40,13 @@ where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
 {
     pub fn from_path(path: &'a Path<N>, options: TrajectoryOptions<N>) -> Self {
         Self {
             path,
-            // TODO: Fix clone
-            options: options.clone(),
-            switching_points: TrajectorySwitchingPoints::from_path(path.clone(), options.clone())
-                .unwrap(),
+            options,
+            switching_points: TrajectorySwitchingPoints::from_path(&path, options).unwrap(),
         }
     }
 
@@ -230,7 +231,7 @@ where
             let max_velocity_at_position = max_velocity_at(
                 self.path,
                 position,
-                LimitType::Velocity(self.options.velocity_limit.clone()),
+                LimitType::Velocity(self.options.velocity_limit),
             );
 
             if velocity > max_velocity_at_position
@@ -241,7 +242,7 @@ where
                         max_velocity_at(
                             self.path,
                             old_position,
-                            LimitType::Velocity(self.options.velocity_limit.clone()),
+                            LimitType::Velocity(self.options.velocity_limit),
                         ),
                     ),
                     MinMax::Min,
@@ -249,7 +250,7 @@ where
                 ) <= max_velocity_derivative_at(
                     self.path,
                     old_position,
-                    LimitType::Velocity(self.options.velocity_limit.clone()),
+                    LimitType::Velocity(self.options.velocity_limit),
                     &self.options,
                 )
             {
@@ -266,7 +267,7 @@ where
                 > max_velocity_at(
                     self.path,
                     position,
-                    LimitType::Acceleration(self.options.acceleration_limit.clone()),
+                    LimitType::Acceleration(self.options.acceleration_limit),
                 )
                 || velocity > max_velocity_at_position
             {
@@ -294,7 +295,7 @@ where
                     let max_midpoint_velocity = max_velocity_at(
                         self.path,
                         midpoint,
-                        LimitType::Velocity(self.options.velocity_limit.clone()),
+                        LimitType::Velocity(self.options.velocity_limit),
                     );
 
                     if midpoint_velocity > max_midpoint_velocity
@@ -305,7 +306,7 @@ where
                                 max_velocity_at(
                                     self.path,
                                     before,
-                                    LimitType::Velocity(self.options.velocity_limit.clone()),
+                                    LimitType::Velocity(self.options.velocity_limit),
                                 ),
                             ),
                             MinMax::Min,
@@ -313,7 +314,7 @@ where
                         ) <= max_velocity_derivative_at(
                             self.path,
                             before,
-                            LimitType::Velocity(self.options.velocity_limit.clone()),
+                            LimitType::Velocity(self.options.velocity_limit),
                             &self.options,
                         )
                     {
@@ -324,7 +325,7 @@ where
                         > max_velocity_at(
                             self.path,
                             midpoint,
-                            LimitType::Acceleration(self.options.acceleration_limit.clone()),
+                            LimitType::Acceleration(self.options.acceleration_limit),
                         )
                         || midpoint_velocity > max_midpoint_velocity
                     {
@@ -343,11 +344,11 @@ where
                 if max_velocity_at(
                     self.path,
                     after,
-                    LimitType::Acceleration(self.options.acceleration_limit.clone()),
+                    LimitType::Acceleration(self.options.acceleration_limit),
                 ) < max_velocity_at(
                     self.path,
                     after,
-                    LimitType::Velocity(self.options.velocity_limit.clone()),
+                    LimitType::Velocity(self.options.velocity_limit),
                 ) {
                     if let Some(next) = next_discontinuity {
                         if after > next.position {
@@ -363,7 +364,7 @@ where
                     ) > max_velocity_derivative_at(
                         self.path,
                         new_point.position,
-                        LimitType::Acceleration(self.options.acceleration_limit.clone()),
+                        LimitType::Acceleration(self.options.acceleration_limit),
                         &self.options,
                     ) {
                         break Ok((new_points, PathPosition::NotEnd, position));
@@ -376,7 +377,7 @@ where
                 ) > max_velocity_derivative_at(
                     self.path,
                     new_point.position,
-                    LimitType::Velocity(self.options.velocity_limit.clone()),
+                    LimitType::Velocity(self.options.velocity_limit),
                     &self.options,
                 ) {
                     break Ok((new_points, PathPosition::NotEnd, position));

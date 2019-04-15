@@ -1,14 +1,16 @@
 use crate::Coord;
 use nalgebra::allocator::SameShapeVectorAllocator;
+use nalgebra::storage::Owned;
 use nalgebra::DefaultAllocator;
 use nalgebra::DimName;
 
 /// Trajectory creation options
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct TrajectoryOptions<N>
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    Owned<f64, N>: Copy,
 {
     /// Velocity limit for each axis
     pub velocity_limit: Coord<N>,
@@ -27,6 +29,7 @@ impl<N> Default for TrajectoryOptions<N>
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    Owned<f64, N>: Copy,
 {
     fn default() -> Self {
         Self {

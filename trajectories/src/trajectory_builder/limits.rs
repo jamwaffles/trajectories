@@ -5,6 +5,7 @@ use super::{LimitType, MinMax, TrajectoryOptions, TrajectoryStep};
 use crate::{Coord, Path, PathItem};
 use nalgebra::{
     allocator::{Allocator, SameShapeVectorAllocator},
+    storage::Owned,
     DefaultAllocator, DimName,
 };
 
@@ -15,6 +16,7 @@ where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
 {
     match limit_type {
         LimitType::Velocity(velocity_limit) => {
@@ -80,6 +82,7 @@ where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
 {
     match limit {
         LimitType::Velocity(velocity_limit) => {
@@ -109,11 +112,11 @@ where
             (max_velocity_at(
                 path,
                 position_along_path + options.epsilon,
-                LimitType::Acceleration(acceleration_limit.clone()),
+                LimitType::Acceleration(acceleration_limit),
             ) - max_velocity_at(
                 path,
                 position_along_path - options.epsilon,
-                LimitType::Acceleration(acceleration_limit.clone()),
+                LimitType::Acceleration(acceleration_limit),
             )) / (2.0 * options.epsilon)
         }
     }
@@ -130,6 +133,7 @@ where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
 {
     let &TrajectoryStep {
         position, velocity, ..
@@ -182,6 +186,7 @@ where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
 {
     max_acceleration_at(path, &pos_vel, min_max, options) / pos_vel.velocity
 }

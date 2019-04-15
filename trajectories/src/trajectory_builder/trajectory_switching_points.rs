@@ -5,12 +5,14 @@ use super::{
     },
     LimitType, MinMax, TrajectoryStep, TrajectorySwitchingPoint,
 };
-use crate::path::{Continuity, PathItem, PathSwitchingPoint};
+use crate::path::{Continuity, PathItem};
 use crate::{Path, TrajectoryOptions};
 use nalgebra::{
     allocator::{Allocator, SameShapeVectorAllocator},
+    storage::Owned,
     DefaultAllocator, DimName,
 };
+use std::sync::Arc;
 use std::thread;
 use std::time::Instant;
 
@@ -20,32 +22,34 @@ use std::time::Instant;
 /// determine its position
 const VELOCITY_COARSE_STEP_SIZE: f64 = 0.001;
 
-pub struct TrajectorySwitchingPoints<N>
+pub struct TrajectorySwitchingPoints<'a, N>
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
 {
-    path: Path<N>,
+    path: &'a Path<N>,
     options: TrajectoryOptions<N>,
     acceleration_switching_points: Vec<TrajectorySwitchingPoint>,
     velocity_switching_points: Vec<TrajectorySwitchingPoint>,
     switching_points: Vec<TrajectorySwitchingPoint>,
 }
 
-impl<N> TrajectorySwitchingPoints<N>
+impl<'a, N> TrajectorySwitchingPoints<'a, N>
 where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
 {
-    pub fn from_path(path: Path<N>, options: TrajectoryOptions<N>) -> Result<Self, String> {
+    pub fn from_path(path: &'a Path<N>, options: TrajectoryOptions<N>) -> Result<Self, String> {
         let all_start = Instant::now();
 
-        let path_v = path.clone();
-        let path_a = path.clone();
-        let options_v = options.clone();
-        let options_a = options.clone();
+        let p = Arc::new(path.clone());
+
+        let path_v = p.clone();
+        let path_a = p.clone();
 
         let velocity_switching_points = thread::spawn(move || {
             let start = Instant::now();
@@ -54,7 +58,7 @@ where
             let mut pos = 0.0;
 
             while let Some(point) =
-                Self::internal_rename_me_next_velocity_switching_point(&path_v, pos, &options_v)
+                Self::internal_rename_me_next_velocity_switching_point(&path_v, pos, &options)
             {
                 points.push(point);
                 debug!("Vel point {}", pos);
@@ -77,7 +81,7 @@ where
             let mut pos = 0.0;
 
             while let Some(point) =
-                Self::internal_rename_me_next_acceleration_switching_point(&path_a, pos, &options_a)
+                Self::internal_rename_me_next_acceleration_switching_point(&path_a, pos, &options)
             {
                 points.push(point);
                 debug!("Accel point {}", pos);
@@ -196,7 +200,7 @@ where
                         <= max_velocity_at(
                             path,
                             point.pos.position,
-                            LimitType::Velocity(options.velocity_limit.clone()),
+                            LimitType::Velocity(options.velocity_limit),
                         )
             })
             .cloned();
@@ -224,13 +228,13 @@ where
                             <= max_velocity_at(
                                 path,
                                 point.pos.position - options.epsilon,
-                                LimitType::Acceleration(options.acceleration_limit.clone()),
+                                LimitType::Acceleration(options.acceleration_limit),
                             )
                             && point.pos.velocity
                                 <= max_velocity_at(
                                     path,
                                     point.pos.position + options.epsilon,
-                                    LimitType::Acceleration(options.acceleration_limit.clone()),
+                                    LimitType::Acceleration(options.acceleration_limit),
                                 )))
             })
             .cloned();
@@ -285,12 +289,12 @@ where
                     let before_velocity = max_velocity_at(
                         path,
                         current_point.position - options.epsilon,
-                        LimitType::Acceleration(options.acceleration_limit.clone()),
+                        LimitType::Acceleration(options.acceleration_limit),
                     );
                     let after_velocity = max_velocity_at(
                         path,
                         current_point.position + options.epsilon,
-                        LimitType::Acceleration(options.acceleration_limit.clone()),
+                        LimitType::Acceleration(options.acceleration_limit),
                     );
 
                     let velocity = before_velocity.min(after_velocity);
@@ -313,13 +317,13 @@ where
                     let before_max_velocity_deriv = max_velocity_derivative_at(
                         path,
                         current_point.position - 2.0 * options.epsilon,
-                        LimitType::Acceleration(options.acceleration_limit.clone()),
+                        LimitType::Acceleration(options.acceleration_limit),
                         &options,
                     );
                     let after_max_velocity_deriv = max_velocity_derivative_at(
                         path,
                         current_point.position + 2.0 * options.epsilon,
-                        LimitType::Acceleration(options.acceleration_limit.clone()),
+                        LimitType::Acceleration(options.acceleration_limit),
                         &options,
                     );
 
@@ -348,19 +352,19 @@ where
                     let velocity = max_velocity_at(
                         path,
                         current_point.position,
-                        LimitType::Acceleration(options.acceleration_limit.clone()),
+                        LimitType::Acceleration(options.acceleration_limit),
                     );
 
                     let low_deriv = max_velocity_derivative_at(
                         path,
                         current_point.position - options.epsilon,
-                        LimitType::Acceleration(options.acceleration_limit.clone()),
+                        LimitType::Acceleration(options.acceleration_limit),
                         &options,
                     );
                     let high_deriv = max_velocity_derivative_at(
                         path,
                         current_point.position + options.epsilon,
-                        LimitType::Acceleration(options.acceleration_limit.clone()),
+                        LimitType::Acceleration(options.acceleration_limit),
                         &options,
                     );
 
@@ -401,11 +405,7 @@ where
             &path,
             &TrajectoryStep::new(
                 position,
-                max_velocity_at(
-                    path,
-                    position,
-                    LimitType::Velocity(options.velocity_limit.clone()),
-                ),
+                max_velocity_at(path, position, LimitType::Velocity(options.velocity_limit)),
             ),
             MinMax::Min,
             &options,
@@ -413,7 +413,7 @@ where
         let mut prev_deriv = max_velocity_derivative_at(
             path,
             position,
-            LimitType::Velocity(options.velocity_limit.clone()),
+            LimitType::Velocity(options.velocity_limit),
             &options,
         );;
 
@@ -428,11 +428,7 @@ where
                 &path,
                 &TrajectoryStep::new(
                     position,
-                    max_velocity_at(
-                        path,
-                        position,
-                        LimitType::Velocity(options.velocity_limit.clone()),
-                    ),
+                    max_velocity_at(path, position, LimitType::Velocity(options.velocity_limit)),
                 ),
                 MinMax::Min,
                 &options,
@@ -441,7 +437,7 @@ where
             let deriv = max_velocity_derivative_at(
                 path,
                 position,
-                LimitType::Velocity(options.velocity_limit.clone()),
+                LimitType::Velocity(options.velocity_limit),
                 &options,
             );
 
@@ -475,18 +471,14 @@ where
                 &path,
                 &TrajectoryStep::new(
                     position,
-                    max_velocity_at(
-                        path,
-                        position,
-                        LimitType::Velocity(options.velocity_limit.clone()),
-                    ),
+                    max_velocity_at(path, position, LimitType::Velocity(options.velocity_limit)),
                 ),
                 MinMax::Min,
                 &options,
             ) > max_velocity_derivative_at(
                 path,
                 position,
-                LimitType::Velocity(options.velocity_limit.clone()),
+                LimitType::Velocity(options.velocity_limit),
                 &options,
             ) {
                 prev_position = position
@@ -500,7 +492,7 @@ where
             max_velocity_at(
                 path,
                 after_position,
-                LimitType::Velocity(options.velocity_limit.clone()),
+                LimitType::Velocity(options.velocity_limit),
             ),
         );
 
@@ -511,7 +503,7 @@ where
                 max_velocity_at(
                     path,
                     prev_position,
-                    LimitType::Velocity(options.velocity_limit.clone()),
+                    LimitType::Velocity(options.velocity_limit),
                 ),
             ),
             MinMax::Min,
@@ -568,7 +560,7 @@ mod tests {
 
         // Same epsilon as Example.cpp for equal comparison
         let traj = TrajectorySwitchingPoints::from_path(
-            path,
+            &path,
             TrajectoryOptions {
                 velocity_limit: TestCoord3::repeat(1.0),
                 acceleration_limit: TestCoord3::repeat(1.0),
@@ -625,7 +617,7 @@ mod tests {
 
         // Same epsilon as Example.cpp for equal comparison
         let traj = TrajectorySwitchingPoints::from_path(
-            path,
+            &path,
             TrajectoryOptions {
                 velocity_limit: TestCoord3::repeat(1.0),
                 acceleration_limit: TestCoord3::repeat(1.0),
