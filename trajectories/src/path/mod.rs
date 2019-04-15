@@ -209,6 +209,11 @@ where
         // TODO: Test a load of different paths to see if commenting this out makes a difference
         // .or_else(|| self.switching_points.last())
     }
+
+    /// Get an iterator of path switching points
+    pub fn switching_points_iter(&self) -> impl Iterator<Item = &PathSwitchingPoint> {
+        self.switching_points.iter()
+    }
 }
 
 impl<N> PathItem<N> for Path<N>

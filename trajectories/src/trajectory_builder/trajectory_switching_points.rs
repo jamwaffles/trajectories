@@ -278,14 +278,9 @@ where
         position_along_path: f64,
         options: &TrajectoryOptions<N>,
     ) -> Option<TrajectorySwitchingPoint> {
-        let mut velocity;
-        let mut current_point =
-            &PathSwitchingPoint::new(position_along_path, Continuity::Continuous);
-
-        while current_point.position <= path.len() {
-            current_point = path.next_switching_point(current_point.position)?;
-
-            match current_point.continuity {
+        path.switching_points_iter()
+            .skip_while(|point| point.position <= position_along_path)
+            .find_map(|current_point| match current_point.continuity {
                 Continuity::Discontinuous => {
                     let before_velocity = max_velocity_at(
                         path,
@@ -298,7 +293,7 @@ where
                         LimitType::Acceleration(options.acceleration_limit.clone()),
                     );
 
-                    velocity = before_velocity.min(after_velocity);
+                    let velocity = before_velocity.min(after_velocity);
 
                     let before_point =
                         TrajectoryStep::new(current_point.position - options.epsilon, velocity);
@@ -339,11 +334,14 @@ where
                             current_point.position,
                             velocity
                         );
-                        return Some(TrajectorySwitchingPoint {
+
+                        Some(TrajectorySwitchingPoint {
                             pos: TrajectoryStep::new(current_point.position, velocity),
                             before_acceleration,
                             after_acceleration,
-                        });
+                        })
+                    } else {
+                        None
                     }
                 }
                 Continuity::Continuous => {
@@ -373,17 +371,17 @@ where
                             current_point.position,
                             velocity
                         );
-                        return Some(TrajectorySwitchingPoint {
+
+                        Some(TrajectorySwitchingPoint {
                             pos: TrajectoryStep::new(current_point.position, velocity),
                             before_acceleration: 0.0,
                             after_acceleration: 0.0,
-                        });
+                        })
+                    } else {
+                        None
                     }
                 }
-            }
-        }
-
-        None
+            })
     }
 
     // TODO: Benchmark and optimise this method. There are two loops which may be reducable to one
