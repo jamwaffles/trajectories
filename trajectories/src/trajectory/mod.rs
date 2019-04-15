@@ -1,5 +1,5 @@
 mod trajectory_options;
-mod trajectory_step;
+pub(crate) mod trajectory_step;
 
 pub use self::trajectory_options::TrajectoryOptions;
 pub(crate) use self::trajectory_step::TrajectoryStep;

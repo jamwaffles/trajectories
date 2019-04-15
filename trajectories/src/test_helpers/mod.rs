@@ -7,6 +7,10 @@ mod profile;
 
 pub use self::helpers::*;
 pub use self::profile::*;
+pub use crate::trajectory::trajectory_step::TrajectoryStep;
+pub use crate::trajectory_builder::limit_type::LimitType;
+pub use crate::trajectory_builder::limits::*;
+pub use crate::trajectory_builder::min_max::MinMax;
 use nalgebra::Vector3;
 use nalgebra::Vector4;
 

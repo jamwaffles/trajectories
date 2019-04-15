@@ -14,6 +14,9 @@ where
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
+    /// Velocity limit
     Velocity(Coord<N>),
+
+    /// Acceleration limit
     Acceleration(Coord<N>),
 }

@@ -72,6 +72,7 @@ where
     }
 }
 
+/// Find the maximum velocity derivative at a point
 pub fn max_velocity_derivative_at<N>(
     path: &Path<N>,
     position_along_path: f64,

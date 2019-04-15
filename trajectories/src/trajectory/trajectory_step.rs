@@ -12,6 +12,7 @@ pub struct TrajectoryStep {
 }
 
 impl TrajectoryStep {
+    /// Create a new trajectory step from position and velocity
     #[inline(always)]
     pub fn new(position: f64, velocity: f64) -> Self {
         Self {
@@ -21,10 +22,12 @@ impl TrajectoryStep {
         }
     }
 
+    /// Add a time value to a current trajectory step
     pub fn with_time(self, time: f64) -> Self {
         Self { time, ..self }
     }
 
+    /// Set the time for this trajectory step
     pub fn time(mut self, time: f64) {
         self.time = time;
     }

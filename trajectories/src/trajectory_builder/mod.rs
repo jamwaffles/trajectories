@@ -1,6 +1,6 @@
-mod limit_type;
-mod limits;
-mod min_max;
+pub(crate) mod limit_type;
+pub(crate) mod limits;
+pub(crate) mod min_max;
 mod path_position;
 mod trajectory_switching_point;
 mod trajectory_switching_points;

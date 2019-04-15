@@ -5,6 +5,10 @@ name = "trajectories"
 version = "0.1.0"
 [[bench]]
 harness = false
+name = "limits"
+
+[[bench]]
+harness = false
 name = "path"
 
 [[bench]]
