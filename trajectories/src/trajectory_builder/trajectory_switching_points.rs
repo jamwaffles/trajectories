@@ -11,6 +11,14 @@ use nalgebra::{
     allocator::{Allocator, SameShapeVectorAllocator},
     DefaultAllocator, DimName,
 };
+use std::thread;
+use std::time::Instant;
+
+/// Velocity switching point search broad phase step size
+///
+/// Once a switching point has been found in this interval, bisection is used to more accurately
+/// determine its position
+const VELOCITY_COARSE_STEP_SIZE: f64 = 0.001;
 
 pub struct TrajectorySwitchingPoints<N>
 where
@@ -20,6 +28,9 @@ where
 {
     path: Path<N>,
     options: TrajectoryOptions<N>,
+    acceleration_switching_points: Vec<TrajectorySwitchingPoint>,
+    velocity_switching_points: Vec<TrajectorySwitchingPoint>,
+    switching_points: Vec<TrajectorySwitchingPoint>,
 }
 
 impl<N> TrajectorySwitchingPoints<N>
@@ -29,7 +40,102 @@ where
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
 {
     pub fn from_path(path: Path<N>, options: TrajectoryOptions<N>) -> Result<Self, String> {
-        Ok(Self { path, options })
+        let all_start = Instant::now();
+
+        let path_v = path.clone();
+        let path_a = path.clone();
+        let options_v = options.clone();
+        let options_a = options.clone();
+
+        let velocity_switching_points = thread::spawn(move || {
+            let start = Instant::now();
+
+            let mut points = Vec::new();
+            let mut pos = 0.0;
+
+            while let Some(point) =
+                Self::internal_rename_me_next_velocity_switching_point(&path_v, pos, &options_v)
+            {
+                points.push(point);
+                debug!("Vel point {}", pos);
+                pos = point.pos.position + VELOCITY_COARSE_STEP_SIZE;
+            }
+
+            info!(
+                "Found {} velocity switching points in {} ms",
+                points.len(),
+                start.elapsed().as_millis()
+            );
+
+            points
+        });
+
+        let acceleration_switching_points = thread::spawn(move || {
+            let start = Instant::now();
+
+            let mut points = Vec::new();
+            let mut pos = 0.0;
+
+            while let Some(point) =
+                Self::internal_rename_me_next_acceleration_switching_point(&path_a, pos, &options_a)
+            {
+                points.push(point);
+                debug!("Accel point {}", pos);
+                pos = point.pos.position;
+            }
+
+            info!(
+                "Found {} acceleration switching points in {} ms",
+                points.len(),
+                start.elapsed().as_millis()
+            );
+
+            points
+        });
+
+        let velocity_switching_points = velocity_switching_points.join().unwrap();
+        let acceleration_switching_points = acceleration_switching_points.join().unwrap();
+
+        let switching_points = {
+            let start = Instant::now();
+
+            let mut points = Vec::new();
+            let mut pos = 0.0;
+
+            while let Some(point) = Self::internal_rename_me_next_switching_point(
+                &path,
+                &velocity_switching_points,
+                &acceleration_switching_points,
+                pos,
+                &options,
+            ) {
+                points.push(point);
+                pos = point.pos.position;
+
+                debug!("Sw point {}", pos);
+            }
+
+            info!(
+                "Computed all {} switching points in {} ms",
+                points.len(),
+                start.elapsed().as_millis()
+            );
+
+            points
+        };
+
+        info!(
+            "Switching point total time: {} ms",
+            all_start.elapsed().as_millis()
+        );
+
+        Ok(Self {
+            path,
+            options,
+            acceleration_switching_points,
+            velocity_switching_points,
+            switching_points,
+        })
     }
 
     pub fn next_switching_point(
@@ -38,9 +144,16 @@ where
     ) -> Option<TrajectorySwitchingPoint> {
         Self::internal_rename_me_next_switching_point(
             &self.path,
+            &self.velocity_switching_points,
+            &self.acceleration_switching_points,
             position_along_path,
             &self.options,
         )
+
+        // self.switching_points
+        //     .iter()
+        //     .find(|point| point.pos.position > position_along_path)
+        //     .cloned()
     }
 
     #[cfg(test)]
@@ -70,31 +183,23 @@ where
     /// Get next switching point along the path, bounded by velocity or acceleration
     fn internal_rename_me_next_switching_point(
         path: &Path<N>,
+        velocity_switching_points: &Vec<TrajectorySwitchingPoint>,
+        acceleration_switching_points: &Vec<TrajectorySwitchingPoint>,
         position_along_path: f64,
         options: &TrajectoryOptions<N>,
     ) -> Option<TrajectorySwitchingPoint> {
-        let mut acceleration_switching_point: Option<TrajectorySwitchingPoint> = None;
-
-        // Find the next acceleration switching point
-        while let Some(point) = Self::internal_rename_me_next_acceleration_switching_point(
-            path,
-            acceleration_switching_point
-                .map(|p| p.pos.position)
-                .unwrap_or(position_along_path),
-            options,
-        ) {
-            acceleration_switching_point = Some(point);
-
-            if point.pos.velocity
-                <= max_velocity_at(
-                    path,
-                    point.pos.position,
-                    LimitType::Velocity(options.velocity_limit.clone()),
-                )
-            {
-                break;
-            }
-        }
+        let acceleration_switching_point = acceleration_switching_points
+            .iter()
+            .find(|point| {
+                point.pos.position > position_along_path
+                    && point.pos.velocity
+                        <= max_velocity_at(
+                            path,
+                            point.pos.position,
+                            LimitType::Velocity(options.velocity_limit.clone()),
+                        )
+            })
+            .cloned();
 
         trace!(
             "RS next_accel_sw_point (pos_along_path;sw_pos;sw_vel),{},{},{}",
@@ -107,38 +212,28 @@ where
                 .unwrap_or(0.0),
         );
 
-        let mut velocity_switching_point: Option<TrajectorySwitchingPoint> = None;
-
-        // Find the next velocity switching point
-        while let Some(point) = Self::internal_rename_me_next_velocity_switching_point(
-            path,
-            velocity_switching_point
-                .map(|p| p.pos.position)
-                .unwrap_or(position_along_path),
-            options,
-        ) {
-            velocity_switching_point = Some(point);
-
-            if point.pos.position
-                > acceleration_switching_point
-                    .map(|p| p.pos.position)
-                    .expect("Acceleration switching point")
-                || (point.pos.velocity
-                    <= max_velocity_at(
-                        &path,
-                        point.pos.position - options.epsilon,
-                        LimitType::Acceleration(options.acceleration_limit.clone()),
-                    )
-                    && point.pos.velocity
-                        <= max_velocity_at(
-                            path,
-                            point.pos.position + options.epsilon,
-                            LimitType::Acceleration(options.acceleration_limit.clone()),
-                        ))
-            {
-                break;
-            }
-        }
+        let velocity_switching_point = velocity_switching_points
+            .iter()
+            .find(|point| {
+                point.pos.position > position_along_path
+                    && (point.pos.position
+                        > acceleration_switching_point
+                            .map(|accel| accel.pos.position)
+                            .unwrap_or(0.0)
+                        || (point.pos.velocity
+                            <= max_velocity_at(
+                                path,
+                                point.pos.position - options.epsilon,
+                                LimitType::Acceleration(options.acceleration_limit.clone()),
+                            )
+                            && point.pos.velocity
+                                <= max_velocity_at(
+                                    path,
+                                    point.pos.position + options.epsilon,
+                                    LimitType::Acceleration(options.acceleration_limit.clone()),
+                                )))
+            })
+            .cloned();
 
         trace!(
             "RS next_vel_sw_point (pos_along_path;sw_pos;sw_vel),{},{},{}",
@@ -302,10 +397,8 @@ where
         position_along_path: f64,
         options: &TrajectoryOptions<N>,
     ) -> Option<TrajectorySwitchingPoint> {
-        // Broad phase search step
-        let step_size = 0.001;
         let accuracy = options.epsilon;
-        let mut position = position_along_path - step_size;
+        let mut position = position_along_path;
         let mut prev_slope = max_acceleration_derivative_at(
             &path,
             &TrajectoryStep::new(
@@ -331,7 +424,7 @@ where
         // Bisection is used after this broad phase to more accurately determine the position of the
         // local minimum
         while position < path.len() {
-            position += step_size;
+            position += VELOCITY_COARSE_STEP_SIZE;
 
             let slope = max_acceleration_derivative_at(
                 &path,
@@ -373,7 +466,7 @@ where
         }
 
         // Create an interval to search within to find the actual switching point
-        let mut prev_position = position - step_size;
+        let mut prev_position = position - VELOCITY_COARSE_STEP_SIZE;
         let mut after_position = position;
 
         // Binary search through interval to find switching point within an epsilon

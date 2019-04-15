@@ -206,7 +206,8 @@ where
         self.switching_points
             .iter()
             .find(|sp| sp.position > position_along_path)
-            .or_else(|| self.switching_points.last())
+        // TODO: Test a load of different paths to see if commenting this out makes a difference
+        // .or_else(|| self.switching_points.last())
     }
 }
 

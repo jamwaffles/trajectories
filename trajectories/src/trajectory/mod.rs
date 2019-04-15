@@ -10,6 +10,7 @@ use nalgebra::{
     allocator::{Allocator, SameShapeVectorAllocator},
     DefaultAllocator, DimName,
 };
+use std::time::Instant;
 
 /// Motion trajectory
 #[derive(Debug)]
@@ -32,9 +33,13 @@ where
     // TODO: Stop panicking all over the place and actually use the error arm of this `Result`
     /// Create a new trajectory from a given path and max velocity and acceleration
     pub fn new(path: &'a Path<N>, options: TrajectoryOptions<N>) -> Result<Self, String> {
+        let start = Instant::now();
+
         let builder = TrajectoryBuilder::from_path(path, options);
 
         let trajectory = builder.into_steps()?;
+
+        info!("Built trajectory in {} ms", start.elapsed().as_millis());
 
         Ok(Self { path, trajectory })
     }

@@ -9,7 +9,7 @@
 #![deny(
     bad_style,
     const_err,
-    dead_code,
+    // dead_code,
     improper_ctypes,
     legacy_directory_ownership,
     non_shorthand_field_patterns,
