@@ -5,7 +5,8 @@ use criterion::*;
 use trajectories::prelude::*;
 use trajectories::{
     test_helpers::{
-        max_acceleration_at, max_velocity_at, LimitType, MinMax, TestCoord3, TrajectoryStep,
+        max_acceleration_at, max_velocity_at, max_velocity_derivative_at, LimitType, MinMax,
+        TestCoord3, TrajectoryStep,
     },
     Path, PathOptions, TrajectoryOptions,
 };
@@ -215,6 +216,86 @@ fn bench_max_velocity_at_vel_limited(c: &mut Criterion) {
     });
 }
 
+fn bench_max_velocity_deriv_at_vel_limited(c: &mut Criterion) {
+    c.bench_function("max_velocity_deriv_at_vel_limited", move |b| {
+        let options = TrajectoryOptions {
+            acceleration_limit: TestCoord3::repeat(1.0),
+            velocity_limit: TestCoord3::repeat(1.0),
+            epsilon: 0.000001,
+            timestep: 0.01,
+        };
+
+        b.iter_with_setup(
+            || {
+                let p = Path::from_waypoints(
+                    &waypoints(),
+                    PathOptions {
+                        max_deviation: DEVIATION,
+                    },
+                );
+                let len = p.len();
+                let step = len / NUM_POINTS as f64;
+
+                (p, len, step)
+            },
+            |(p, len, step)| {
+                let mut i = 0.0;
+
+                while i < len {
+                    let _pos = max_velocity_derivative_at(
+                        &p,
+                        i,
+                        LimitType::Velocity(options.velocity_limit),
+                        &options,
+                    );
+
+                    i += step;
+                }
+            },
+        )
+    });
+}
+
+fn bench_max_velocity_deriv_at_accel_limited(c: &mut Criterion) {
+    c.bench_function("max_velocity_deriv_at_accel_limited", move |b| {
+        let options = TrajectoryOptions {
+            acceleration_limit: TestCoord3::repeat(1.0),
+            velocity_limit: TestCoord3::repeat(1.0),
+            epsilon: 0.000001,
+            timestep: 0.01,
+        };
+
+        b.iter_with_setup(
+            || {
+                let p = Path::from_waypoints(
+                    &waypoints(),
+                    PathOptions {
+                        max_deviation: DEVIATION,
+                    },
+                );
+                let len = p.len();
+                let step = len / NUM_POINTS as f64;
+
+                (p, len, step)
+            },
+            |(p, len, step)| {
+                let mut i = 0.0;
+
+                while i < len {
+                    let _pos = max_velocity_derivative_at(
+                        &p,
+                        i,
+                        LimitType::Acceleration(options.velocity_limit),
+                        &options,
+                    );
+
+                    i += step;
+                }
+            },
+        )
+    });
+}
+
 fn bench_max_acceleration_at(c: &mut Criterion) {
     c.bench_function("max_acceleration_at", move |b| {
         let options = TrajectoryOptions {
@@ -259,6 +340,8 @@ criterion_group!(
     limits,
     bench_max_velocity_at_accel_limited,
     bench_max_velocity_at_vel_limited,
-    bench_max_acceleration_at
+    bench_max_acceleration_at,
+    bench_max_velocity_deriv_at_vel_limited,
+    bench_max_velocity_deriv_at_accel_limited
 );
 criterion_main!(limits);
