@@ -91,11 +91,13 @@ where
             let tangent_abs = tangent.abs();
             let velocity = velocity_limit.component_div(&tangent_abs);
 
+            let calc = -(velocity_limit.component_mul(&curvature))
+                .component_div(&tangent.component_mul(&tangent_abs));
+
             // Find the component index with the smallest value
             let constraint_axis = velocity.imin();
 
-            let result = -(velocity_limit[constraint_axis] * curvature[constraint_axis])
-                / (tangent[constraint_axis] * tangent_abs[constraint_axis]);
+            let result = calc[constraint_axis];
 
             trace!(
                 "RS max_vel_vel_deriv (pos;vel),{},{}",
