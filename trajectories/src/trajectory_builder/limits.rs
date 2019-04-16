@@ -92,11 +92,7 @@ where
             let velocity = velocity_limit.component_div(&tangent_abs);
 
             // Find the component index with the smallest value
-            let (constraint_axis, _) = velocity
-                .iter()
-                .enumerate()
-                .min_by(|a, b| a.1.partial_cmp(b.1).unwrap())
-                .unwrap_or((0, &std::f64::MAX));
+            let constraint_axis = velocity.imin();
 
             let result = -(velocity_limit[constraint_axis] * curvature[constraint_axis])
                 / (tangent[constraint_axis] * tangent_abs[constraint_axis]);
