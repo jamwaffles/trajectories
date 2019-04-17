@@ -177,11 +177,10 @@ where
         &self,
         position_along_path: f64,
     ) -> Option<TrajectorySwitchingPoint> {
-        Self::internal_rename_me_next_acceleration_switching_point(
-            &self.path,
-            position_along_path,
-            &self.options,
-        )
+        self.acceleration_switching_points
+            .iter()
+            .find(|point| point.pos.position >= position_along_path)
+            .cloned()
     }
 
     /// Get next switching point along the path, bounded by velocity or acceleration
