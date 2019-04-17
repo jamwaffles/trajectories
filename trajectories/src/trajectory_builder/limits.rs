@@ -36,38 +36,48 @@ where
             let vel_abs = vel.abs();
             let n = nalgebra::dimension::<Coord<N>>();
 
-            let mut max_path_velocity = std::f64::INFINITY;
+            // TODO: Less dumb names
+            let accel_div_vel = acceleration.component_div(&vel);
+            let accel_limit_div_vel_abs = acceleration_limit.component_div(&vel_abs);
+            let accel = acceleration_limit.component_div(&acceleration.abs());
 
-            for i in 0..n {
-                if vel[i] != 0.0 {
-                    for j in (i + 1)..n {
-                        if vel[j] != 0.0 {
-                            // TODO: Come up with a less mathsy name
-                            let a_ij = acceleration[i] / vel[i] - acceleration[j] / vel[j];
+            let new_res = (0..n)
+                .filter_map(|i| {
+                    if vel[i] != 0.0 {
+                        let min = ((i + 1)..n).filter(|j| vel[*j] != 0.0).fold(
+                            std::f64::INFINITY,
+                            |acc, j| {
+                                // TODO: Come up with a less mathsy name
+                                let a_ij = (accel_div_vel[i] - accel_div_vel[j]).abs();
 
-                            if a_ij != 0.0 {
-                                max_path_velocity = max_path_velocity.min(
-                                    ((acceleration_limit[i] / vel_abs[i]
-                                        + acceleration_limit[j] / vel_abs[j])
-                                        / a_ij.abs())
-                                    .sqrt(),
-                                );
-                            }
-                        }
+                                if a_ij > 0.0 {
+                                    acc.min(
+                                        (accel_limit_div_vel_abs[i] + accel_limit_div_vel_abs[j])
+                                            / a_ij,
+                                    )
+                                } else {
+                                    acc
+                                }
+                            },
+                        );
+
+                        Some(min)
+                    } else if acceleration[i] != 0.0 {
+                        Some(accel[i])
+                    } else {
+                        None
                     }
-                } else if acceleration[i] != 0.0 {
-                    max_path_velocity = max_path_velocity
-                        .min((acceleration_limit[i] / acceleration[i].abs()).sqrt());
-                }
-            }
+                })
+                .fold(std::f64::INFINITY, |acc, x| acc.min(x))
+                .sqrt();
 
             trace!(
                 "RS max_vel_from_acc (pos;vel),{},{}",
                 position_along_path,
-                max_path_velocity
+                new_res
             );
 
-            max_path_velocity
+            new_res
         }
     }
 }
