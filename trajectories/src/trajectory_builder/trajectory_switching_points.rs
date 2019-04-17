@@ -62,7 +62,7 @@ where
             {
                 points.push(point);
                 debug!("Vel point {}", pos);
-                pos = point.pos.position + VELOCITY_COARSE_STEP_SIZE;
+                pos = point.pos.position;
             }
 
             info!(
