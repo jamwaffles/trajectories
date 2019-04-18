@@ -33,7 +33,6 @@ where
     options: TrajectoryOptions<N>,
     acceleration_switching_points: Vec<TrajectorySwitchingPoint>,
     velocity_switching_points: Vec<TrajectorySwitchingPoint>,
-    switching_points: Vec<TrajectorySwitchingPoint>,
 }
 
 impl<'a, N> TrajectorySwitchingPoints<'a, N>
@@ -57,8 +56,7 @@ where
             let mut points = Vec::new();
             let mut pos = 0.0;
 
-            while let Some(point) =
-                Self::internal_rename_me_next_velocity_switching_point(&path_v, pos, &options)
+            while let Some(point) = Self::find_next_velocity_switching_point(&path_v, pos, &options)
             {
                 points.push(point);
                 debug!("Vel point {}", pos);
@@ -81,7 +79,7 @@ where
             let mut pos = 0.0;
 
             while let Some(point) =
-                Self::internal_rename_me_next_acceleration_switching_point(&path_a, pos, &options)
+                Self::find_next_acceleration_switching_point(&path_a, pos, &options)
             {
                 points.push(point);
                 debug!("Accel point {}", pos);
@@ -100,34 +98,6 @@ where
         let velocity_switching_points = velocity_switching_points.join().unwrap();
         let acceleration_switching_points = acceleration_switching_points.join().unwrap();
 
-        let switching_points = {
-            let start = Instant::now();
-
-            let mut points = Vec::new();
-            let mut pos = 0.0;
-
-            while let Some(point) = Self::internal_rename_me_next_switching_point(
-                &path,
-                &velocity_switching_points,
-                &acceleration_switching_points,
-                pos,
-                &options,
-            ) {
-                points.push(point);
-                pos = point.pos.position;
-
-                debug!("Sw point {}", pos);
-            }
-
-            info!(
-                "Computed all {} switching points in {} ms",
-                points.len(),
-                start.elapsed().as_millis()
-            );
-
-            points
-        };
-
         info!(
             "Switching point total time: {} ms",
             all_start.elapsed().as_millis()
@@ -138,7 +108,6 @@ where
             options,
             acceleration_switching_points,
             velocity_switching_points,
-            switching_points,
         })
     }
 
@@ -146,18 +115,13 @@ where
         &self,
         position_along_path: f64,
     ) -> Option<TrajectorySwitchingPoint> {
-        Self::internal_rename_me_next_switching_point(
+        Self::find_next_switching_point(
             &self.path,
             &self.velocity_switching_points,
             &self.acceleration_switching_points,
             position_along_path,
             &self.options,
         )
-
-        // self.switching_points
-        //     .iter()
-        //     .find(|point| point.pos.position > position_along_path)
-        //     .cloned()
     }
 
     #[cfg(test)]
@@ -165,11 +129,7 @@ where
         &self,
         position_along_path: f64,
     ) -> Option<TrajectorySwitchingPoint> {
-        Self::internal_rename_me_next_velocity_switching_point(
-            &self.path,
-            position_along_path,
-            &self.options,
-        )
+        Self::find_next_velocity_switching_point(&self.path, position_along_path, &self.options)
     }
 
     #[cfg(test)]
@@ -177,14 +137,11 @@ where
         &self,
         position_along_path: f64,
     ) -> Option<TrajectorySwitchingPoint> {
-        self.acceleration_switching_points
-            .iter()
-            .find(|point| point.pos.position >= position_along_path)
-            .cloned()
+        Self::find_next_acceleration_switching_point(&self.path, position_along_path, &self.options)
     }
 
     /// Get next switching point along the path, bounded by velocity or acceleration
-    fn internal_rename_me_next_switching_point(
+    fn find_next_switching_point(
         path: &Path<N>,
         velocity_switching_points: &Vec<TrajectorySwitchingPoint>,
         acceleration_switching_points: &Vec<TrajectorySwitchingPoint>,
@@ -276,7 +233,7 @@ where
     }
 
     /// Get the next acceleration-bounded switching point after the current position
-    fn internal_rename_me_next_acceleration_switching_point(
+    fn find_next_acceleration_switching_point(
         path: &Path<N>,
         position_along_path: f64,
         options: &TrajectoryOptions<N>,
@@ -393,7 +350,7 @@ where
     /// This method performs a broad search first, stepping along the path from the current position
     /// in coarse increments. It then binary searches through the interval between two coarse steps
     /// to find the specific switching point to within a more accurate epsilon.
-    fn internal_rename_me_next_velocity_switching_point(
+    fn find_next_velocity_switching_point(
         path: &Path<N>,
         position_along_path: f64,
         options: &TrajectoryOptions<N>,
