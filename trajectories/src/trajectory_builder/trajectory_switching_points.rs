@@ -20,7 +20,7 @@ use std::time::Instant;
 ///
 /// Once a switching point has been found in this interval, bisection is used to more accurately
 /// determine its position
-const VELOCITY_COARSE_STEP_SIZE: f64 = 0.001;
+const VELOCITY_COARSE_STEP_SIZE: f64 = 0.01;
 
 pub struct TrajectorySwitchingPoints<'a, N>
 where
