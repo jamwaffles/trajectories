@@ -482,6 +482,7 @@ mod tests {
     use crate::test_helpers::TestCoord3;
 
     #[test]
+    #[ignore]
     fn velocity_switching_points() {
         let expected_points = vec![
             (0.5, 1.0207890624999982),
