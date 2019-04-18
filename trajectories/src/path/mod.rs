@@ -14,6 +14,7 @@ pub use self::segment::PathSegment;
 use crate::Coord;
 use nalgebra::allocator::Allocator;
 use nalgebra::allocator::SameShapeVectorAllocator;
+use nalgebra::storage::Owned;
 use nalgebra::DefaultAllocator;
 use nalgebra::DimName;
 use std::time::Instant;
@@ -35,6 +36,7 @@ where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
 {
     /// Linear path segments and circular blends
     pub segments: Vec<PathSegment<N>>,
@@ -51,6 +53,7 @@ where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
 {
     /// Create a blended path from a set of waypoints
     ///
@@ -221,6 +224,7 @@ where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
 {
     /// Get the length of the complete path
     #[inline(always)]

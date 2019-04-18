@@ -1,10 +1,11 @@
 use super::PathItem;
 use crate::Coord;
 use crate::TRAJECTORY_EPSILON;
-use nalgebra::allocator::Allocator;
-use nalgebra::allocator::SameShapeVectorAllocator;
-use nalgebra::DefaultAllocator;
-use nalgebra::DimName;
+use nalgebra::{
+    allocator::{Allocator, SameShapeVectorAllocator},
+    storage::Owned,
+    DefaultAllocator, DimName,
+};
 use std::f64;
 
 /// Circular path segment
@@ -17,6 +18,7 @@ where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
 {
     /// Center point of circle
     pub center: Coord<N>,
@@ -38,6 +40,12 @@ where
 
     /// Start offset plus arc length
     pub end_offset: f64,
+
+    /// Whether this is a zero-size circular segment
+    ///
+    /// This will be the case when two line segments are essentially parallel, or of negligible
+    /// length.
+    empty: bool,
 }
 
 impl<N> Default for CircularPathSegment<N>
@@ -45,6 +53,7 @@ where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
 {
     fn default() -> Self {
         Self {
@@ -55,6 +64,7 @@ where
             end_offset: 0.0,
             x: Coord::zeros(),
             y: Coord::zeros(),
+            empty: true,
         }
     }
 }
@@ -64,6 +74,7 @@ where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
 {
     /// Create a blend segment for two line segments comprised of three points
     pub fn from_waypoints(
@@ -142,6 +153,7 @@ where
             arc_length,
             start_offset: 0.0,
             end_offset: arc_length,
+            empty: false,
         }
     }
 
@@ -199,6 +211,7 @@ where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
 {
     /// Get the arc length of this segment
     fn len(&self) -> f64 {
@@ -208,34 +221,50 @@ where
     /// Get position ("robot configuration" in paper parlance) along arc from normalised distance
     /// along it (`s`)
     fn position(&self, distance_along_arc: f64) -> Coord<N> {
-        let angle = (distance_along_arc - self.start_offset) / self.radius;
+        if self.empty {
+            self.center
+        } else {
+            let angle = (distance_along_arc - self.start_offset) / self.radius;
 
-        &self.center + self.radius * ((&self.x * angle.cos()) + (&self.y * angle.sin()))
+            &self.center + self.radius * ((&self.x * angle.cos()) + (&self.y * angle.sin()))
+        }
     }
 
     /// Get derivative (tangent) of point along curve
     fn tangent(&self, distance_along_arc: f64) -> Coord<N> {
-        let angle = (distance_along_arc - self.start_offset) / self.radius;
+        if self.empty {
+            Coord::zeros()
+        } else {
+            let angle = (distance_along_arc - self.start_offset) / self.radius;
 
-        -&self.x * angle.sin() + &self.y * angle.cos()
+            -&self.x * angle.sin() + &self.y * angle.cos()
+        }
     }
 
     /// Get second derivative (rate of change of tangent, aka curvature) of point along curve
     fn curvature(&self, distance_along_arc: f64) -> Coord<N> {
-        let angle = (distance_along_arc - self.start_offset) / self.radius;
+        if self.empty {
+            Coord::repeat(-1.0)
+        } else {
+            let angle = (distance_along_arc - self.start_offset) / self.radius;
 
-        -1.0 / self.radius * (&self.x * angle.cos() + &self.y * angle.sin())
+            -1.0 / self.radius * (&self.x * angle.cos() + &self.y * angle.sin())
+        }
     }
 
     fn tangent_and_curvature(&self, distance_along_arc: f64) -> (Coord<N>, Coord<N>) {
-        let angle = (distance_along_arc - self.start_offset) / self.radius;
-        let angle_s = angle.sin();
-        let angle_c = angle.cos();
+        if self.empty {
+            (Coord::zeros(), Coord::repeat(-1.0))
+        } else {
+            let angle = (distance_along_arc - self.start_offset) / self.radius;
+            let angle_s = angle.sin();
+            let angle_c = angle.cos();
 
-        (
-            -&self.x * angle_s + &self.y * angle_c,
-            -1.0 / self.radius * (&self.x * angle_c + &self.y * angle_s),
-        )
+            (
+                -&self.x * angle_s + &self.y * angle_c,
+                -1.0 / self.radius * (&self.x * angle_c + &self.y * angle_s),
+            )
+        }
     }
 }
 

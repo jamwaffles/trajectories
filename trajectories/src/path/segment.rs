@@ -3,6 +3,7 @@ use crate::Coord;
 use core::cmp::Ordering;
 use nalgebra::{
     allocator::{Allocator, SameShapeVectorAllocator},
+    storage::Owned,
     DefaultAllocator, DimName,
 };
 
@@ -12,6 +13,7 @@ where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
 {
     Linear(LinearPathSegment<N>),
     Circular(CircularPathSegment<N>),
@@ -22,6 +24,7 @@ where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
 {
     fn partial_cmp(&self, other: &PathSegment<N>) -> Option<Ordering> {
         Some(
@@ -42,6 +45,7 @@ where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
 {
     /// Get length of path
     fn len(&self) -> f64 {
@@ -88,6 +92,7 @@ where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
 {
     /// Clone segment and give it a start offset
     // TODO: Trait

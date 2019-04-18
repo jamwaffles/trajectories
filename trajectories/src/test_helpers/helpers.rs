@@ -7,6 +7,7 @@ use crate::Coord;
 use csv;
 use nalgebra::allocator::Allocator;
 use nalgebra::allocator::SameShapeVectorAllocator;
+use nalgebra::storage::Owned;
 use nalgebra::DefaultAllocator;
 use nalgebra::DimName;
 use serde::Serialize;
@@ -25,6 +26,7 @@ where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
 {
     SvgPath::new()
         .set("fill", "none")
@@ -44,6 +46,7 @@ where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
 {
     let size = 0.1;
 
@@ -67,6 +70,7 @@ where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
 {
     Rectangle::new()
         .set("fill", "none")
@@ -84,6 +88,7 @@ where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
 {
     let aspect = (bottom_right[0] - top_left[0]) / (bottom_right[1] - top_left[1]);
     let width = 1024;
@@ -108,6 +113,8 @@ where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
+    Owned<f64, N>: Copy,
 {
     let line_scale = 0.25;
 
@@ -145,6 +152,7 @@ where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
 {
     (
         coords
@@ -171,6 +179,8 @@ pub fn debug_blend<N>(
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
+    Owned<f64, N>: Copy,
 {
     let path_before = single_line(&before, &current, "red", 1);
     let path_after = single_line(&current, &after, "red", 1);
@@ -192,6 +202,8 @@ where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
+    Owned<f64, N>: Copy,
 {
     let top_left = blend.center.clone().add_scalar(-(blend.radius + PADDING));
     let bottom_right = blend
@@ -234,6 +246,7 @@ where
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
 {
     let (top_left, bottom_right) = calc_bbox(waypoints);
 
@@ -301,6 +314,7 @@ pub fn debug_path_switching_points<N>(
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
 {
     let (top_left, bottom_right) = calc_bbox(waypoints);
 
@@ -343,6 +357,7 @@ pub fn debug_path_point<N>(
     N: DimName + Copy,
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     <DefaultAllocator as Allocator<f64, N>>::Buffer: Send + Sync,
+    Owned<f64, N>: Copy,
 {
     let (top_left, bottom_right) = calc_bbox(&waypoints);
 
