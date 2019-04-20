@@ -1,0 +1,8 @@
+[package]
+name = "trajectories-jerk"
+version = "0.1.0"
+authors = ["James Waples <james@wapl.es>"]
+edition = "2018"
+
+[dependencies]
+nalgebra = "0.18.0"
