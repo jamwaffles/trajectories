@@ -1,6 +1,7 @@
 use super::{TrajectoryOptions, TrajectorySegment};
 use crate::path::Path;
 use nalgebra::{allocator::SameShapeVectorAllocator, storage::Owned, DefaultAllocator, DimName};
+use std::cmp::Ordering;
 
 /// A simple trajectory that uses no blending or smoothing to calculate motion along a path
 ///
@@ -30,7 +31,6 @@ where
             .scan(0.0, |time, segment| {
                 let new_segment = TrajectorySegment::new(segment, options, *time);
 
-                // TODO: Add a velocity per segment and use that instead of the max vel here
                 *time += new_segment.time();
 
                 Some(new_segment)
@@ -40,6 +40,26 @@ where
         let length = path.iter().fold(0.0, |acc, segment| acc + segment.len());
 
         Ok(Self { path, length })
+    }
+
+    pub fn segment_at_time(&self, time: f64) -> Option<&TrajectorySegment<N>> {
+        self.path
+            .binary_search_by(|segment| {
+                let start = segment.start_offset();
+                let end = start + segment.len();
+
+                if start <= time && time < end {
+                    Ordering::Equal
+                } else if time < start {
+                    Ordering::Greater
+                } else if time >= end {
+                    Ordering::Less
+                } else {
+                    unreachable!()
+                }
+            })
+            .ok()
+            .and_then(|idx| self.path.get(idx))
     }
 
     pub fn len(&self) -> f64 {

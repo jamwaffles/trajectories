@@ -30,6 +30,7 @@ where
         start_offset: f64,
     ) -> Self {
         let time = match path_segment {
+            // TODO: Add a velocity per segment and use that instead of the max vel here
             PathSegment::Linear(segment) => options
                 .velocity_limit
                 .component_mul(&(segment.end - segment.start).normalize())
