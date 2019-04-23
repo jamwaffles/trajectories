@@ -14,6 +14,8 @@ where
     Owned<f64, N>: Copy,
 {
     path: Vec<TrajectorySegment<'a, N>>,
+
+    length: f64,
 }
 
 impl<'a, N> LinearTrajectory<'a, N>
@@ -33,9 +35,15 @@ where
 
                 Some(new_segment)
             })
-            .collect();
+            .collect::<Vec<TrajectorySegment<N>>>();
 
-        Ok(Self { path })
+        let length = path.iter().fold(0.0, |acc, segment| acc + segment.len());
+
+        Ok(Self { path, length })
+    }
+
+    pub fn len(&self) -> f64 {
+        self.length
     }
 }
 
@@ -96,5 +104,28 @@ mod tests {
         // Probably correct...
         assert_ulps_eq!(trajectory.path[0].len(), 3.7416573867739413);
         assert_ulps_eq!(trajectory.path[0].time(), 2.6457513110645907);
+    }
+
+    #[test]
+    fn total_length() {
+        // All segments have a length and time of 1.0 at max velocity of 1.0
+        let segments = vec![
+            TestCoord3::new(1.0, 1.0, 0.0),
+            TestCoord3::new(2.0, 3.0, 0.0),
+            TestCoord3::new(5.0, 10.0, 0.0),
+        ];
+
+        let path = Path::from_waypoints(&segments).unwrap();
+
+        let trajectory = LinearTrajectory::new(
+            &path,
+            TrajectoryOptions {
+                velocity_limit: TestCoord3::new(1.0, 2.0, 3.0),
+                acceleration_limit: TestCoord3::new(1.0, 1.0, 1.0),
+            },
+        )
+        .unwrap();
+
+        assert_ulps_eq!(trajectory.len(), 9.851841083363698);
     }
 }
