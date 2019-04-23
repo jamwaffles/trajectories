@@ -1,6 +1,7 @@
 use crate::path_segment::PathSegment;
 use crate::Coord;
 use nalgebra::{allocator::SameShapeVectorAllocator, storage::Owned, DefaultAllocator, DimName};
+use std::fmt;
 
 #[derive(Debug, Clone)]
 pub struct Path<N>
@@ -18,6 +19,7 @@ where
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     Owned<f64, N>: Copy,
 {
+    /// Create a path from only linear segments between a list of waypoints
     pub fn from_waypoints(waypoints: &[Coord<N>]) -> Result<Self, PathErrorKind> {
         if waypoints.len() < 2 {
             return Err(PathErrorKind::TooShort);
@@ -27,16 +29,50 @@ where
             .windows(2)
             .map(|parts| match parts {
                 [start, end] => PathSegment::linear(*start, *end),
-                _ => panic!("Path requires at least two waypoints"),
+                _ => unreachable!("Path requires at least two waypoints"),
             })
             .collect();
 
         Ok(Self { segments })
     }
-
-    // TODO: Another method to construct a path from a GCode program. Or impl From<thing>?
 }
 
 pub enum PathErrorKind {
     TooShort,
+}
+
+impl fmt::Debug for PathErrorKind {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            PathErrorKind::TooShort => write!(
+                f,
+                "Path too short. Linear paths must have at least two waypoints."
+            ),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_helpers::TestCoord3;
+
+    #[test]
+    fn create_linear_path() {
+        let waypoints = vec![
+            TestCoord3::new(0.0, 0.0, 0.0),
+            TestCoord3::new(1.0, 2.0, 3.0),
+            TestCoord3::new(5.0, 10.0, 15.0),
+        ];
+
+        Path::from_waypoints(&waypoints).expect("Failed to generate path");
+    }
+
+    #[test]
+    #[should_panic]
+    fn linear_path_too_short() {
+        let waypoints = vec![TestCoord3::new(0.0, 0.0, 0.0)];
+
+        Path::from_waypoints(&waypoints).unwrap();
+    }
 }
