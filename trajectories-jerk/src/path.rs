@@ -35,6 +35,10 @@ where
 
         Ok(Self { segments })
     }
+
+    pub fn iter(&self) -> impl Iterator<Item = &PathSegment<N>> {
+        self.segments.iter()
+    }
 }
 
 pub enum PathErrorKind {

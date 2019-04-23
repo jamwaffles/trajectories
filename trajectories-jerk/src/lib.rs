@@ -1,7 +1,7 @@
 mod path;
 mod path_segment;
-mod planner;
 pub mod test_helpers;
+mod trajectory;
 
 use nalgebra::VectorN;
 
