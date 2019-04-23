@@ -1,27 +1,6 @@
+use crate::path_segment::PathSegment;
 use crate::Coord;
 use nalgebra::{allocator::SameShapeVectorAllocator, storage::Owned, DefaultAllocator, DimName};
-
-#[derive(Debug, Copy, Clone)]
-pub struct PathSegment<N>
-where
-    N: DimName + Copy,
-    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
-    Owned<f64, N>: Copy,
-{
-    start: Coord<N>,
-    end: Coord<N>,
-}
-
-impl<N> PathSegment<N>
-where
-    N: DimName + Copy,
-    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
-    Owned<f64, N>: Copy,
-{
-    pub fn from_waypoints(start: Coord<N>, end: Coord<N>) -> Self {
-        Self { start, end }
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct Path<N>
@@ -47,13 +26,15 @@ where
         let segments = waypoints
             .windows(2)
             .map(|parts| match parts {
-                [start, end] => PathSegment::from_waypoints(*start, *end),
-                _ => panic!("Bad parts"),
+                [start, end] => PathSegment::linear(*start, *end),
+                _ => panic!("Path requires at least two waypoints"),
             })
             .collect();
 
         Ok(Self { segments })
     }
+
+    // TODO: Another method to construct a path from a GCode program. Or impl From<thing>?
 }
 
 pub enum PathErrorKind {
