@@ -1,5 +1,6 @@
 use super::TrajectoryOptions;
 use crate::path_segment::PathSegment;
+use crate::Coord;
 use nalgebra::{allocator::SameShapeVectorAllocator, storage::Owned, DefaultAllocator, DimName};
 
 pub struct TrajectorySegment<'a, N>
@@ -54,5 +55,52 @@ where
 
     pub fn len(&self) -> f64 {
         self.path_segment.len()
+    }
+
+    /// Get a position from a time along this segment
+    ///
+    /// Panics if passed time is out of bounds for the segment
+    pub fn position_unchecked(&self, time: f64) -> Coord<N> {
+        match self.path_segment {
+            PathSegment::Linear(segment) => {
+                let offset = time - self.start_offset;
+
+                assert!(offset >= 0.0);
+                assert!(offset <= self.len());
+
+                segment.start + ((segment.end - segment.start) * (offset / self.len()))
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_helpers::TestCoord3;
+
+    #[test]
+    fn get_linear_position() {
+        let path_segment = PathSegment::linear(
+            TestCoord3::new(1.0, 1.0, 1.0),
+            TestCoord3::new(2.0, 2.0, 2.0),
+        );
+
+        let trajectory_segment = TrajectorySegment::new(
+            &path_segment,
+            TrajectoryOptions {
+                velocity_limit: TestCoord3::repeat(1.0),
+                acceleration_limit: TestCoord3::repeat(1.0),
+            },
+            0.0,
+        );
+
+        let half = trajectory_segment.len() / 2.0;
+
+        assert_eq!(half, 0.8660254037844386);
+
+        let pos = trajectory_segment.position_unchecked(half);
+
+        assert_eq!(pos, TestCoord3::repeat(1.5));
     }
 }
