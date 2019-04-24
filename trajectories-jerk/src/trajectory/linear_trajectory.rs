@@ -1,5 +1,6 @@
 use super::{TrajectoryOptions, TrajectorySegment};
 use crate::path::Path;
+use crate::Coord;
 use nalgebra::{allocator::SameShapeVectorAllocator, storage::Owned, DefaultAllocator, DimName};
 use std::cmp::Ordering;
 
@@ -65,6 +66,15 @@ where
     pub fn len(&self) -> f64 {
         self.length
     }
+
+    /// Get position at a time along the path
+    ///
+    /// TODO: Meaningful error type describing why a position could not be found
+    pub fn position(&self, time: f64) -> Result<Coord<N>, ()> {
+        self.segment_at_time(time)
+            .map(|segment| segment.position_unchecked(time))
+            .ok_or(())
+    }
 }
 
 #[cfg(test)]
@@ -104,7 +114,6 @@ mod tests {
 
     #[test]
     fn create_segments_with_times() {
-        // All segments have a length and time of 1.0 at max velocity of 1.0
         let segments = vec![
             TestCoord3::new(1.0, 1.0, 1.0),
             TestCoord3::new(2.0, 3.0, 4.0),
@@ -128,7 +137,6 @@ mod tests {
 
     #[test]
     fn total_length() {
-        // All segments have a length and time of 1.0 at max velocity of 1.0
         let segments = vec![
             TestCoord3::new(1.0, 1.0, 0.0),
             TestCoord3::new(2.0, 3.0, 0.0),
@@ -147,5 +155,32 @@ mod tests {
         .unwrap();
 
         assert_ulps_eq!(trajectory.len(), 9.851841083363698);
+    }
+
+    #[test]
+    fn get_position() {
+        // All segments have a length and time of 1.0 at max velocity of 1.0
+        let segments = vec![
+            TestCoord3::new(1.0, 0.0, 0.0),
+            TestCoord3::new(2.0, 0.0, 0.0),
+            TestCoord3::new(2.0, 1.0, 0.0),
+            TestCoord3::new(2.0, 1.0, 1.0),
+        ];
+
+        let path = Path::from_waypoints(&segments).unwrap();
+
+        let trajectory = LinearTrajectory::new(
+            &path,
+            TrajectoryOptions {
+                velocity_limit: TestCoord3::new(1.0, 1.0, 1.0),
+                acceleration_limit: TestCoord3::new(1.0, 1.0, 1.0),
+            },
+        )
+        .unwrap();
+
+        // Get position half way along second segment
+        let coord = trajectory.position(1.5).unwrap();
+
+        assert_eq!(coord, TestCoord3::new(2.0, 0.5, 0.0));
     }
 }
