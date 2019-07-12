@@ -72,6 +72,13 @@ where
             }
         }
     }
+
+    /// Get the first derivative (velocity, gradient) of this segment
+    pub fn first_derivative_unchecked(&self, _time: f64) -> Coord<N> {
+        match self.path_segment {
+            PathSegment::Linear(segment) => (segment.end - segment.start).normalize(),
+        }
+    }
 }
 
 #[cfg(test)]

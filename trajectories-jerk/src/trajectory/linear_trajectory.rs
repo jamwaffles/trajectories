@@ -75,6 +75,15 @@ where
             .map(|segment| segment.position_unchecked(time))
             .ok_or(())
     }
+
+    /// Get velocity at a time along the path
+    ///
+    /// TODO: Meaningful error type describing why a velocity could not be found
+    pub fn velocity(&self, time: f64) -> Result<Coord<N>, ()> {
+        self.segment_at_time(time)
+            .map(|segment| segment.first_derivative_unchecked(time))
+            .ok_or(())
+    }
 }
 
 #[cfg(test)]

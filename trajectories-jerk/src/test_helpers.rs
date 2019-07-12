@@ -43,15 +43,16 @@ where
 
     while time <= traj.len() {
         let pos = traj.position(time).unwrap();
+        let vel = traj.velocity(time).unwrap();
 
         let row = TrajDebugRecord {
             time,
             pos_x: pos[0],
             pos_y: pos[1],
             pos_z: pos[2],
-            vel_x: 0.0,
-            vel_y: 0.0,
-            vel_z: 0.0,
+            vel_x: vel[0],
+            vel_y: vel[1],
+            vel_z: vel[2],
         };
 
         wtr.serialize(row).expect("Could not serialize");
