@@ -13,6 +13,6 @@ where
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     Owned<f64, N>: Copy,
 {
-    velocity_limit: Coord<N>,
-    acceleration_limit: Coord<N>,
+    pub velocity_limit: Coord<N>,
+    pub acceleration_limit: Coord<N>,
 }

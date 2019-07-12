@@ -1,8 +1,11 @@
 mod path;
 mod path_segment;
+#[doc(hidden)]
 pub mod test_helpers;
 mod trajectory;
 
+pub use crate::path::Path;
+pub use crate::trajectory::{LinearTrajectory, TrajectoryOptions};
 use nalgebra::VectorN;
 
 /// Type alias for all vector operations
