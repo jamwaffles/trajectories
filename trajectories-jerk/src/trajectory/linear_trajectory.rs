@@ -70,7 +70,7 @@ where
     /// Get position at a time along the path
     ///
     /// TODO: Meaningful error type describing why a position could not be found
-    pub fn position(&self, time: f64) -> Result<Coord<N>, ()> {
+    pub fn position_linear(&self, time: f64) -> Result<Coord<N>, ()> {
         self.segment_at_time(time)
             .map(|segment| segment.position_unchecked(time))
             .ok_or(())
@@ -79,7 +79,13 @@ where
     /// Get velocity at a time along the path
     ///
     /// TODO: Meaningful error type describing why a velocity could not be found
-    pub fn velocity(&self, time: f64) -> Result<Coord<N>, ()> {
+    pub fn velocity_linear(&self, time: f64) -> Result<Coord<N>, ()> {
+        self.segment_at_time(time)
+            .map(|segment| segment.first_derivative_unchecked(time))
+            .ok_or(())
+    }
+
+    pub fn velocity_s_curve(&self, time: f64) -> Result<Coord<N>, ()> {
         self.segment_at_time(time)
             .map(|segment| segment.first_derivative_unchecked(time))
             .ok_or(())
@@ -188,7 +194,7 @@ mod tests {
         .unwrap();
 
         // Get position half way along second segment
-        let coord = trajectory.position(1.5).unwrap();
+        let coord = trajectory.position_linear(1.5).unwrap();
 
         assert_eq!(coord, TestCoord3::new(2.0, 0.5, 0.0));
     }

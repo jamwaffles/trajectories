@@ -45,6 +45,7 @@ pub enum PathErrorKind {
     TooShort,
 }
 
+// TODO: Impl Error or whatever instead for more mad Rust iomaticness
 impl fmt::Debug for PathErrorKind {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
