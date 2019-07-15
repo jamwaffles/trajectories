@@ -62,3 +62,42 @@ where
 
     wtr.flush().expect("Flush");
 }
+
+pub fn debug_s_curve_trajectory<N>(traj: &LinearTrajectory<N>, file_name: &str, time_step: f64)
+where
+    N: DimName + Copy,
+    DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
+    Owned<f64, N>: Copy,
+{
+    // NOTE: Relative to lib root
+    let path = PathBuf::from(format!("../target/jerk-plots/{}.csv", file_name));
+
+    fs::create_dir_all(&path.parent().unwrap()).expect("Failed to create output dir");
+
+    println!("Plotting to {}", path.display());
+
+    let mut time = 0.0;
+
+    let mut wtr = csv::Writer::from_writer(File::create(path).unwrap());
+
+    while time <= traj.len() {
+        // let pos = traj.position_linear(time).unwrap();
+        let vel = traj.velocity_s_curve(time).unwrap();
+
+        let row = TrajDebugRecord {
+            time,
+            pos_x: 0.0,
+            pos_y: 0.0,
+            pos_z: 0.0,
+            vel_x: vel[0],
+            vel_y: vel[1],
+            vel_z: vel[2],
+        };
+
+        wtr.serialize(row).expect("Could not serialize");
+
+        time += time_step;
+    }
+
+    wtr.flush().expect("Flush");
+}

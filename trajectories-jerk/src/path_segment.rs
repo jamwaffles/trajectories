@@ -11,6 +11,9 @@ where
     pub(crate) start: Coord<N>,
     pub(crate) end: Coord<N>,
 
+    pub(crate) start_vel: Option<Coord<N>>,
+    pub(crate) end_vel: Option<Coord<N>>,
+
     length: f64,
 }
 
@@ -24,7 +27,17 @@ where
         Self {
             start,
             end,
+            start_vel: None,
+            end_vel: None,
             length: (end - start).norm(),
+        }
+    }
+
+    pub fn with_velocity(self, start_vel: Coord<N>, end_vel: Coord<N>) -> Self {
+        Self {
+            start_vel: Some(start_vel),
+            end_vel: Some(end_vel),
+            ..self
         }
     }
 }

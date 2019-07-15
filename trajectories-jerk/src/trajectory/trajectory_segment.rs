@@ -10,7 +10,7 @@ where
     Owned<f64, N>: Copy,
 {
     // Reference to original path segment
-    path_segment: &'a PathSegment<N>,
+    pub(crate) path_segment: &'a PathSegment<N>,
 
     /// Start time from beginning of trajectory
     start_offset: f64,
@@ -49,6 +49,7 @@ where
         self.start_offset
     }
 
+    /// Get the duration of this segment
     pub fn time(&self) -> f64 {
         self.time
     }

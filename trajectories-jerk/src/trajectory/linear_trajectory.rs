@@ -1,5 +1,6 @@
 use super::{TrajectoryOptions, TrajectorySegment};
 use crate::path::Path;
+use crate::path_segment::PathSegment;
 use crate::Coord;
 use nalgebra::{allocator::SameShapeVectorAllocator, storage::Owned, DefaultAllocator, DimName};
 use std::cmp::Ordering;
@@ -86,9 +87,14 @@ where
     }
 
     pub fn velocity_s_curve(&self, time: f64) -> Result<Coord<N>, ()> {
-        self.segment_at_time(time)
-            .map(|segment| segment.first_derivative_unchecked(time))
-            .ok_or(())
+        let segment = match self.segment_at_time(time).ok_or(())?.path_segment {
+            PathSegment::Linear(s) => s,
+            // _ => unreachable!(),
+        };
+
+        println!("Segment {:?}", segment);
+
+        unimplemented!()
     }
 }
 
