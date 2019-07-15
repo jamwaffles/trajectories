@@ -4,6 +4,7 @@ use trajectories_jerk::{
 };
 
 #[test]
+#[ignore]
 fn s_curve_trajectory() {
     let options = TrajectoryOptions {
         velocity_limit: TestCoord3::repeat(1.0),

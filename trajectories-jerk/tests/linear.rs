@@ -4,7 +4,7 @@ use trajectories_jerk::{
 };
 
 #[test]
-fn ass() {
+fn trapezoidal_trajectory() {
     let options = TrajectoryOptions {
         velocity_limit: TestCoord3::repeat(5.0),
         acceleration_limit: TestCoord3::repeat(10.0),

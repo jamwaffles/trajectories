@@ -3,6 +3,7 @@ use crate::path_segment::PathSegment;
 use crate::Coord;
 use nalgebra::{allocator::SameShapeVectorAllocator, storage::Owned, DefaultAllocator, DimName};
 
+#[derive(Debug)]
 pub struct TrajectorySegment<'a, N>
 where
     N: DimName + Copy,
@@ -17,6 +18,12 @@ where
 
     /// The duration of this segment
     time: f64,
+
+    /// Duration of the beginning acceleration period in this segment
+    acceleration_time: f64,
+
+    /// Acceleration to use during accel phase
+    acceleration: Coord<N>,
 }
 
 impl<'a, N> TrajectorySegment<'a, N>
@@ -30,21 +37,30 @@ where
         options: TrajectoryOptions<N>,
         start_offset: f64,
     ) -> Self {
-        let time = match path_segment {
-            // TODO: Add a velocity per segment and use that instead of the max vel here
+        match path_segment {
             PathSegment::Linear(segment) => {
                 let delta_v = segment.end_velocity - segment.start_velocity;
                 let delta_s = segment.end - segment.start;
 
-                let accel_time = delta_v.component_div(&options.acceleration_limit);
-                let accel_distance =
-                    (segment.end - segment.start).component_mul(&(accel_time / 2.0));
+                let accel_time = delta_v.component_div(&options.acceleration_limit).abs();
+                let accel_distance = segment.start_velocity.component_mul(&accel_time)
+                    + (0.5
+                        * options
+                            .acceleration_limit
+                            .component_mul(&accel_time.component_mul(&accel_time)));
 
-                let cruise_distance = delta_s - accel_distance;
+                let cruise_distance = (delta_s - accel_distance).abs();
                 let cruise_time = cruise_distance.component_div(&segment.end_velocity);
 
+                // Haaxxx!
+                let cruise_time = if cruise_time.norm().is_infinite() {
+                    Coord::repeat(0.0)
+                } else {
+                    cruise_time
+                };
+
                 println!("Delta_v {:?}", delta_v);
-                println!("Delta_s {:?}", delta_v);
+                println!("Delta_s {:?}", delta_s);
 
                 println!(
                     "Accel time: {:?}, accel distance {:?}, total length: {}, cruise_time {:?}, cruise_distance {:?}",
@@ -55,19 +71,21 @@ where
                     cruise_distance
                 );
 
-                let naive_result = options
-                    .velocity_limit
-                    .component_mul(&(segment.end - segment.start).normalize())
-                    .norm();
+                let time = (accel_time + cruise_time).norm();
 
-                naive_result
+                // let naive_result = options
+                //     .velocity_limit
+                //     .component_mul(&(segment.end - segment.start).normalize())
+                //     .norm();
+
+                Self {
+                    path_segment,
+                    time,
+                    start_offset,
+                    acceleration_time: accel_time.norm(),
+                    acceleration: options.acceleration_limit,
+                }
             }
-        };
-
-        Self {
-            path_segment,
-            time,
-            start_offset,
         }
     }
 
@@ -93,9 +111,17 @@ where
                 let offset = time - self.start_offset;
 
                 assert!(offset >= 0.0);
-                assert!(offset <= self.len());
+                assert!(offset <= self.time());
 
-                segment.start + ((segment.end - segment.start) * (offset / self.len()))
+                // segment.start + ((segment.end - segment.start) * (offset / self.len()))
+
+                if offset <= self.acceleration_time {
+                    // Acceleration period
+                    (segment.start * offset) + (0.5 * self.acceleration * offset)
+                } else {
+                    // Linear period
+                    segment.start + ((segment.end - segment.start) * (offset / self.len()))
+                }
             }
         }
     }
