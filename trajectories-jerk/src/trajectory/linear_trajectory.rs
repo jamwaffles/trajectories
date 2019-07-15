@@ -102,15 +102,25 @@ where
 mod tests {
     use super::*;
     use crate::test_helpers::TestCoord3;
+    use crate::Waypoint;
     use approx::assert_ulps_eq;
 
     #[test]
     fn create_unit_segments_with_times() {
         // All segments have a length and time of 1.0 at max velocity of 1.0
         let segments = vec![
-            TestCoord3::new(1.0, 0.0, 0.0),
-            TestCoord3::new(2.0, 0.0, 0.0),
-            TestCoord3::new(2.0, 1.0, 0.0),
+            Waypoint::new(
+                TestCoord3::new(1.0, 0.0, 0.0),
+                TestCoord3::new(1.0, 1.0, 1.0),
+            ),
+            Waypoint::new(
+                TestCoord3::new(2.0, 0.0, 0.0),
+                TestCoord3::new(1.0, 1.0, 1.0),
+            ),
+            Waypoint::new(
+                TestCoord3::new(2.0, 1.0, 0.0),
+                TestCoord3::new(1.0, 1.0, 1.0),
+            ),
         ];
 
         let path = Path::from_waypoints(&segments).unwrap();
@@ -125,8 +135,8 @@ mod tests {
         .unwrap();
 
         for segment in trajectory.path.iter() {
-            assert_eq!(segment.len(), 1.0);
-            assert_eq!(segment.time(), 1.0);
+            assert_eq!(segment.len(), 1.0, "Length is incorrect");
+            assert_eq!(segment.time(), 1.0, "Time is incorrect");
         }
 
         assert_eq!(trajectory.path[0].start_offset(), 0.0);
@@ -136,8 +146,14 @@ mod tests {
     #[test]
     fn create_segments_with_times() {
         let segments = vec![
-            TestCoord3::new(1.0, 1.0, 1.0),
-            TestCoord3::new(2.0, 3.0, 4.0),
+            Waypoint::new(
+                TestCoord3::new(0.0, 0.0, 0.0),
+                TestCoord3::new(1.0, 1.0, 1.0),
+            ),
+            Waypoint::new(
+                TestCoord3::new(1.0, 1.0, 0.0),
+                TestCoord3::new(1.0, 1.0, 1.0),
+            ),
         ];
 
         let path = Path::from_waypoints(&segments).unwrap();
@@ -152,16 +168,25 @@ mod tests {
         .unwrap();
 
         // Probably correct...
-        assert_ulps_eq!(trajectory.path[0].len(), 3.7416573867739413);
-        assert_ulps_eq!(trajectory.path[0].time(), 2.6457513110645907);
+        assert_ulps_eq!(trajectory.path[0].len(), 1.4142135623730951);
+        assert_ulps_eq!(trajectory.path[0].time(), 1.5811388300841895);
     }
 
     #[test]
     fn total_length() {
         let segments = vec![
-            TestCoord3::new(1.0, 1.0, 0.0),
-            TestCoord3::new(2.0, 3.0, 0.0),
-            TestCoord3::new(5.0, 10.0, 0.0),
+            Waypoint::new(
+                TestCoord3::new(1.0, 1.0, 0.0),
+                TestCoord3::new(1.0, 1.0, 1.0),
+            ),
+            Waypoint::new(
+                TestCoord3::new(2.0, 3.0, 0.0),
+                TestCoord3::new(1.0, 1.0, 1.0),
+            ),
+            Waypoint::new(
+                TestCoord3::new(5.0, 10.0, 0.0),
+                TestCoord3::new(1.0, 1.0, 1.0),
+            ),
         ];
 
         let path = Path::from_waypoints(&segments).unwrap();
@@ -182,10 +207,22 @@ mod tests {
     fn get_position() {
         // All segments have a length and time of 1.0 at max velocity of 1.0
         let segments = vec![
-            TestCoord3::new(1.0, 0.0, 0.0),
-            TestCoord3::new(2.0, 0.0, 0.0),
-            TestCoord3::new(2.0, 1.0, 0.0),
-            TestCoord3::new(2.0, 1.0, 1.0),
+            Waypoint::new(
+                TestCoord3::new(1.0, 0.0, 0.0),
+                TestCoord3::new(1.0, 1.0, 1.0),
+            ),
+            Waypoint::new(
+                TestCoord3::new(2.0, 0.0, 0.0),
+                TestCoord3::new(1.0, 1.0, 1.0),
+            ),
+            Waypoint::new(
+                TestCoord3::new(2.0, 1.0, 0.0),
+                TestCoord3::new(1.0, 1.0, 1.0),
+            ),
+            Waypoint::new(
+                TestCoord3::new(2.0, 1.0, 1.0),
+                TestCoord3::new(1.0, 1.0, 1.0),
+            ),
         ];
 
         let path = Path::from_waypoints(&segments).unwrap();

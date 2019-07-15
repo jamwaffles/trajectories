@@ -1,6 +1,6 @@
 use trajectories_jerk::{
     test_helpers::{debug_s_curve_trajectory, TestCoord3},
-    LinearTrajectory, Path, TrajectoryOptions,
+    LinearTrajectory, Path, TrajectoryOptions, Waypoint,
 };
 
 #[test]
@@ -10,11 +10,13 @@ fn s_curve_trajectory() {
         acceleration_limit: TestCoord3::repeat(1.0),
     };
 
+    let velocity = TestCoord3::new(1.0, 1.0, 1.0);
+
     let p = Path::from_waypoints(&vec![
-        TestCoord3::new(0.0, 0.0, 0.0),
-        TestCoord3::new(1.0, 0.0, 0.0),
-        TestCoord3::new(1.0, 1.0, 0.0),
-        TestCoord3::new(1.0, 1.0, 1.0),
+        Waypoint::new(TestCoord3::new(0.0, 0.0, 0.0), velocity * 0.0),
+        Waypoint::new(TestCoord3::new(1.0, 0.0, 0.0), velocity),
+        Waypoint::new(TestCoord3::new(1.0, 1.0, 0.0), velocity * 1.5),
+        Waypoint::new(TestCoord3::new(1.0, 1.0, 1.0), velocity * 0.0),
     ])
     .expect("Failed to create path");
 

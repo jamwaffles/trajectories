@@ -86,12 +86,19 @@ where
 mod tests {
     use super::*;
     use crate::test_helpers::TestCoord3;
+    use crate::Waypoint;
 
     #[test]
     fn get_linear_position() {
         let path_segment = PathSegment::linear(
-            TestCoord3::new(1.0, 1.0, 1.0),
-            TestCoord3::new(2.0, 2.0, 2.0),
+            Waypoint::new(
+                TestCoord3::new(1.0, 1.0, 1.0),
+                TestCoord3::new(0.0, 0.0, 0.0),
+            ),
+            Waypoint::new(
+                TestCoord3::new(2.0, 2.0, 2.0),
+                TestCoord3::new(1.0, 1.0, 1.0),
+            ),
         );
 
         let trajectory_segment = TrajectorySegment::new(

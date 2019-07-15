@@ -1,3 +1,4 @@
+use crate::waypoint::Waypoint;
 use crate::Coord;
 use nalgebra::{allocator::SameShapeVectorAllocator, storage::Owned, DefaultAllocator, DimName};
 
@@ -11,8 +12,8 @@ where
     pub(crate) start: Coord<N>,
     pub(crate) end: Coord<N>,
 
-    pub(crate) start_vel: Option<Coord<N>>,
-    pub(crate) end_vel: Option<Coord<N>>,
+    pub(crate) start_velocity: Coord<N>,
+    pub(crate) end_velocity: Coord<N>,
 
     length: f64,
 }
@@ -23,21 +24,13 @@ where
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     Owned<f64, N>: Copy,
 {
-    pub fn new(start: Coord<N>, end: Coord<N>) -> Self {
+    pub fn from_waypoints(start: Waypoint<N>, end: Waypoint<N>) -> Self {
         Self {
-            start,
-            end,
-            start_vel: None,
-            end_vel: None,
-            length: (end - start).norm(),
-        }
-    }
-
-    pub fn with_velocity(self, start_vel: Coord<N>, end_vel: Coord<N>) -> Self {
-        Self {
-            start_vel: Some(start_vel),
-            end_vel: Some(end_vel),
-            ..self
+            start: start.position,
+            end: end.position,
+            start_velocity: start.velocity,
+            end_velocity: end.velocity,
+            length: (end.position - start.position).norm(),
         }
     }
 }
@@ -58,8 +51,8 @@ where
     DefaultAllocator: SameShapeVectorAllocator<f64, N, N>,
     Owned<f64, N>: Copy,
 {
-    pub fn linear(start: Coord<N>, end: Coord<N>) -> Self {
-        PathSegment::Linear(LinearPathSegment::new(start, end))
+    pub fn linear(start: Waypoint<N>, end: Waypoint<N>) -> Self {
+        PathSegment::Linear(LinearPathSegment::from_waypoints(start, end))
     }
 
     pub fn len(&self) -> f64 {

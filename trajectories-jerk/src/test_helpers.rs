@@ -42,8 +42,8 @@ where
     let mut wtr = csv::Writer::from_writer(File::create(path).unwrap());
 
     while time <= traj.len() {
-        let pos = traj.position_linear(time).unwrap();
-        let vel = traj.velocity_linear(time).unwrap();
+        let pos = traj.position_linear(time).expect("Failed to get position");
+        let vel = traj.velocity_linear(time).expect("Failed to get velocity");
 
         let row = TrajDebugRecord {
             time,

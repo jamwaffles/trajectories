@@ -1,5 +1,5 @@
 use crate::path_segment::PathSegment;
-use crate::Coord;
+use crate::waypoint::Waypoint;
 use nalgebra::{allocator::SameShapeVectorAllocator, storage::Owned, DefaultAllocator, DimName};
 use std::fmt;
 
@@ -20,7 +20,7 @@ where
     Owned<f64, N>: Copy,
 {
     /// Create a path from only linear segments between a list of waypoints
-    pub fn from_waypoints(waypoints: &[Coord<N>]) -> Result<Self, PathErrorKind> {
+    pub fn from_waypoints(waypoints: &[Waypoint<N>]) -> Result<Self, PathErrorKind> {
         if waypoints.len() < 2 {
             return Err(PathErrorKind::TooShort);
         }
@@ -64,10 +64,12 @@ mod tests {
 
     #[test]
     fn create_linear_path() {
+        let velocity = TestCoord3::new(1.0, 1.0, 1.0);
+
         let waypoints = vec![
-            TestCoord3::new(0.0, 0.0, 0.0),
-            TestCoord3::new(1.0, 2.0, 3.0),
-            TestCoord3::new(5.0, 10.0, 15.0),
+            Waypoint::new(TestCoord3::new(0.0, 0.0, 0.0), velocity),
+            Waypoint::new(TestCoord3::new(1.0, 2.0, 3.0), velocity),
+            Waypoint::new(TestCoord3::new(5.0, 10.0, 15.0), velocity),
         ];
 
         Path::from_waypoints(&waypoints).expect("Failed to generate path");
@@ -76,7 +78,9 @@ mod tests {
     #[test]
     #[should_panic]
     fn linear_path_too_short() {
-        let waypoints = vec![TestCoord3::new(0.0, 0.0, 0.0)];
+        let velocity = TestCoord3::new(1.0, 1.0, 1.0);
+
+        let waypoints = vec![Waypoint::new(TestCoord3::new(0.0, 0.0, 0.0), velocity)];
 
         Path::from_waypoints(&waypoints).unwrap();
     }
