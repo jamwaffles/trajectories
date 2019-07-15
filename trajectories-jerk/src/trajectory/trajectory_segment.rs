@@ -32,10 +32,36 @@ where
     ) -> Self {
         let time = match path_segment {
             // TODO: Add a velocity per segment and use that instead of the max vel here
-            PathSegment::Linear(segment) => options
-                .velocity_limit
-                .component_mul(&(segment.end - segment.start).normalize())
-                .norm(),
+            PathSegment::Linear(segment) => {
+                let delta_v = segment.end_velocity - segment.start_velocity;
+                let delta_s = segment.end - segment.start;
+
+                let accel_time = delta_v.component_div(&options.acceleration_limit);
+                let accel_distance =
+                    (segment.end - segment.start).component_mul(&(accel_time / 2.0));
+
+                let cruise_distance = delta_s - accel_distance;
+                let cruise_time = cruise_distance.component_div(&segment.end_velocity);
+
+                println!("Delta_v {:?}", delta_v);
+                println!("Delta_s {:?}", delta_v);
+
+                println!(
+                    "Accel time: {:?}, accel distance {:?}, total length: {}, cruise_time {:?}, cruise_distance {:?}",
+                    accel_time,
+                    accel_distance,
+                    path_segment.len(),
+                    cruise_time,
+                    cruise_distance
+                );
+
+                let naive_result = options
+                    .velocity_limit
+                    .component_mul(&(segment.end - segment.start).normalize())
+                    .norm();
+
+                naive_result
+            }
         };
 
         Self {
