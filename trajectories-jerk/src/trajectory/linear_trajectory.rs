@@ -117,6 +117,17 @@ where
             ))
     }
 
+    /// Get acceleration given a time
+    pub fn acceleration_linear(&self, time: f64) -> Result<Coord<N>, String> {
+        self.segment_at_time(time)
+            .map(|segment| segment.acceleration_unchecked(time))
+            .ok_or(format!(
+                "Failed to get segment at time {}. Total length {}",
+                time,
+                self.len()
+            ))
+    }
+
     pub fn velocity_s_curve(&self, time: f64) -> Result<Coord<N>, String> {
         let segment = match self
             .segment_at_time(time)

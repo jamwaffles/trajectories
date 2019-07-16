@@ -21,6 +21,9 @@ struct TrajDebugRecord {
     vel_x: f64,
     vel_y: f64,
     vel_z: f64,
+    acc_x: f64,
+    acc_y: f64,
+    acc_z: f64,
 }
 
 /// Log trajectory output to a CSV file for GNUPlot or other things to plot later
@@ -44,6 +47,9 @@ where
     while time <= traj.duration() {
         let pos = traj.position_linear(time).expect("Failed to get position");
         let vel = traj.velocity_linear(time).expect("Failed to get velocity");
+        let acc = traj
+            .acceleration_linear(time)
+            .expect("Failed to get acceleration");
 
         let row = TrajDebugRecord {
             time,
@@ -53,6 +59,9 @@ where
             vel_x: vel[0],
             vel_y: vel[1],
             vel_z: vel[2],
+            acc_x: acc[0],
+            acc_y: acc[1],
+            acc_z: acc[2],
         };
 
         wtr.serialize(row).expect("Could not serialize");
@@ -92,6 +101,9 @@ where
             vel_x: vel[0],
             vel_y: vel[1],
             vel_z: vel[2],
+            acc_x: 0.0,
+            acc_y: 0.0,
+            acc_z: 0.0,
         };
 
         wtr.serialize(row).expect("Could not serialize");

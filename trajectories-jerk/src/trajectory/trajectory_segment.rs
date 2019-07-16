@@ -162,6 +162,11 @@ where
             PathSegment::Linear(segment) => (segment.end - segment.start).normalize(),
         }
     }
+
+    /// Get current acceleration
+    pub fn acceleration_unchecked(&self, time: f64) -> Coord<N> {
+        Coord::repeat(0.0)
+    }
 }
 
 #[cfg(test)]
