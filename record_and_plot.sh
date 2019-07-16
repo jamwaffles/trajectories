@@ -1,13 +1,14 @@
 #!/bin/bash
 
 PLOT_SCRIPT="$1"
+TEST_FILTER="${2:-compare_test_2}"
 
 PLOT_NAME=$(basename $PLOT_SCRIPT .plt)
 
 RS_GREP="RS ${PLOT_NAME}"
 CPP_GREP="CPP ${PLOT_NAME}"
 
-BASE_CMD="cargo test -p trajectories --release compare_test_2"
+BASE_CMD="cargo test -p trajectories --release $TEST_FILTER"
 
 RS_CSV="./target/instrument_${PLOT_NAME}.csv"
 CPP_CSV="./target/${PLOT_NAME}_cpp.csv"
