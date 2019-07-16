@@ -15,8 +15,9 @@ fn trapezoidal_trajectory() {
     let p = Path::from_waypoints(&vec![
         Waypoint::new(TestCoord3::new(0.0, 0.0, 0.0), velocity * 0.0),
         Waypoint::new(TestCoord3::new(5.0, 0.0, 0.0), velocity),
-        Waypoint::new(TestCoord3::new(10.0, 0.0, 0.0), velocity * 2.0),
-        Waypoint::new(TestCoord3::new(15.0, 0.0, 0.0), velocity * 0.0),
+        Waypoint::new(TestCoord3::new(10.0, 0.0, 0.0), velocity),
+        Waypoint::new(TestCoord3::new(15.0, 0.0, 0.0), velocity * 2.0),
+        Waypoint::new(TestCoord3::new(20.0, 0.0, 0.0), velocity * 0.0),
     ])
     .expect("Failed to create path");
 

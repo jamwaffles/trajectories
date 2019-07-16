@@ -51,7 +51,30 @@ where
                             .component_mul(&accel_time.component_mul(&accel_time)));
 
                 let cruise_distance = (delta_s - accel_distance).abs();
-                let cruise_time = cruise_distance.component_div(&segment.end_velocity);
+                // let cruise_time = cruise_distance.component_div(&segment.end_velocity);
+
+                let (cruise_time, acceleration) = match segment
+                    .start_velocity
+                    .partial_cmp(&segment.end_velocity)
+                    .expect("Could not compare start/end")
+                {
+                    Ordering::Equal | Ordering::Less => {
+                        // End velocity is greater than start. Use end velocity as cruise velocity
+                        // as acceleration ramps from beginning of segment
+                        (
+                            cruise_distance.component_div(&segment.end_velocity),
+                            options.acceleration_limit,
+                        )
+                    }
+                    Ordering::Greater => {
+                        // Start velocity is greater. Use start as cruise velocity before
+                        // decelerating at end of segment to end_velocity
+                        (
+                            cruise_distance.component_div(&segment.start_velocity),
+                            -options.acceleration_limit,
+                        )
+                    }
+                };
 
                 // Haaxxx!
                 let cruise_time = if cruise_time.norm().is_infinite() {
@@ -74,17 +97,12 @@ where
 
                 let time = (accel_time + cruise_time).norm();
 
-                // let naive_result = options
-                //     .velocity_limit
-                //     .component_mul(&(segment.end - segment.start).normalize())
-                //     .norm();
-
                 Self {
                     path_segment,
                     time,
                     start_offset,
                     acceleration_time: accel_time.norm(),
-                    acceleration: options.acceleration_limit,
+                    acceleration,
                 }
             }
         }
@@ -114,58 +132,102 @@ where
                 assert!(offset >= 0.0);
                 assert!(offset <= self.time());
 
-                // segment.start + ((segment.end - segment.start) * (offset / self.len()))
-
-                match dbg!(segment.start_velocity.partial_cmp(&segment.end_velocity))
+                match segment
+                    .start_velocity
+                    .partial_cmp(&segment.end_velocity)
                     .expect("Could not compare start/end")
                 {
                     Ordering::Equal => {
                         // Linear only, no accel/decel
-                        segment.start + ((segment.end - segment.start) * (offset / self.len()))
+                        segment.start + ((segment.end - segment.start) * (offset / self.time()))
                     }
                     Ordering::Less => {
-                        // Accelerate to a higher velocity(?) at beginning of move
+                        // Accelerate to a higher velocity at beginning of move
                         if offset <= self.acceleration_time {
                             // Acceleration period
-                            (segment.start * offset) + (0.5 * self.acceleration * offset)
+                            (segment.start_velocity * offset) + (0.5 * self.acceleration * offset)
                         } else {
                             // Linear period
-                            segment.start + ((segment.end - segment.start) * (offset / self.len()))
+                            segment.start + ((segment.end - segment.start) * (offset / self.time()))
                         }
                     }
                     Ordering::Greater => {
-                        // Decelerate to lower velocity(?) at end of move
+                        // Decelerate to lower velocity at end of move
                         if offset > (self.time - self.acceleration_time) {
                             // Deceleration period
-                            (segment.start * offset) + (0.5 * self.acceleration * offset)
+                            (segment.start_velocity * offset) + (0.5 * self.acceleration * offset)
                         } else {
                             // Linear period
-                            segment.start + ((segment.end - segment.start) * (offset / self.len()))
+                            segment.start + ((segment.end - segment.start) * (offset / self.time()))
                         }
                     }
                 }
-
-                // if offset <= self.acceleration_time {
-                //     // Acceleration period
-                //     (segment.start * offset) + (0.5 * self.acceleration * offset)
-                // } else {
-                //     // Linear period
-                //     segment.start + ((segment.end - segment.start) * (offset / self.len()))
-                // }
             }
         }
     }
 
     /// Get the first derivative (velocity, gradient) of this segment
-    pub fn velocity_unchecked(&self, _time: f64) -> Coord<N> {
+    pub fn velocity_unchecked(&self, time: f64) -> Coord<N> {
         match self.path_segment {
-            PathSegment::Linear(segment) => (segment.end - segment.start).normalize(),
+            PathSegment::Linear(segment) => {
+                let offset = time - self.start_offset;
+
+                match segment
+                    .start_velocity
+                    .partial_cmp(&segment.end_velocity)
+                    .expect("Could not compare start/end")
+                {
+                    Ordering::Equal => {
+                        // Linear only, no accel/decel
+                        segment.start_velocity
+                    }
+                    // End velocity is higher than start velocity
+                    Ordering::Less => {
+                        if offset <= self.acceleration_time {
+                            // Acceleration period
+                            segment.start_velocity + self.acceleration * offset
+                        } else {
+                            // Linear period
+                            segment.end_velocity
+                        }
+                    }
+                    // End velocity is lower than start_velocity
+                    Ordering::Greater => {
+                        if offset > (self.time - self.acceleration_time) {
+                            // TODO: Store on struct
+                            let cruise_time = self.time - self.acceleration_time;
+
+                            // Deceleration period
+                            segment.start_velocity + self.acceleration * (offset - cruise_time)
+                        } else {
+                            // Linear period
+                            segment.start_velocity
+                        }
+                    }
+                }
+            }
         }
     }
 
     /// Get current acceleration
     pub fn acceleration_unchecked(&self, time: f64) -> Coord<N> {
-        Coord::repeat(0.0)
+        match self.path_segment {
+            PathSegment::Linear(segment) => {
+                let offset = time - self.start_offset;
+
+                match segment
+                    .start_velocity
+                    .partial_cmp(&segment.end_velocity)
+                    .expect("Could not compare start/end")
+                {
+                    Ordering::Less if offset <= self.acceleration_time => self.acceleration,
+                    Ordering::Greater if offset > (self.time - self.acceleration_time) => {
+                        self.acceleration
+                    }
+                    _ => Coord::repeat(0.0),
+                }
+            }
+        }
     }
 }
 
