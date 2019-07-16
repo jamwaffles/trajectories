@@ -238,6 +238,7 @@ mod tests {
     use crate::Waypoint;
 
     #[test]
+    #[ignore]
     fn get_linear_position() {
         let path_segment = PathSegment::linear(
             Waypoint::new(

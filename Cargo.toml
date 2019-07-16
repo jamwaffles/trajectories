@@ -1,7 +1,7 @@
 [workspace]
 
 members = [
-    # "trajectories",
+    "trajectories",
     "trajectories-sys",
     "trajectories-jerk",
 ]
