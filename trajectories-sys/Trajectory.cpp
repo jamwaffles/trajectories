@@ -73,7 +73,7 @@ Trajectory::Trajectory(const Path &path, const Vector3d &maxVelocity, const Vect
 			break;
 		}
 		// COMP
-		// std::cout<<"CPP forward_sw_point (pos;vel;beforeAcceleration;afterAcceleration),"<<switchingPoint.pathPos<<","<<switchingPoint.pathVel<<","<<beforeAcceleration<<","<<afterAcceleration<<","<<std::endl;
+		std::cout<<"CPP forward_sw_point (pos;vel;beforeAcceleration;afterAcceleration),"<<switchingPoint.pathPos<<","<<switchingPoint.pathVel<<","<<beforeAcceleration<<","<<afterAcceleration<<","<<std::endl;
 		integrateBackward(trajectory, switchingPoint.pathPos, switchingPoint.pathVel, beforeAcceleration);
 	}
 
@@ -438,7 +438,7 @@ void Trajectory::integrateBackward(list<TrajectoryStep> &startTrajectory, double
 			slope = (trajectory.front().pathVel - pathVel) / (trajectory.front().pathPos - pathPos);
 
 			// COMP
-			// std::cout<<"CPP back_step (pathPos;pathVel;acceleration;slope),"<<pathPos<<","<<pathVel<<","<<acceleration<<","<<slope<<std::endl;
+			std::cout<<"CPP back_step (pathPos;pathVel;acceleration;slope),"<<pathPos<<","<<pathVel<<","<<acceleration<<","<<slope<<std::endl;
 
 			// If velocity is below zero, bail
 			if(pathVel < 0.0) {

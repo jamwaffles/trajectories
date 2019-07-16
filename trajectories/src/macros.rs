@@ -21,8 +21,8 @@ macro_rules! instrument {
 pub static mut INSTRUMENTATION: Option<HashMap<&'static str, fs::File>> = None;
 
 macro_rules! instrument {
-    ($name:expr, $time:expr, ( $($value:expr,)+ )) => { instrument!($name, $time, ( $($key $value),+ )) };
-    ($name:expr, $time:expr, ( $($value:expr),* )) => {
+    ($name:expr, ( $($value:expr,)+ )) => { instrument!($name, ( $($key $value),+ )) };
+    ($name:expr, ( $($value:expr),* )) => {
         {
             use std::collections::HashMap;
             use csv;
@@ -34,7 +34,7 @@ macro_rules! instrument {
                 Ok(ref var) if var == $name => {
                     trace!("Enabling instrumentation");
 
-                    let values = ($name, $time, $($value),+ );
+                    let values = ($name, $($value),+ );
 
                     let instrumentation = unsafe {
                         crate::macros::INSTRUMENTATION.get_or_insert(HashMap::new())

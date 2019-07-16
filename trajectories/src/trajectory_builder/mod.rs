@@ -92,12 +92,21 @@ where
                     new_switching_point, stop_position
                 );
 
-                trace!(
-                    "RS forward_sw_point (pos;vel;beforeAccel;afterAccel),{},{},{},{}",
-                    switching_point.pos.position,
-                    switching_point.pos.velocity,
-                    switching_point.before_acceleration,
-                    switching_point.after_acceleration
+                // trace!(
+                //     "RS forward_sw_point (pos;vel;beforeAccel;afterAccel),{},{},{},{}",
+                //     switching_point.pos.position,
+                //     switching_point.pos.velocity,
+                //     switching_point.before_acceleration,
+                //     switching_point.after_acceleration
+                // );
+                instrument!(
+                    "forward_sw_point",
+                    (
+                        switching_point.pos.position,
+                        switching_point.pos.velocity,
+                        switching_point.before_acceleration,
+                        switching_point.after_acceleration
+                    )
                 );
 
                 switching_point = new_switching_point;
@@ -440,12 +449,16 @@ where
 
                 new_trajectory.push(new_point);
 
-                trace!(
-                    "RS back_step (pathPos;pathVel;acceleration;slope),{},{},{},{}",
-                    position,
-                    velocity,
-                    before_acceleration,
-                    slope
+                // trace!(
+                //     "RS back_step (pathPos;pathVel;acceleration;slope),{},{},{},{}",
+                //     position,
+                //     velocity,
+                //     before_acceleration,
+                //     slope
+                // );
+                instrument!(
+                    "back_step",
+                    (position, velocity, before_acceleration, slope)
                 );
 
                 if velocity < 0.0 {
