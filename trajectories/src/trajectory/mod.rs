@@ -56,13 +56,23 @@ where
     pub fn position(&self, time: f64) -> Coord<N> {
         let (previous, current) = self.trajectory_segment(time);
 
-        trace!(
-            "RS get_pos (time;prev_pos;prev_vel;curr_pos;curr_vel),{},{},{},{},{}",
+        // trace!(
+        //     "RS get_pos (time;prev_pos;prev_vel;curr_pos;curr_vel),{},{},{},{},{}",
+        //     time,
+        //     previous.position,
+        //     previous.velocity,
+        //     current.position,
+        //     current.velocity
+        // );
+        instrument!(
+            "get_pos",
             time,
-            previous.position,
-            previous.velocity,
-            current.position,
-            current.velocity
+            (
+                previous.position,
+                previous.velocity,
+                current.position,
+                current.velocity
+            )
         );
 
         let duration = current.time - previous.time;

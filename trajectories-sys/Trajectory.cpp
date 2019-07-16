@@ -611,7 +611,7 @@ Vector3d Trajectory::getPosition(double time) const {
 	previous--;
 
 	// COMP
-	// std::cout<<"CPP get_pos (time;prev_pos;prev_vel;curr_pos;curr_vel),"<<time<<","<<previous->pathPos<<","<<previous->pathVel<<","<<it->pathPos<<","<<it->pathVel <<std::endl;
+	std::cout<<"CPP get_pos (time;prev_pos;prev_vel;curr_pos;curr_vel),"<<time<<","<<previous->pathPos<<","<<previous->pathVel<<","<<it->pathPos<<","<<it->pathVel <<std::endl;
 	double timeStep = it->time - previous->time;
 	const double acceleration = 2.0
 		* (it->pathPos - previous->pathPos - timeStep * previous->pathVel)

@@ -12,5 +12,5 @@ cd ..
 echo "Done"
 
 echo "Plotting..."
-gnuplot compare.plt
+gnuplot ./gnuplot/compare.plt
 echo "Done"
