@@ -2,6 +2,7 @@ use super::TrajectoryOptions;
 use crate::path_segment::PathSegment;
 use crate::Coord;
 use nalgebra::{allocator::SameShapeVectorAllocator, storage::Owned, DefaultAllocator, DimName};
+use std::cmp::Ordering;
 
 #[derive(Debug)]
 pub struct TrajectorySegment<'a, N>
@@ -115,19 +116,48 @@ where
 
                 // segment.start + ((segment.end - segment.start) * (offset / self.len()))
 
-                if offset <= self.acceleration_time {
-                    // Acceleration period
-                    (segment.start * offset) + (0.5 * self.acceleration * offset)
-                } else {
-                    // Linear period
-                    segment.start + ((segment.end - segment.start) * (offset / self.len()))
+                match dbg!(segment.start_velocity.partial_cmp(&segment.end_velocity))
+                    .expect("Could not compare start/end")
+                {
+                    Ordering::Equal => {
+                        // Linear only, no accel/decel
+                        segment.start + ((segment.end - segment.start) * (offset / self.len()))
+                    }
+                    Ordering::Less => {
+                        // Accelerate to a higher velocity(?) at beginning of move
+                        if offset <= self.acceleration_time {
+                            // Acceleration period
+                            (segment.start * offset) + (0.5 * self.acceleration * offset)
+                        } else {
+                            // Linear period
+                            segment.start + ((segment.end - segment.start) * (offset / self.len()))
+                        }
+                    }
+                    Ordering::Greater => {
+                        // Decelerate to lower velocity(?) at end of move
+                        if offset > (self.time - self.acceleration_time) {
+                            // Deceleration period
+                            (segment.start * offset) + (0.5 * self.acceleration * offset)
+                        } else {
+                            // Linear period
+                            segment.start + ((segment.end - segment.start) * (offset / self.len()))
+                        }
+                    }
                 }
+
+                // if offset <= self.acceleration_time {
+                //     // Acceleration period
+                //     (segment.start * offset) + (0.5 * self.acceleration * offset)
+                // } else {
+                //     // Linear period
+                //     segment.start + ((segment.end - segment.start) * (offset / self.len()))
+                // }
             }
         }
     }
 
     /// Get the first derivative (velocity, gradient) of this segment
-    pub fn first_derivative_unchecked(&self, _time: f64) -> Coord<N> {
+    pub fn velocity_unchecked(&self, _time: f64) -> Coord<N> {
         match self.path_segment {
             PathSegment::Linear(segment) => (segment.end - segment.start).normalize(),
         }

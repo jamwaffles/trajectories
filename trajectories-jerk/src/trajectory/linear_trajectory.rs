@@ -109,7 +109,7 @@ where
     /// TODO: Meaningful error type describing why a velocity could not be found
     pub fn velocity_linear(&self, time: f64) -> Result<Coord<N>, String> {
         self.segment_at_time(time)
-            .map(|segment| segment.first_derivative_unchecked(time))
+            .map(|segment| segment.velocity_unchecked(time))
             .ok_or(format!(
                 "Failed to get segment at time {}. Total length {}",
                 time,
