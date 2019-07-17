@@ -216,7 +216,7 @@ bool Trajectory::getNextAccelerationSwitchingPoint(double pathPos, TrajectorySte
 				|| getMinMaxPhaseSlope(switchingPathPos + eps, switchingPathVel, true) < getAccelerationMaxPathVelocityDeriv(switchingPathPos + 2.0*eps)))
 			{
 				// COMP
-				// std::cout<<"CPP acc_sw_discont (in_pos;next_post;next_vel),"<<pathPos<<","<<switchingPathPos<<","<<switchingPathVel<<std::endl;
+				std::cout<<"CPP acc_sw_discont (in_pos;next_post;next_vel),"<<pathPos<<","<<switchingPathPos<<","<<switchingPathVel<<std::endl;
 				break;
 			}
 		}
@@ -419,7 +419,7 @@ void Trajectory::integrateBackward(list<TrajectoryStep> &startTrajectory, double
 	double slope = 0.0;
 	assert(start1->pathPos <= pathPos);
 	int blah = startTrajectory.size() - 1;
-	// double start_sw_pos = pathPos;
+	double start_sw_pos = pathPos;
 	// Move backwards through path in windows of 2. Exit if beginning of path is reached
 	while(start1 != startTrajectory.begin() || pathPos >= 0.0)
 	{
@@ -463,7 +463,7 @@ void Trajectory::integrateBackward(list<TrajectoryStep> &startTrajectory, double
 		const double intersectionPathPos = (start1->pathVel - pathVel + slope * pathPos - startSlope * start1->pathPos) / (slope - startSlope);
 
 		// COMP
-		// std::cout<<"CPP intersection_values (i_pos;start_slope),"<<intersectionPathPos<<","<<startSlope<<std::endl;
+		std::cout<<"CPP intersection_values (i_pos;start_slope),"<<intersectionPathPos<<","<<startSlope<<std::endl;
 
 		// If the current backwards-iterating segment intersects the original path, we're done
 		if(max(start1->pathPos, pathPos) - eps <= intersectionPathPos && intersectionPathPos <= eps + min(start2->pathPos, trajectory.front().pathPos)) {
@@ -476,7 +476,7 @@ void Trajectory::integrateBackward(list<TrajectoryStep> &startTrajectory, double
 			startTrajectory.splice(startTrajectory.end(), trajectory);
 
 			// COMP
-			// std::cout<<"CPP back_splice_idx (start_sw_pos;splice_idx),"<<start_sw_pos<<","<<blah<<std::endl;
+			std::cout<<"CPP back_splice_idx (start_sw_pos;splice_idx),"<<start_sw_pos<<","<<blah<<std::endl;
 
 			return;
 		}
@@ -505,7 +505,7 @@ double Trajectory::getMinMaxPathAcceleration(double pathPos, double pathVel, boo
 	}
 
 	// COMP
-	// std::cout<<"CPP acc_at (pathPos;pathVel;factor*maxPathAcceleration),"<<pathPos<<","<<pathVel<<","<<(factor*maxPathAcceleration)<<std::endl;
+	std::cout<<"CPP acc_at (pathPos;pathVel;factor*maxPathAcceleration),"<<pathPos<<","<<pathVel<<","<<(factor*maxPathAcceleration)<<std::endl;
 	return factor * maxPathAcceleration;
 }
 
@@ -536,7 +536,7 @@ double Trajectory::getAccelerationMaxPathVelocity(double pathPos) const {
 	}
 
 	// COMP
-	// std::cout<<"CPP max_vel_from_acc (pos;vel),"<<pathPos<<","<<maxPathVelocity<<std::endl;
+	std::cout<<"CPP max_vel_from_acc (pos;vel),"<<pathPos<<","<<maxPathVelocity<<std::endl;
 
 	return maxPathVelocity;
 }
@@ -550,7 +550,7 @@ double Trajectory::getVelocityMaxPathVelocity(double pathPos) const {
 	}
 
 	// COMP
-	// std::cout<<"CPP max_vel_from_vel (pos;vel),"<<pathPos<<","<<maxPathVelocity<<std::endl;
+	std::cout<<"CPP max_vel_from_vel (pos;vel),"<<pathPos<<","<<maxPathVelocity<<std::endl;
 
 	return maxPathVelocity;
 }
@@ -574,7 +574,7 @@ double Trajectory::getVelocityMaxPathVelocityDeriv(double pathPos) {
 		/ (tangent[activeConstraint] * abs(tangent[activeConstraint]));
 
 	// COMP
-	// std::cout<<"CPP max_vel_vel_deriv (pos;vel),"<<pathPos<<","<<result<<std::endl;
+	std::cout<<"CPP max_vel_vel_deriv (pos;vel),"<<pathPos<<","<<result<<std::endl;
 
 	return result;
 }

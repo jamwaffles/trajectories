@@ -23,11 +23,7 @@ where
             let tangent = path.tangent(position_along_path);
             let result = velocity_limit.component_div(&tangent).amin();
 
-            trace!(
-                "RS max_vel_from_vel (pos;vel),{},{}",
-                position_along_path,
-                result
-            );
+            instrument!("max_vel_from_vel", (position_along_path, result));
 
             result
         }
@@ -71,11 +67,7 @@ where
                 .fold(std::f64::INFINITY, |acc, x| acc.min(x))
                 .sqrt();
 
-            trace!(
-                "RS max_vel_from_acc (pos;vel),{},{}",
-                position_along_path,
-                new_res
-            );
+            instrument!("max_vel_from_acc", (position_along_path, new_res));
 
             new_res
         }
@@ -109,11 +101,7 @@ where
 
             let result = calc[constraint_axis];
 
-            trace!(
-                "RS max_vel_vel_deriv (pos;vel),{},{}",
-                position_along_path,
-                result
-            );
+            instrument!("max_vel_vel_deriv", (position_along_path, result));
 
             result
         }
@@ -174,12 +162,7 @@ where
             },
         );
 
-    trace!(
-        "RS acc_at (pathPos;pathVel;factor*maxPathAcceleration),{},{},{}",
-        position,
-        velocity,
-        res * factor
-    );
+    instrument!("acc_at", (position, velocity, res * factor));
 
     res * factor
 }

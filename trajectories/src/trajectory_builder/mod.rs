@@ -72,10 +72,9 @@ where
             let (fwd, is_end, stop_position) =
                 self.integrate_forward(&trajectory, switching_point.after_acceleration)?;
 
-            debug!(
-                "RS integ_fwd_end_step (pos;vel),{},{}",
-                fwd.last().unwrap().position,
-                fwd.last().unwrap().velocity,
+            instrument!(
+                "integ_fwd_end_step",
+                (fwd.last().unwrap().position, fwd.last().unwrap().velocity)
             );
 
             trajectory.extend(fwd);
@@ -483,11 +482,7 @@ where
                     - start_slope * start1.position)
                     / (slope - start_slope);
 
-                trace!(
-                    "RS intersection_values (i_pos;start_slope),{},{}",
-                    intersection_position,
-                    start_slope
-                );
+                instrument!("intersection_values", (intersection_position, start_slope));
 
                 // Check for intersection between path and current segment
                 if start1.position.max(position) - self.options.epsilon <= intersection_position
@@ -513,10 +508,9 @@ where
 
                     let ret = new_trajectory.into_iter().rev().collect();
 
-                    trace!(
-                        "RS back_splice_idx (start_sw_pos;splice_idx),{},{}",
-                        start_switching_point.pos.position,
-                        splice_index
+                    instrument!(
+                        "back_splice_idx",
+                        (start_switching_point.pos.position, splice_index)
                     );
 
                     return Ok((splice_index, ret));

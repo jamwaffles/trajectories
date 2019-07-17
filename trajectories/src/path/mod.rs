@@ -161,7 +161,8 @@ where
         };
 
         for p in switching_points.iter() {
-            trace!("RS switching_point (pos;1.0),{},1.0", p.position);
+            // trace!("RS switching_point (pos;1.0),{},1.0", p.position);
+            instrument!("switching_point", (p.position, 1.0));
         }
 
         let length = start_offset

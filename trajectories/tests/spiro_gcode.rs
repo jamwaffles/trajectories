@@ -23,16 +23,6 @@ fn spiro_gcode() {
 
     let rust_path = Path::from_waypoints(&waypoints, PathOptions { max_deviation });
 
-    let _rust_trajectory = Trajectory::new(
-        &rust_path,
-        TrajectoryOptions {
-            velocity_limit: TestCoord3::new(1.3, 0.67, 0.67),
-            acceleration_limit: TestCoord3::new(0.002, 0.002, 0.002),
-            epsilon,
-            timestep,
-        },
-    );
-
     let cpp_path = unsafe {
         path_create(
             spiro_gcode_data()
@@ -45,6 +35,16 @@ fn spiro_gcode() {
             max_deviation,
         )
     };
+
+    let _rust_trajectory = Trajectory::new(
+        &rust_path,
+        TrajectoryOptions {
+            velocity_limit: TestCoord3::new(1.3, 0.67, 0.67),
+            acceleration_limit: TestCoord3::new(0.002, 0.002, 0.002),
+            epsilon,
+            timestep,
+        },
+    );
 
     let _cpp_trajectory = unsafe {
         CppTrajectory::new(
