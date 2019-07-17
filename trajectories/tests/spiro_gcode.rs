@@ -46,6 +46,8 @@ fn spiro_gcode() {
         },
     );
 
+    println!("Rust traj: {:?}", _rust_trajectory);
+
     let _cpp_trajectory = unsafe {
         CppTrajectory::new(
             cpp_path,
