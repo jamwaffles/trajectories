@@ -31,8 +31,7 @@ fn spiro_gcode() {
             epsilon,
             timestep,
         },
-    )
-    .unwrap();
+    );
 
     let cpp_path = unsafe {
         path_create(
