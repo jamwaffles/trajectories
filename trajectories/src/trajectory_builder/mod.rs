@@ -231,10 +231,10 @@ where
 
                 break Ok((new_points, PathPosition::End, position));
             } else if velocity < 0.0 {
-                panic!(
+                break Err(format!(
                     "Integrate forward velocity cannot be 0, position {}, velocity {}",
                     position, velocity
-                );
+                ));
             }
 
             let max_velocity_at_position = max_velocity_at(
