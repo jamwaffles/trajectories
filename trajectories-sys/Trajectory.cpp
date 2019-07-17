@@ -331,7 +331,7 @@ bool Trajectory::integrateForward(list<TrajectoryStep> &trajectory, double accel
 		else if(pathVel < 0.0) {
 			// Velocity can't be zero; set error flag and bail
 			valid = false;
-			cout << "error" << endl;
+			cout << "Error: Velocity less than zero: " << pathVel << endl;
 			return true;
 		}
 
