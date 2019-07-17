@@ -255,7 +255,7 @@ Path::Path(const list<Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > &pat
 
 	for(std::list<std::pair<double, bool> >::iterator i = switchingPoints.begin(); i != switchingPoints.end(); i++) {
 		// COMP
-		// std::cout << "CPP switching_point (pos;1.0)," << (*i).first << ",1.0" << std::endl;
+		std::cout << "CPP switching_point (pos;1.0)," << (*i).first << ",1.0" << std::endl;
 	}
 }
 

@@ -66,7 +66,7 @@ Trajectory::Trajectory(const Path &path, const Vector3d &maxVelocity, const Vect
 		TrajectoryStep switchingPoint;
 
 		// COMP
-		// std::cout<<"CPP integ_fwd_end_step (pos;vel),"<<trajectory.back().pathPos<<","<<trajectory.back().pathVel<< std::endl;
+		std::cout<<"CPP integ_fwd_end_step (pos;vel),"<<trajectory.back().pathPos<<","<<trajectory.back().pathVel<< std::endl;
 
 		// Break if we've reached the end of the path
 		if(getNextSwitchingPoint(trajectory.back().pathPos, switchingPoint, beforeAcceleration, afterAcceleration)) {
@@ -152,7 +152,7 @@ bool Trajectory::getNextSwitchingPoint(double pathPos, TrajectoryStep &nextSwitc
 	} while(!accelerationReachedEnd && accelerationSwitchingPoint.pathVel > getVelocityMaxPathVelocity(accelerationSwitchingPoint.pathPos));
 
 	// COMP
-	// std::cout<<"CPP next_accel_sw_point (pos_along_path;sw_pos;sw_vel),"<<pathPos<<","<<accelerationSwitchingPoint.pathPos<<","<<accelerationSwitchingPoint.pathVel<<std::endl;
+	std::cout<<"CPP next_accel_sw_point (pos_along_path;sw_pos;sw_vel),"<<pathPos<<","<<accelerationSwitchingPoint.pathPos<<","<<accelerationSwitchingPoint.pathVel<<std::endl;
 
 	// Velocity switching point, defaults to zero velocity
 	TrajectoryStep velocitySwitchingPoint(pathPos, 0.0);
@@ -165,7 +165,7 @@ bool Trajectory::getNextSwitchingPoint(double pathPos, TrajectoryStep &nextSwitc
 		|| velocitySwitchingPoint.pathVel > getAccelerationMaxPathVelocity(velocitySwitchingPoint.pathPos + eps)));
 
 	// COMP
-	// std::cout<<"CPP next_vel_sw_point (pos_along_path;sw_pos;sw_vel),"<<pathPos<<","<<velocitySwitchingPoint.pathPos<<","<<velocitySwitchingPoint.pathVel<<std::endl;
+	std::cout<<"CPP next_vel_sw_point (pos_along_path;sw_pos;sw_vel),"<<pathPos<<","<<velocitySwitchingPoint.pathPos<<","<<velocitySwitchingPoint.pathVel<<std::endl;
 
 	if(accelerationReachedEnd && velocityReachedEnd) {
 		return true;

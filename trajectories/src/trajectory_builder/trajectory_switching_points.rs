@@ -195,15 +195,27 @@ where
             })
             .cloned();
 
-        trace!(
-            "RS next_vel_sw_point (pos_along_path;sw_pos;sw_vel),{},{},{}",
-            position_along_path,
-            velocity_switching_point
-                .map(|p| p.pos.position)
-                .unwrap_or(0.0),
-            velocity_switching_point
-                .map(|p| p.pos.velocity)
-                .unwrap_or(0.0),
+        // trace!(
+        //     "RS next_vel_sw_point (pos_along_path;sw_pos;sw_vel),{},{},{}",
+        //     position_along_path,
+        //     velocity_switching_point
+        //         .map(|p| p.pos.position)
+        //         .unwrap_or(0.0),
+        //     velocity_switching_point
+        //         .map(|p| p.pos.velocity)
+        //         .unwrap_or(0.0),
+        // );
+        instrument!(
+            "next_vel_sw_point",
+            (
+                position_along_path,
+                velocity_switching_point
+                    .map(|p| p.pos.position)
+                    .unwrap_or(0.0),
+                velocity_switching_point
+                    .map(|p| p.pos.velocity)
+                    .unwrap_or(0.0)
+            )
         );
 
         // Return the next earliest switching point (if any)
