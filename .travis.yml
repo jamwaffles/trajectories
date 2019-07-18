@@ -21,6 +21,7 @@ addons:
       - llvm-7-dev
 
 script:
+  - rustup update
   - cargo test --release
 
 cache: cargo
