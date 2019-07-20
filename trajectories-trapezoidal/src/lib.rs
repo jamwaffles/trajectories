@@ -82,17 +82,20 @@ impl SuperSimpleTrapezoidal {
         if self.start_time <= time && time <= self.start_time + self.accel_time {
             println!("Accel phase");
 
-            0.0
+            self.start + 0.5 * self.max_accel * (time - self.start_time).powi(2)
         } else if self.start_time + self.accel_time < time
             && time <= self.end_time - self.accel_time
         {
             println!("Linear phase");
 
-            0.0
+            self.start
+                + self.max_accel
+                    * self.accel_time
+                    * (time - self.start_time - self.accel_time / 2.0)
         } else if self.end_time - self.accel_time < time && time <= self.end_time {
             println!("Decel phase");
 
-            0.0
+            self.end - 0.5 * self.max_accel * (self.end_time - time - self.start_time).powi(2)
         } else {
             unreachable!(
                 "Time {} is out of bounds {} - {}",
