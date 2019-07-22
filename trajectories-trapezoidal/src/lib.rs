@@ -143,4 +143,22 @@ mod tests {
 
         csv_debug("super_simple", &points);
     }
+
+    #[test]
+    fn short() {
+        let traj = SuperSimpleTrapezoidal::new(10.0, 11.0, 1.0, 2.0);
+
+        let mut t = 0.0;
+        let mut points = Vec::new();
+
+        while t <= traj.duration {
+            let pos = traj.position(t);
+
+            points.push((t, pos));
+
+            t += 0.1;
+        }
+
+        csv_debug("short", &points);
+    }
 }
