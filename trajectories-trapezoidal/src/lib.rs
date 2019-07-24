@@ -47,14 +47,24 @@ struct SuperSimpleTrapezoidal {
 
 impl SuperSimpleTrapezoidal {
     pub fn new(start: f32, end: f32, max_accel: f32, max_vel: f32) -> Self {
-        // ta
-        let accel_time = max_vel / max_accel;
-
         // L
         let length = (end - start).abs();
 
-        // T
-        let duration = (length * max_accel + max_vel.powi(2)) / (max_accel * max_vel);
+        let has_linear_tract = length >= max_vel.powi(2) / max_accel;
+
+        // (ta, T)
+        let (accel_time, duration) = if has_linear_tract {
+            (
+                max_vel / max_accel,
+                (length * max_accel + max_vel.powi(2)) / (max_accel * max_vel),
+            )
+        } else {
+            let accel_time = (length / max_accel).sqrt();
+
+            (accel_time, accel_time * 2.0)
+        };
+
+        println!("{}", has_linear_tract);
 
         println!("Accel time {}", accel_time);
         println!("Duration {}", duration);
