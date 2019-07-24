@@ -90,20 +90,20 @@ impl SuperSimpleTrapezoidal {
 
     pub fn position(&self, time: f32) -> f32 {
         if self.start_time <= time && time <= self.start_time + self.accel_time {
-            println!("Accel phase");
+            println!("Position: Accel phase");
 
             self.start + 0.5 * self.max_accel * (time - self.start_time).powi(2)
         } else if self.start_time + self.accel_time < time
             && time <= self.end_time - self.accel_time
         {
-            println!("Linear phase");
+            println!("Position: Linear phase");
 
             self.start
                 + self.max_accel
                     * self.accel_time
                     * (time - self.start_time - self.accel_time / 2.0)
         } else if self.end_time - self.accel_time < time && time <= self.end_time {
-            println!("Decel phase");
+            println!("Position: Decel phase");
 
             self.end - 0.5 * self.max_accel * (self.end_time - time - self.start_time).powi(2)
         } else {
@@ -113,9 +113,33 @@ impl SuperSimpleTrapezoidal {
             );
         }
     }
+
+    pub fn velocity(&self, time: f32) -> f32 {
+        if self.start_time <= time && time <= self.start_time + self.accel_time {
+            println!("Velocity: Accel phase");
+
+            // 0.5 + (2.0 * (time - self.start_time))
+            // 2.0 * (time - self.start_time)
+
+            self.max_accel * (time - self.start_time)
+        } else if self.start_time + self.accel_time < time
+            && time <= self.end_time - self.accel_time
+        {
+            println!("Velocity: Linear phase");
+
+            0.0
+        } else if self.end_time - self.accel_time < time && time <= self.end_time {
+            0.0
+        } else {
+            unreachable!(
+                "Time {} is out of bounds {} - {}",
+                time, self.start_time, self.end_time
+            );
+        }
+    }
 }
 
-fn csv_debug(name: &'static str, points: &[(f32, f32)]) {
+fn csv_debug(name: &'static str, points: &[(f32, f32, f32)]) {
     // NOTE: Relative to lib root
     let path = PathBuf::from(format!("../target/trapezoidal/{}.csv", name));
 
@@ -145,8 +169,9 @@ mod tests {
 
         while t <= traj.duration {
             let pos = traj.position(t);
+            let vel = traj.velocity(t);
 
-            points.push((t, pos));
+            points.push((t, pos, vel));
 
             t += 0.1;
         }
@@ -163,8 +188,9 @@ mod tests {
 
         while t <= traj.duration {
             let pos = traj.position(t);
+            let vel = traj.velocity(t);
 
-            points.push((t, pos));
+            points.push((t, pos, vel));
 
             t += 0.1;
         }
