@@ -11,6 +11,8 @@ set term svg size 2500,1250
 set timestamp
 
 set y2tics
+set ylabel "Position"
+set y2label "Velocity"
 set xlabel "Time"
 
 set output ARG2
@@ -19,5 +21,5 @@ set output ARG2
 
 load '../gnuplot/dark2.pal'
 
-plot ARG1 using 1:2 ls 1 with linespoints title 'Value 1', \
-ARG1 using 1:3 ls 1 with linespoints axes x1y2 title 'Value 2'
+plot ARG1 using 1:2 ls 1 with linespoints title 'Position', \
+ARG1 using 1:3 ls 2 with linespoints axes x1y2 title 'Velocity'
