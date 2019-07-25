@@ -127,9 +127,13 @@ impl SuperSimpleTrapezoidal {
         {
             println!("Velocity: Linear phase");
 
-            0.0
+            self.max_accel * self.accel_time
         } else if self.end_time - self.accel_time < time && time <= self.end_time {
-            0.0
+            println!("Velocity: Decel phase");
+
+            let initial_velocity = self.max_accel * self.accel_time;
+
+            initial_velocity + self.max_accel * (self.end_time - self.accel_time - time)
         } else {
             unreachable!(
                 "Time {} is out of bounds {} - {}",
