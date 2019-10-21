@@ -33,14 +33,14 @@ name = "long_path"
 
 [dependencies]
 approx = "0.3.2"
-criterion = "0.2.10"
-csv = "1.0.5"
-log = "0.4.6"
-nalgebra = "0.17.3"
-pretty_env_logger = "0.3.0"
-serde = "1.0.89"
-serde_derive = "1.0.89"
-svg = "0.5.12"
+criterion = "0.3.0"
+csv = "1.1.1"
+log = "0.4.8"
+nalgebra = "0.18.1"
+pretty_env_logger = "0.3.1"
+serde = "1.0.101"
+serde_derive = "1.0.101"
+svg = "0.6.0"
 
 [dependencies.cpuprofiler]
 optional = true
